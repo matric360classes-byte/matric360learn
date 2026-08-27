@@ -3,7 +3,7 @@ export default function Home(){
   <div style={{fontFamily:'system-ui',background:'#0a0a0a',color:'#fff',minHeight:'100vh'}}>
     <header style={{padding:'20px',display:'flex',justifyContent:'space-between',borderBottom:'1px solid #222'}}>
       <b>Matric360Learn.co.za</b>
-      <a href="https://wa.me/27700000000" style={{background:'#25D366',color:'#000',padding:'8px 14px',borderRadius:'8px',textDecoration:'none',fontWeight:'bold'}}>WhatsApp</a>
+      <a href="https://wa.me/27729888561" style={{background:'#25D366',color:'#000',padding:'8px 14px',borderRadius:'8px',textDecoration:'none',fontWeight:'bold'}}>WhatsApp</a>
     </header>
 
     <div style={{textAlign:'center',padding:'60px 20px'}}>
