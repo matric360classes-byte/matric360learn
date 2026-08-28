@@ -1,4 +1,4 @@
-import { SUBJECTS_DATA } from "../../../]
+import { SUBJECTS_DATA } from "../../../lib/subjects"
 export default function SubjectPage({ params }: { params: { id: string } }) {
   const s = SUBJECTS_DATA[params.id]
   if(!s) return <div style={{padding:40,color:'#fff',background:'#0a0a0a',minHeight:'100vh'}}>Subject not found</div>
