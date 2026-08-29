@@ -7,15 +7,15 @@ export const SUBJECTS_DATA: any = {
       {
         title: "PHYSICS",
         units: [
-          { id: "mechanics", title: "UNIT 1: Mechanics", progress: 30, topics: ["Newton's Laws", "Momentum", "Work Energy Power"] },
-          { id: "waves-sound-light", title: "UNIT 2: Waves, Sound and Light", progress: 0, topics: ["Doppler Effect", "Diffraction"] },
-          { id: "electricity-magnetism", title: "UNIT 3: Electricity & Magnetism", progress: 0, topics: ["Electric Circuits", "Electrodynamics"] },
+          { id: "mechanics", title: "UNIT 1: Mechanics", progress: 30, topics: ["Newton Laws", "Forces", "Energy"] },
+          { id: "waves-sound-light", title: "UNIT 2: Waves, Sound and Light", progress: 0, topics: ["Waves", "Sound"] },
+          { id: "electricity-magnetism", title: "UNIT 3: Electricity & Magnetism", progress: 0, topics: ["Circuits", "Magnetism"] }
         ]
       },
       {
         title: "CHEMISTRY",
         units: [
-          { id: "matter-materials", title: "UNIT 1: Matter & Materials", progress: 0, topics: ["Quantitative Chemistry"] },
+          { id: "matter-materials", title: "UNIT 1: Matter & Materials", progress: 0, topics: ["Particles", "Bonding"] }
         ]
       }
     ]
@@ -28,7 +28,7 @@ export const SUBJECTS_DATA: any = {
       {
         title: "MATHEMATICS",
         units: [
-          { id: "algebra", title: "UNIT 1: Algebra", progress: 0, topics: ["Equations"] },
+          { id: "algebra", title: "UNIT 1: Algebra", progress: 0, topics: ["Equations", "Functions"] }
         ]
       }
     ]
