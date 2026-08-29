@@ -3,14 +3,16 @@ import Link from "next/link";
 export default function Page({params}:any){
   const subj=(SUBJECTS_DATA as any)[params.id];
   let unit:any=null;
-  if(subj){
-    for(const s of subj.sections){
-      for(const u of s.units){
-        if(u.id===params.unitId){unit=u; break;}
+  try{
+    if(subj){
+      for(const s of (subj.sections||[])){
+        for(const u of (s.units||[])){
+          if(u.id===params.unitId){unit=u; break;}
+        }
       }
     }
-  }
-  if(!unit) return <div style={{background:"#0f0f13",minHeight:"100vh",color:"white",padding:20}}>Unit not found</div>;
+  }catch(e){}
+  if(!unit) return <div style={{background:"#0f0f13",minHeight:"100vh",color:"white",padding:20}}>Unit {params.unitId} not found</div>;
   return (
     <div style={{background:"#0f0f13",minHeight:"100vh",color:"white",padding:20}}>
       <Link href={`/subjects/${params.id}`} style={{color:"#9ca3af",textDecoration:"none"}}>{"<"} Back</Link>
