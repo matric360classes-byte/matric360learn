@@ -1,6 +1,7 @@
 export const SUBJECTS_DATA:any={
 "mathematics":{
 name:"Mathematics",
+slug:"mathematics",
 desc:"CAPS-aligned exam practice",
 sections:[
 {name:"Mathematics",units:[
@@ -18,10 +19,12 @@ sections:[
 {id:"counting",title:"Counting and Probability",count:5,topics:["Counting Principles","Venn Diagrams","Contingency","Tree Diagrams","Complementary"]},
 {id:"distributions",title:"Probability Distributions",count:5,topics:["Binomial","Normal","Expected Value","Variance","Applications"]}
 ]}
-]
+],
+curriculum:[{unit:"Mathematics",topics:["Patterns","Functions","Calculus"]}]
 },
 "physical-sciences":{
 name:"Physical Sciences",
+slug:"physical-sciences",
 desc:"Physics + Chemistry CAPS",
 sections:[
 {name:"Physics",units:[
@@ -45,10 +48,10 @@ sections:[
 {id:"chlor-alkali",title:"Chlor-Alkali Industry",count:1,topics:["Membrane Cell"]},
 {id:"fertilizers",title:"Fertilizer Industry",count:3,topics:["Haber Process","Ostwald Process","Contact Process"]}
 ]}
-]
+],
+curriculum:[{unit:"Physics",topics:["Mechanics","Momentum"]},{unit:"Chemistry",topics:["Organic","Equilibrium"]}]
 }
 };
-
 export const NODES_TEMPLATE=[
 {id:"A",nodeLabel:"Node A · Exam Hook",title:"Exam Hook"},
 {id:"B",nodeLabel:"Node B · Learn The Concept",title:"Learn The Concept"},
