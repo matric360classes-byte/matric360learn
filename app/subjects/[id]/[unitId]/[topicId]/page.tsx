@@ -1,46 +1,35 @@
-"use client";
-import { useState } from "react";
+import { SUBJECTS_DATA } from "@/lib/subjects";
 import Link from "next/link";
 
-export default function TopicPage({ params }: any) {
-  const [yt, setYt] = useState("");
-  const getId = (url:string) => {
-    try { const u=new URL(url); if(u.hostname.includes("youtu")) return u.searchParams.get("v") || u.pathname.split("/").pop(); } catch {}
-    return null;
-  };
-  const vid = getId(yt);
-
+export default function Page({ params }: { params: { id: string } }) {
+  const subject: any = (SUBJECTS_DATA as any)[params.id];
+  if (!subject) return <div style={{padding:24, color:"#fff"}}>Subject {params.id} not found</div>;
   return (
-    <div style={{background:"#0b0b12", minHeight:"100vh", color:"#fff", paddingBottom:80}}>
-      <header style={{padding:14, borderBottom:"1px solid #1e1e2a", display:"flex", justifyContent:"space-between"}}>
-        <Link href={`/subjects/${params.id}/${params.unitId}`}>‹ Back</Link>
-        <span style={{fontSize:12, border:"1px solid #333", borderRadius:20, padding:"4px 10px"}}>{params.topicId}</span>
-      </header>
-
+    <div style={{background:"#0b0b12", minHeight:"100vh", color:"#fff"}}>
+      <div style={{padding:14, borderBottom:"1px solid #1e1e2a"}}>
+        <Link href="/" style={{fontWeight:700}}>‹ Home</Link> <span style={{marginLeft:12}}>{subject.name}</span>
+      </div>
       <div style={{padding:16}}>
-        {/* Nodes A-E */}
-        <div style={{display:"flex", gap:8, marginBottom:16}}>
-          {["A: Notes","B: Diagram","C: Example","D: Mistakes","E: Exam Qs"].map((n,i)=>(
-            <div key={i} style={{flex:1, background: i===0 ? "#7c3aed" : "#15151f", border:"1px solid #2a2a3a", borderRadius:12, padding:10, textAlign:"center", fontSize:11, fontWeight:700}}>{n}</div>
-          ))}
-        </div>
-
-        <div style={{background:"#15151f", border:"1px solid #2a2a3a", borderRadius:16, padding:16}}>
-          <h2 style={{fontWeight:800, fontSize:20, textTransform:"capitalize"}}>{params.topicId.replaceAll("-"," ")}</h2>
-          <p style={{color:"#888", fontSize:13, marginTop:8}}>CAPS • Grade 12 • Unlisted YouTube supported</p>
-          
-          <div style={{marginTop:16}}>
-            <label style={{fontSize:12, color:"#aaa"}}>Paste Unlisted YouTube link (teacher only)</label>
-            <input value={yt} onChange={e=>setYt(e.target.value)} placeholder="https://youtu.be/..." style={{width:"100%", marginTop:6, background:"#0b0b12", border:"1px solid #2a2a3a", borderRadius:10, padding:12, color:"#fff"}}/>
-          </div>
-
-          {vid && <iframe style={{width:"100%", height:200, marginTop:12, borderRadius:12, border:0}} src={`https://www.youtube.com/embed/${vid}`} allowFullScreen/>}
-
-          <div style={{marginTop:16, background:"#0b0b12", borderRadius:12, padding:12, border:"1px solid #1e1e2a"}}>
-            <div style={{fontSize:12, fontWeight:700}}>Lesson Content</div>
-            <div style={{color:"#666", fontSize:13, marginTop:6}}>Add your notes, diagrams, worked examples here. This page is ready for your CMS.</div>
+        <div style={{background:"#7c3aed", borderRadius:16, padding:16, marginBottom:20}}>
+          <div style={{fontSize:12, opacity:.8}}>Progress</div>
+          <div style={{fontSize:28, fontWeight:800}}>30%</div>
+          <div style={{background:"rgba(0,0,0,.3)", height:6, borderRadius:10, marginTop:10}}>
+            <div style={{width:"30%", height:6, background:"#fff", borderRadius:10}}/>
           </div>
         </div>
+        {subject.sections.map((sec:any)=>(
+          <div key={sec.title} style={{marginBottom:24}}>
+            <div style={{fontSize:11, color:"#888", fontWeight:700, letterSpacing:1, marginBottom:10}}>{sec.title}</div>
+            <div style={{display:"grid", gap:12}}>
+              {sec.units.map((u:any)=>(
+                <Link key={u.id} href={`/subjects/${params.id}/${u.id}`} style={{background:"#15151f", border:"1px solid #2a2a3a", borderRadius:16, padding:16, display:"block"}}>
+                  <div style={{display:"flex", justifyContent:"space-between"}}><b>{u.title}</b><span>›</span></div>
+                  <div style={{color:"#666", fontSize:12, marginTop:6}}>{u.topics.length} topics</div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
