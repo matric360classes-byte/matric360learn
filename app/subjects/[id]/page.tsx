@@ -1,4 +1,4 @@
-import { SUBJECTS_DATA } from "../../../lib/subjects";
+import { SUBJECTS_DATA } from "../../lib/subjects";
 import Link from "next/link";
 
 export default function Page({ params }: any) {
