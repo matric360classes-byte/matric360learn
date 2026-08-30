@@ -3,30 +3,65 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { SUBJECTS_DATA } from "../../../lib/subjects";
 
-export default function UnitsPage() {
+export default function UnitsPage(){
   const params = useParams();
-  const id = params.id as string;
-  const subject = (SUBJECTS_DATA as any)[id];
+  let id = (params?.id as string) || "mathematics";
+  if(id==="physical-science") id="physical-sciences";
+  if(id==="maths") id="mathematics";
 
-  if (!subject) return <div style={{padding:20}}>Subject not found</div>;
+  const allData = SUBJECTS_DATA as any;
+  const subject = allData[id] || allData["mathematics"];
 
-  const allUnits = subject.sections.flatMap((s:any) => s.units.map((u:any) => ({...u, sectionTitle: s.title})));
+  if(!subject){
+    return <div style={{padding:20, color:"#fff", background:"#0a0a12", minHeight:"100vh"}}>Subject not found: {id}</div>;
+  }
 
-  return (
-    <div style={{padding:20, maxWidth:900, margin:"0 auto"}}>
-      <Link href="/">← Home</Link>
-      <h1 style={{fontSize:28, fontWeight:800, marginTop:12}}>{subject.name}</h1>
-      <p>{subject.desc}</p>
+  const sections = subject.sections || [{title: subject.name || "Units", units: subject.units || []}];
+  const flatUnits = sections.flatMap((s:any)=> s.units || []);
 
-      <div style={{display:"grid", gap:16, marginTop:20}}>
-        {allUnits.map((unit:any) => (
-          <Link key={unit.id} href={`/subjects/${id}/${unit.id}`}
-            style={{border:"1px solid #ddd", borderRadius:12, padding:16, display:"block", background:"#fff"}}>
-            <div style={{fontSize:12, opacity:0.6, fontWeight:700}}>{unit.unit} • {unit.sectionTitle}</div>
-            <div style={{fontSize:18, fontWeight:700, marginTop:4}}>{unit.title}</div>
-            <div style={{fontSize:13, opacity:0.7, marginTop:6}}>{unit.topics?.length || unit.subTopics?.length || 0} topics</div>
-            <div style={{marginTop:8, fontSize:13, color:"#2563eb"}}>Open →</div>
-          </Link>
+  return(
+    <div style={{background:"#0a0a12", minHeight:"100vh", padding:"14px 16px 90px", color:"#fff"}}>
+      <div style={{fontSize:13, color:"#6a6a7a"}}>Subjects &gt; {subject.name}</div>
+      <h1 style={{fontSize:32, fontWeight:900, marginTop:6}}>{subject.name}</h1>
+      <p style={{color:"#8a8a9a", fontSize:14, marginTop:6}}>{subject.desc || ""}</p>
+
+      {flatUnits.length===0 && <div style={{marginTop:20, color:"#888"}}>No units found — check lib/subjects.ts has sections/units</div>}
+
+      <div style={{marginTop:18, display:"grid", gap:14}}>
+        {sections.map((sec:any, si:number)=>(
+          <div key={si}>
+            {sections.length>1 && sec.title && (
+              <div style={{background:"#15151f", border:"1px solid #222", borderRadius:16, padding:"12px 14px", marginBottom:12}}>
+                <div style={{fontSize:10, color:"#777"}}>SECTION</div>
+                <div style={{fontSize:18, fontWeight:800}}>{sec.title}</div>
+              </div>
+            )}
+            <div style={{display:"grid", gap:12}}>
+              {(sec.units || []).map((u:any)=>{
+                const count = (u.topics || u.subTopics || []).length;
+                return(
+                  <Link key={u.id} href={`/subjects/${id}/${u.id}`} style={{textDecoration:"none"}}>
+                    <div style={{background:"#1c1c28", border:"1px solid #2a2a3a", borderRadius:18, padding:16}}>
+                      <div style={{display:"flex", justifyContent:"space-between"}}>
+                        <div>
+                          <div style={{fontSize:10, color:"#777", fontWeight:700}}>{u.unit || `UNIT ${si+1}`}</div>
+                          <div style={{fontSize:18, fontWeight:800, color:"#fff", marginTop:4}}>{u.title || u.id}</div>
+                          <div style={{marginTop:8, fontSize:12, color:"#8a8a9a"}}>✓ Completed · {count} topics</div>
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          <div style={{fontWeight:800}}>100%</div>
+                          <div style={{marginTop:8, background:"#2a2a4a", color:"#8b8bff", padding:"6px 12px", borderRadius:20, fontSize:12, fontWeight:700}}>Continue &gt;</div>
+                        </div>
+                      </div>
+                      <div style={{marginTop:12, height:6, background:"#2a2a3a", borderRadius:10}}>
+                        <div style={{width:"100%", height:"100%", background:"#7a7aff", borderRadius:10}}/>
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
         ))}
       </div>
     </div>
