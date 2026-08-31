@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import Sidebar from "./components/Sidebar";
+import Sidebar from "../components/Sidebar";
 
 export default function Page(){
   const [q,setQ]=useState<string|null>(null);
