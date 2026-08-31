@@ -26,7 +26,7 @@ export default function Page(){
     <div style={{background:"#0a0d1f",minHeight:"100vh",color:"#fff",fontFamily:"Inter,system-ui"}}>
       <header style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:"1px solid #1a1e35",position:"sticky",top:0,background:"#0a0d1f",zIndex:50}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#00d4ff,#7c3aed)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>360</div><span style={{fontWeight:900}}>Matric<span style={{color:"#00d4ff"}}>3</span><span style={{color:"#fbbf24"}}>60</span></span></div>
-        <div style={{display:"flex",gap:10}}><Link href="/login" style={{color:"#8b90a8",fontSize:14,textDecoration:"none",padding:"8px 10px"}}>Login</Link><Link href="/subjects" style={{background:"#fbbf24",color:"#000",padding:"9px 18px",borderRadius:999,fontWeight:800,fontSize:13,textDecoration:"none"}}>Start Free</Link></div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}><img src="/logo.png" alt="Matric360" style={{width:36,height:36,borderRadius:10,objectFit:"contain",background:"#fff",padding:2}} /><div style={{fontWeight:900,letterSpacing:"-0.5px"}}>Matric360</div></div>
       </header>
 
       <section style={{padding:"28px 20px 0",textAlign:"center",maxWidth:520,margin:"0 auto"}}>
