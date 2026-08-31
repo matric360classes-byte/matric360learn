@@ -24,10 +24,16 @@ export default function Page(){
 
   return(
     <div style={{background:"#0a0d1f",minHeight:"100vh",color:"#fff",fontFamily:"Inter,system-ui"}}>
-      <header style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:"1px solid #1a1e35",position:"sticky",top:0,background:"#0a0d1f",zIndex:50}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#00d4ff,#7c3aed)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900}}>360</div><span style={{fontWeight:900}}>Matric<span style={{color:"#00d4ff"}}>3</span><span style={{color:"#fbbf24"}}>60</span></span></div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}><img src="/logo.png" alt="Matric360" style={{width:36,height:36,borderRadius:10,objectFit:"contain",background:"#fff",padding:2}} /><div style={{fontWeight:900,letterSpacing:"-0.5px"}}>Matric360</div></div>
-      </header>
+      <header style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"#0a0d1f",position:"sticky",top:0,zIndex:50}}>
+  <div style={{display:"flex",alignItems:"center",gap:8}}>
+    <img src="/logo.png" alt="Matric360" style={{width:34,height:34,borderRadius:9,objectFit:"contain",background:"#000",padding:1}} />
+    <div style={{fontWeight:800,fontSize:18,color:"#fff"}}>Matric<span style={{color:"#38bdf8"}}>3</span><span style={{color:"#facc15"}}>60</span></div>
+  </div>
+  <div style={{display:"flex",alignItems:"center",gap:14}}>
+    <Link href="/login" style={{color:"#9aa0b8",fontSize:14,textDecoration:"none"}}>Login</Link>
+    <Link href="/login" style={{background:"#fbbf24",color:"#000",padding:"8px 16px",borderRadius:999,fontWeight:700,fontSize:13,textDecoration:"none"}}>Start Free</Link>
+  </div>
+</header>
 
       <section style={{padding:"28px 20px 0",textAlign:"center",maxWidth:520,margin:"0 auto"}}>
         <div style={{display:"inline-flex",gap:8,background:"#151932",border:"1px solid #242845",borderRadius:999,padding:"6px 14px",fontSize:12,color:"#a0a7c2"}}><span style={{width:8,height:8,borderRadius:99,background:"#10b981",display:"inline-block"}}/> CAPS-Aligned · Grade 12</div>
