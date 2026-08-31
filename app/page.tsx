@@ -1,55 +1,71 @@
 "use client";
-import { useState } from "react";
+import Link from "next/link";
 
 export default function Page(){
-  const [q,setQ]=useState<string|null>(null);
-  const faqs=[
-    {q:"What is Matric360?",a:"CAPS-aligned Grade 12 platform - Maths 13 Units, Sciences, Languages."},
-    {q:"Who is Matric360 for?",a:"Grade 12 learners who want to pass with Bachelor."},
-    {q:"Which subjects are available?",a:"Maths (13 Units), Physical Sciences - 2 subjects to start."},
-    {q:"Is Matric360 aligned with CAPS?",a:"Yes - every lesson is CAPS aligned."},
-    {q:"Is there a free version?",a:"Yes - R0 forever: CAPS summaries + 1 quiz per unit."},
-    {q:"What does Premium include?",a:"Full CAPS, videos, unlimited quizzes, past papers."},
-    {q:"How much does Matric360 cost?",a:"R149 for 1, R249 for all subjects."},
-    {q:"Can I study on my phone?",a:"Yes - mobile-first, works offline for summaries."},
-  ];
   return(
-    <div style={{background:"#f6fff8",minHeight:"100vh",color:"#0a0d1f"}}>
-      <header style={{display:"flex",justifyContent:"space-between",padding:"14px 16px",alignItems:"center", background:"white", borderBottom:"1px solid #e5e7eb"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <img src="/logo.png" alt="Matric360" style={{width:32,height:32,borderRadius:8}}/>
-          <div style={{fontWeight:800,fontSize:18}}>Matric360</div>
+    <div style={{background:"#0a0d1a", minHeight:"100vh", color:"white", fontFamily:"Inter, sans-serif"}}>
+      {/* HEADER */}
+      <header style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px", background:"#0f1020"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <img src="/logo.png" alt="Matric360" style={{width:36,height:36,borderRadius:8}}/>
+          <div style={{fontWeight:800,fontSize:19}}>Matric<span style={{color:"#38bdf8"}}>3</span><span style={{color:"#fbbf24"}}>60</span></div>
         </div>
-        <div style={{background:"#16a34a",color:"white",padding:"8px 14px",borderRadius:20,fontWeight:700,fontSize:14}}>Learn</div>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <Link href="/login" style={{color:"#cbd5e1",textDecoration:"none",fontSize:14}}>Login</Link>
+          <Link href="/signup" style={{background:"#fbbf24",color:"black",padding:"10px 18px",borderRadius:999,fontWeight:800,textDecoration:"none",fontSize:14}}>Start Free</Link>
+        </div>
       </header>
-      <section style={{padding:"32px 20px", background:"white"}}>
-        <h1 style={{fontSize:32,fontWeight:900,lineHeight:1.1}}>Pass Matric<br/><span style={{color:"#16a34a"}}>With Confidence</span></h1>
-        <p style={{color:"#6b7280",marginTop:10}}>Your original landing - 2 Subjects only</p>
+
+      {/* HERO */}
+      <section style={{padding:"32px 20px 20px", textAlign:"center"}}>
+        <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"#1a1c32",border:"1px solid #2a2c4a",padding:"6px 14px",borderRadius:999,fontSize:12, color:"#cbd5e1"}}>
+          <span style={{width:8,height:8,background:"#10b981",borderRadius:999,display:"inline-block",boxShadow:"0 0 8px #10b981"}}></span>
+          CAPS-Aligned · Grade 12
+        </div>
+        <h1 style={{fontSize:36,fontWeight:900,lineHeight:1.15,marginTop:20}}>
+          Master Grade 12 Maths<br/>& Physical Sciences<br/>with <span style={{background:"linear-gradient(90deg,#38bdf8,#a855f7)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Confidence</span>
+        </h1>
+        <p style={{color:"#94a3b8",marginTop:14,fontSize:14,lineHeight:1.5}}>Start with CAPS-aligned Grade 12 lessons and build progress step by step.</p>
+        
+        <div style={{display:"flex",flexDirection:"column",gap:12,marginTop:24}}>
+          <Link href="/signup" style={{background:"#fbbf24",color:"black",padding:"16px",borderRadius:16,fontWeight:800,textDecoration:"none",display:"flex",justifyContent:"center",gap:8,boxShadow:"0 0 30px rgba(251,191,36,0.3)"}}>✨ Start Studying Free</Link>
+          <Link href="#how" style={{background:"#1e2035",color:"white",padding:"14px",borderRadius:16,fontWeight:600,textDecoration:"none",border:"1px solid #2d304f",display:"flex",justifyContent:"center",gap:8}}>▶ See How It Works</Link>
+        </div>
       </section>
-      <section style={{padding:"16px", background:"#f6fff8"}}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          <div style={{background:"white", padding:16, borderRadius:16, border:"1px solid #dcfce7"}}>
-            <div style={{fontSize:20}}>∑</div>
-            <div style={{fontWeight:800,marginTop:6}}>Mathematics</div>
-            <div style={{fontSize:12,color:"#666"}}>13 Units • CAPS</div>
-          </div>
-          <div style={{background:"white", padding:16, borderRadius:16, border:"1px solid #dcfce7"}}>
-            <div style={{fontSize:20}}>🧪</div>
-            <div style={{fontWeight:800,marginTop:6}}>Physical Sciences</div>
-            <div style={{fontSize:12,color:"#666"}}>12 Units • CAPS</div>
+
+      {/* DASHBOARD PREVIEW - like photo */}
+      <section style={{padding:"20px 16px 40px"}}>
+        <div style={{background:"linear-gradient(180deg,#1a1c32,#141627)",borderRadius:28,padding:12,border:"1px solid #2a2d4a"}}>
+          <div style={{background:"#0f111f",borderRadius:20,padding:16,border:"1px solid #1e2035"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",color:"#94a3b8",fontSize:12,marginBottom:16}}>
+              <span>Dashboard</span>
+              <span style={{color:"#fbbf24",display:"flex",alignItems:"center",gap:4}}>🔥 5 day streak</span>
+            </div>
+            <div style={{background:"#1a1c32",borderRadius:20,padding:16,border:"1px solid #2a2c4a"}}>
+              <div style={{color:"#94a3b8",fontSize:12}}>Exam Readiness</div>
+              <div style={{display:"flex",alignItems:"baseline",gap:8,marginTop:4}}>
+                <span style={{fontSize:28,fontWeight:900,color:"#10b981"}}>75%</span>
+                <span style={{fontSize:12,color:"#10b981"}}>On track</span>
+              </div>
+              <div style={{height:6,background:"#2a2d4a",borderRadius:999,marginTop:12,overflow:"hidden"}}>
+                <div style={{width:"75%",height:"100%",background:"linear-gradient(90deg,#3b82f6,#a855f7)",borderRadius:999}}></div>
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginTop:12}}>
+              <div style={{background:"#1a1c32",borderRadius:16,padding:14,border:"1px solid #2a2c4a"}}>
+                <div style={{color:"#94a3b8",fontSize:10,letterSpacing:1}}>LEVEL</div>
+                <div style={{fontWeight:800,fontSize:18,marginTop:4}}>12</div>
+                <div style={{color:"#38bdf8",fontSize:10,marginTop:4}}>+240 XP today</div>
+              </div>
+              <div style={{background:"#1a1c32",borderRadius:16,padding:14,border:"1px solid #2a2c4a"}}>
+                <div style={{color:"#94a3b8",fontSize:10,letterSpacing:1}}>GOAL</div>
+                <div style={{fontWeight:800,fontSize:18,marginTop:4}}>100 XP</div>
+                <div style={{color:"#10b981",fontSize:10,marginTop:4}}>Almost there</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
-      <section style={{padding:"20px",background:"white", marginTop:12}}>
-        <h2 style={{fontWeight:800,fontSize:20, marginBottom:12}}>FAQ</h2>
-        {faqs.map(f=>(
-          <div key={f.q} style={{borderBottom:"1px solid #f3f4f6",padding:"14px 0"}}>
-            <button onClick={()=>setQ(q===f.q?null:f.q)} style={{width:"100%",textAlign:"left",fontWeight:600,display:"flex",justifyContent:"space-between",background:"none",border:"none",cursor:"pointer"}}>{f.q}<span style={{color:"#16a34a"}}>{q===f.q?"−":"+"}</span></button>
-            {q===f.q&&<p style={{color:"#6b7280",fontSize:14,marginTop:8}}>{f.a}</p>}
-          </div>
-        ))}
-      </section>
-      <footer style={{padding:20,textAlign:"center",color:"#9ca3af",fontSize:12, background:"white"}}>© 2026 Matric360Learn</footer>
     </div>
   )
 }
