@@ -3,12 +3,43 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function DashboardPage(){
-  const [name,setName]=useState("Mike Sibanda");
+  const [name,setName]=useState("Learner");
   const [stats,setStats]=useState({streak:1, xp:0, progress:48, dailyXp:0, dailyGoal:100, daysSince:4});
   const [menuOpen,setMenuOpen]=useState(false);
+
   useEffect(()=>{
+    // 1. Try your saved name from signup
     const n = localStorage.getItem("matric360_name");
-    if(n) setName(n);
+    const email = localStorage.getItem("matric360_email");
+    const googleName = localStorage.getItem("matric360_google_name");
+    const userStr = localStorage.getItem("matric360_user");
+
+    if (googleName) {
+      setName(googleName);
+    } else if (n) {
+      setName(n);
+    } else if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        // Google user has full_name or name
+        setName(u.full_name || u.name || u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0] || "Learner");
+      } catch {
+        if(email) setName(email.split('@')[0]);
+      }
+    } else if (email) {
+      setName(email.split('@')[0]);
+    }
+
+    // 2. If using Supabase — get real logged in user (will override with real Google name)
+    // @ts-ignore
+    try {
+      const supabaseKey = Object.keys(localStorage).find(k=>k.startsWith('sb-') && k.endsWith('-auth-token'));
+      if(supabaseKey){
+        const session = JSON.parse(localStorage.getItem(supabaseKey) || "{}");
+        const realName = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || session?.user?.email?.split('@')[0];
+        if(realName) setName(realName);
+      }
+    } catch {}
   },[]);
 
   return(
