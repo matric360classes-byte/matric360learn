@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { SUBJECTS_DATA } from "@/lib/subjects";
+import { SUBJECTS_DATA } from "../../../../../lib/subjects";
 export default function Page(){
   const p=useParams() as any; let sid=p.id||"mathematics"; if(sid==="physical-science") sid="physical-sciences"; const uid=p.unitId;
   const subj=(SUBJECTS_DATA as any)[sid]; const unit=subj?.sections?.flatMap((s:any)=>s.units||[])?.find((u:any)=>u.id===uid);
