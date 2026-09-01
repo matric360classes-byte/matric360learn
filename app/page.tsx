@@ -1,89 +1,77 @@
-export default function Home() {
+export default function Home(){
   return (
-    <div className="min-h-screen bg-[#0e0e14] text-white">
-      {/* NAV */}
-      <header className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="logo" className="w-8 h-8" />
-          <span className="font-black text-[18px]">Matric<span className="text-[#7c6cff]">3</span><span className="text-[#f7c948]">60</span></span>
+    <div style={{minHeight:"100vh", background:"#0e0e14", color:"white", fontFamily:"Inter, sans-serif"}}>
+      {/* HEADER */}
+      <div style={{maxWidth:1280, margin:"0 auto", padding:"16px 24px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+        
+        {/* LOGO - SQUEEZE FIX INSIDE */}
+        <div style={{display:"flex", alignItems:"center", gap:8}}>
+          <div style={{width:28, height:28, borderRadius:8, overflow:"hidden", background:"#0e0e14", flexShrink:0}}>
+            <img 
+              src="/logo.png" 
+              alt="Matric360" 
+              style={{
+                width:140, 
+                height:70, 
+                objectFit:"cover", 
+                objectPosition:"left center", 
+                marginLeft:-6, 
+                marginTop:-2,
+                transform:"scale(1.8)",
+                transformOrigin:"left center"
+              }} 
+            />
+          </div>
+          <span style={{fontWeight:900}}>Matric<span style={{color:"#7c6cff"}}>3</span><span style={{color:"#f7c948"}}>60</span></span>
         </div>
-        <div className="flex items-center gap-3">
-          <a href="/login" className="text-sm text-[#a1a3b8] hover:text-white">Login</a>
-          <a href="/login" className="bg-[#fde8b0] text-black text-sm font-bold px-4 py-2 rounded-full">Start Free</a>
+
+        <div style={{display:"flex", gap:12, alignItems:"center"}}>
+          <a href="/login" style={{fontSize:14, color:"#a1a3b8", textDecoration:"none"}}>Login</a>
+          <a href="/login" style={{background:"#fde8b0", color:"#000", padding:"8px 16px", borderRadius:999, fontSize:13, fontWeight:800, textDecoration:"none"}}>Start Free</a>
         </div>
-      </header>
+      </div>
 
       {/* HERO - DESKTOP SPLIT */}
-      <main className="max-w-7xl mx-auto px-6 py-12 lg:py-20 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+      <div style={{maxWidth:1280, margin:"0 auto", padding:"40px 24px", display:"grid", gridTemplateColumns:"1.1fr 0.9fr", gap:40, alignItems:"center"}}>
         {/* LEFT */}
         <div>
-          <div className="inline-flex items-center gap-2 text-[11px] tracking-widest text-[#a1a3b8] mb-4">
-            <span className="w-2 h-2 bg-green-500 rounded-full"></span> CAPS-Aligned · Grade 12
-          </div>
-          <h1 className="text-[32px] lg:text-[56px] font-black leading-[0.95] tracking-tight">
-            Master Grade 12<br/>
-            Maths & Physical<br/>
-            Sciences with<br/>
-            <span className="bg-gradient-to-r from-[#2dd4ff] to-[#a78bfa] bg-clip-text text-transparent">Confidence</span>
+          <div style={{fontSize:11, letterSpacing:2, color:"#a1a3b8", marginBottom:16}}>● CAPS-Aligned · Grade 12</div>
+          <h1 style={{fontSize:56, fontWeight:900, lineHeight:0.95, margin:0}}>
+            Master Grade 12<br/>Maths & Physical<br/>Sciences with<br/>
+            <span style={{background:"linear-gradient(90deg,#2dd4ff,#a78bfa)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent"}}>Confidence</span>
           </h1>
-          <p className="mt-5 text-[#8b8da3] text-[15px] lg:text-[16px] max-w-[440px] leading-relaxed">
-            Start with CAPS-aligned Grade 12 lessons and build progress step by step.
-          </p>
-          <div className="mt-7 flex flex-col sm:flex-row gap-3">
-            <a href="/login" className="bg-[#f7c948] text-black font-extrabold px-6 py-3 rounded-full text-sm text-center">
-              ✨ Start Studying Free
-            </a>
-            <a href="#how" className="bg-[#1e1e2e] text-white font-bold px-6 py-3 rounded-full text-sm text-center border border-[#2a2a3e]">
-              ▷ See How It Works
-            </a>
+          <p style={{color:"#8b8da3", marginTop:16, maxWidth:440}}>Start with CAPS-aligned Grade 12 lessons and build progress step by step.</p>
+          <div style={{display:"flex", gap:12, marginTop:24}}>
+            <a href="/login" style={{background:"#f7c948", color:"#000", padding:"12px 20px", borderRadius:999, fontWeight:800, fontSize:14, textDecoration:"none"}}>✨ Start Studying Free</a>
+            <a href="#how" style={{background:"#1e1e2e", border:"1px solid #2a2a3e", color:"#fff", padding:"12px 20px", borderRadius:999, fontWeight:700, fontSize:14, textDecoration:"none"}}>▷ See How It Works</a>
           </div>
         </div>
 
-        {/* RIGHT - DASHBOARD CARD */}
-        <div className="lg:justify-self-end w-full lg:w-[380px]">
-          <div className="bg-[#1a1a28] border border-[#2a2a3e] rounded-[20px] p-5 shadow-2xl">
-            <div className="flex justify-between text-[11px] text-[#8b8da3] mb-4">
-              <span>Dashboard</span>
-              <span className="text-[#f7c948]">🔥 5 day streak</span>
+        {/* RIGHT CARD */}
+        <div style={{display:"flex", justifyContent:"flex-end"}}>
+          <div style={{width:380, background:"#1a1a28", border:"1px solid #2a2a3e", borderRadius:20, padding:20}}>
+            <div style={{display:"flex", justifyContent:"space-between", fontSize:11, color:"#8b8da3"}}><span>Dashboard</span><span style={{color:"#f7c948"}}>🔥 5 day streak</span></div>
+            <div style={{background:"#24243a", borderRadius:12, padding:14, marginTop:12}}>
+              <div style={{fontSize:11, color:"#8b8da3"}}>Exam Readiness</div>
+              <div style={{fontSize:28, fontWeight:900, color:"#2ee89e"}}>75% <span style={{fontSize:11, color:"#8b8da3", fontWeight:400}}>On track</span></div>
             </div>
-            <div className="bg-[#24243a] rounded-xl p-4 mb-4">
-              <div className="text-[11px] text-[#8b8da3]">Exam Readiness</div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-[28px] font-black text-[#2ee89e]">75%</span>
-                <span className="text-[11px] text-[#8b8da3]">On track</span>
-              </div>
-              <div className="h-1.5 bg-[#0e0e14] rounded-full mt-2"><div className="h-full w-[75%] bg-gradient-to-r from-[#2dd4ff] to-[#a78bfa] rounded-full"></div></div>
+            <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginTop:10}}>
+              <div style={{background:"#24243a", borderRadius:12, padding:12}}><div style={{fontSize:10, color:"#8b8da3"}}>LEVEL</div><div style={{fontWeight:900}}>12</div></div>
+              <div style={{background:"#24243a", borderRadius:12, padding:12}}><div style={{fontSize:10, color:"#8b8da3"}}>GOAL</div><div style={{fontWeight:900}}>100 XP</div></div>
             </div>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className="bg-[#24243a] rounded-xl p-3">
-                <div className="text-[10px] text-[#8b8da3]">LEVEL</div>
-                <div className="font-black">12</div>
-                <div className="text-[10px] text-[#2ee89e]">+240 XP today</div>
-              </div>
-              <div className="bg-[#24243a] rounded-xl p-3">
-                <div className="text-[10px] text-[#8b8da3]">GOAL</div>
-                <div className="font-black">100 XP</div>
-                <div className="text-[10px] text-[#2ee89e]">Almost there</div>
-              </div>
-            </div>
-            <div className="bg-[#24243a] rounded-xl p-3 mb-3">
-              <div className="text-[10px] text-[#2dd4ff]">✨ RECOMMENDED</div>
-              <div className="text-[13px] font-bold">Calculus - Paper 1 Prep</div>
-              <div className="text-[11px] text-[#8b8da3]">5 lessons · 12 min</div>
-            </div>
-            <div className="bg-[#2a2420] border border-[#3a3228] rounded-xl p-3">
-              <div className="text-[11px]">🔥 Daily streak</div>
-              <div className="text-[11px] text-[#8b8da3]">Keep your streak alive — complete one lesson today.</div>
+            <div style={{background:"#24243a", borderRadius:12, padding:12, marginTop:10}}>
+              <div style={{fontSize:10, color:"#2dd4ff"}}>RECOMMENDED</div>
+              <div style={{fontSize:13, fontWeight:700}}>Calculus - Paper 1 Prep</div>
+              <div style={{fontSize:11, color:"#8b8da3"}}>5 lessons · 12 min</div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
 
-      {/* HOW IT WORKS */}
-      <section id="how" className="max-w-7xl mx-auto px-6 pb-20 text-center">
-        <h2 className="text-[22px] font-black">See how Matric360 works</h2>
-        <p className="text-[13px] text-[#8b8da3] max-w-[600px] mx-auto mt-2">A quick tour of daily practice, past papers, mock exams and progress tracking — everything Grade 12 learners need to master the CAPS curriculum.</p>
-      </section>
+      <div id="how" style={{textAlign:"center", padding:"20px 24px 80px"}}>
+        <h2 style={{fontSize:22, fontWeight:900}}>See how Matric360 works</h2>
+        <p style={{fontSize:13, color:"#8b8da3", maxWidth:600, margin:"8px auto 0"}}>A quick tour of daily practice, past papers, mock exams and progress tracking.</p>
+      </div>
     </div>
   )
 }
