@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { SUBJECTS_DATA } from "@/lib/subjects";
+import { SUBJECTS_DATA } from "../../../../lib/subjects";
 export default function Page(){
   const p=useParams(); let id=(p?.id as string)||"mathematics"; if(id==="physical-science") id="physical-sciences";
   const s=(SUBJECTS_DATA as any)[id] || (SUBJECTS_DATA as any).mathematics;
