@@ -1,66 +1,76 @@
 "use client";
-import { useEffect, useState } from "react";
 import Link from "next/link";
 
-export default function DashboardPage(){
-  const [name,setName]=useState("Mike Sibanda");
-  const [stats,setStats]=useState({streak:1, xp:0, progress:48, dailyXp:0, dailyGoal:100, daysSince:4});
-  const [menuOpen,setMenuOpen]=useState(false);
-  useEffect(()=>{
-    const n = localStorage.getItem("matric360_name");
-    if(n) setName(n);
-  },[]);
-
-  return(
-    <div style={{background:"#0e0e14",minHeight:"100vh",color:"white",paddingBottom:90}}>
-      <header style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",background:"#0e0e14",position:"sticky",top:0,zIndex:20,borderBottom:"1px solid #1a1a26"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div onClick={()=>setMenuOpen(true)} style={{width:36,height:36,background:"#15151f",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>☰</div>
-          <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:800}}>
-            <img src="/logo.png" alt="logo" style={{width:32,height:32,borderRadius:8}} />
-            Matric360
-          </div>
+export default function Home() {
+  return (
+    <div style={{background:"#0a0a0c", minHeight:"100vh", color:"white"}}>
+      {/* HEADER */}
+      <header style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"20px 24px", maxWidth:1280, margin:"0 auto"}}>
+        <div style={{display:"flex", alignItems:"center", gap:10, fontWeight:700}}>
+          <img src="/logo.png" alt="logo" style={{width:32, height:32, borderRadius:8}} />
+          Matric360
         </div>
-        <div style={{display:"flex",gap:8}}>
-          <div style={{background:"#15151f",border:"1px solid #242436",borderRadius:999,padding:"6px 12px",fontSize:12}}>🛡️ Content</div>
-          <div style={{background:"#15151f",border:"1px solid #242436",borderRadius:999,padding:"6px 12px",fontSize:12,color:"#22c55e"}}>● Online</div>
+        <div style={{display:"flex", gap:12}}>
+          <Link href="/login" style={{color:"white", textDecoration:"none", padding:"8px 16px"}}>Log in</Link>
+          <Link href="/login" style={{background:"#f5c88a", color:"black", padding:"8px 18px", borderRadius:999, textDecoration:"none", fontWeight:600}}>Start Free</Link>
         </div>
       </header>
 
-      {menuOpen && (
-        <>
-          <div onClick={()=>setMenuOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:50}}></div>
-          <div style={{position:"fixed",top:0,left:0,bottom:0,width:"78%",maxWidth:320,background:"#10101a",zIndex:60,padding:"16px",overflowY:"auto"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:800}}>
-                <img src="/logo.png" alt="logo" style={{width:34,height:34,borderRadius:999}} />
-                Matric360
-              </div>
-              <div onClick={()=>setMenuOpen(false)} style={{width:32,height:32,borderRadius:999,border:"1px solid #3a3a5a",display:"flex",alignItems:"center",justifyContent:"center",color:"#8b8cff",cursor:"pointer"}}>✕</div>
+      {/* HERO - ONLY THIS PART IS FIXED - LEFT ON DESKTOP, 75% ON RIGHT LIKE YOUR PHOTO */}
+      <div style={{maxWidth:1280, margin:"0 auto", padding:"60px 24px"}}>
+        <style>{`
+          .hero-wrap{display:grid; gap:40px}
+          @media(min-width:1024px){
+            .hero-wrap{grid-template-columns:1.15fr 0.85fr; align-items:center}
+            .hero-left{text-align:left !important; align-items:flex-start !important}
+            .hero-left .hero-btns{justify-content:flex-start !important}
+          }
+        `}</style>
+        
+        <div className="hero-wrap">
+          {/* LEFT */}
+          <div className="hero-left" style={{display:"flex", flexDirection:"column", alignItems:"center", textAlign:"center"}}>
+            <div style={{display:"inline-flex", alignItems:"center", gap:8, background:"#15151a", border:"1px solid #2a2a30", padding:"6px 12px", borderRadius:999, fontSize:13, marginBottom:20}}>
+              <span style={{width:8, height:8, background:"#22c55e", borderRadius:999}}></span> CAPS-Aligned · Grade 12
             </div>
-            <Link href="/dashboard" style={{textDecoration:"none",color:"white",padding:"12px 8px",display:"flex",gap:12}}>⌂ Dashboard</Link>
-            <Link href="/subjects" style={{textDecoration:"none",color:"white",padding:"12px 8px",display:"flex",gap:12}}>📖 Subjects</Link>
-            <div style={{color:"#6b6d85",fontSize:11,margin:"12px 8px"}}>SUBJECTS</div>
-            <Link href="/subjects/mathematics" style={{textDecoration:"none",color:"white",padding:"12px 8px",display:"flex",gap:12}}><span style={{color:"#7c6cff"}}>∑</span> Mathematics</Link>
-            <Link href="/subjects/physical-sciences" style={{textDecoration:"none",color:"white",padding:"12px 8px",display:"flex",gap:12}}>🎓 Physical Sciences</Link>
-            <div style={{height:1,background:"#1e1e2e",margin:"16px 0"}}></div>
-            <Link href="/exams" style={{textDecoration:"none",color:"#c2c3d6",padding:"12px 8px",display:"flex",gap:12}}>📋 Mock Exams</Link>
-            <Link href="/progress" style={{textDecoration:"none",color:"#c2c3d6",padding:"12px 8px",display:"flex",gap:12}}>📊 Progress</Link>
-            <Link href="/profile" style={{textDecoration:"none",color:"#c2c3d6",padding:"12px 8px",display:"flex",gap:12}}>👤 Profile</Link>
+            <h1 style={{fontSize:"clamp(36px,6vw,68px)", lineHeight:"0.95", fontWeight:800, margin:0}}>
+              Master Grade 12<br/>Maths & Physical<br/>Sciences with<br/>
+              <span style={{background:"linear-gradient(90deg,#22d3ee,#a855f7)", WebkitBackgroundClip:"text", color:"transparent"}}>Confidence</span>
+            </h1>
+            <p style={{color:"#9ca3af", fontSize:18, marginTop:20, maxWidth:520}}>
+              Start with CAPS-aligned Grade 12 lessons and build progress step by step.
+            </p>
+            <div className="hero-btns" style={{display:"flex", gap:12, marginTop:28, justifyContent:"center", flexWrap:"wrap"}}>
+              <Link href="/login" style={{background:"#f5c88a", color:"black", padding:"12px 22px", borderRadius:999, textDecoration:"none", fontWeight:600}}>Start Studying Free</Link>
+              <Link href="#how" style={{border:"1px solid #2a2a30", color:"white", padding:"12px 22px", borderRadius:999, textDecoration:"none"}}>See How It Works</Link>
+            </div>
           </div>
-        </>
-      )}
 
-      <div style={{padding:16,maxWidth:480,margin:"0 auto"}}>
-        <div style={{color:"#8b8da3",fontSize:14}}>Welcome back</div>
-        <div style={{fontSize:32,fontWeight:900}}>{name}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginTop:18}}>
-          <div style={{background:"#15151f",borderRadius:20,padding:14}}><div style={{fontSize:12,color:"#8b8da3"}}>🔥 Streak</div><div style={{fontSize:28,fontWeight:900,marginTop:8}}>{stats.streak} d</div></div>
-          <div style={{background:"#15151f",borderRadius:20,padding:14}}><div style={{fontSize:12,color:"#8b8da3"}}>🏆 XP</div><div style={{fontSize:28,fontWeight:900,marginTop:8}}>{stats.xp}</div></div>
-          <div style={{background:"#15151f",borderRadius:20,padding:14}}><div style={{fontSize:12,color:"#8b8da3"}}>✨ Progress</div><div style={{fontSize:28,fontWeight:900,marginTop:8}}>{stats.progress}%</div></div>
+          {/* RIGHT - 75% CARD EXACTLY LIKE PHOTO */}
+          <div style={{display:"flex", justifyContent:"center"}}>
+            <div style={{background:"#16161a", border:"1px solid #2a2a30", borderRadius:24, padding:20, width:"100%", maxWidth:380}}>
+              <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16}}>
+                <span style={{color:"#9ca3af"}}>Overall Progress</span>
+                <span style={{background:"#f5c88a", color:"black", padding:"4px 10px", borderRadius:999, fontSize:13, fontWeight:700}}>75%</span>
+              </div>
+              <div style={{height:8, background:"#2a2a30", borderRadius:999, marginBottom:20}}>
+                <div style={{width:"75%", height:"100%", background:"#f5c88a", borderRadius:999}}></div>
+              </div>
+              <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:16}}>
+                <div style={{background:"#1f1f24", padding:12, borderRadius:16}}><div style={{fontSize:22, fontWeight:700}}>12</div><div style={{fontSize:12, color:"#9ca3af"}}>Lessons Done</div></div>
+                <div style={{background:"#1f1f24", padding:12, borderRadius:16}}><div style={{fontSize:22, fontWeight:700}}>100 XP</div><div style={{fontSize:12, color:"#9ca3af"}}>Earned</div></div>
+              </div>
+              <div style={{background:"#1f1f24", padding:12, borderRadius:16, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                <div><div style={{fontWeight:600}}>Calculus</div><div style={{fontSize:12, color:"#9ca3af"}}>Mathematics • 80%</div></div>
+                <div style={{width:32, height:32, borderRadius:999, background:"#2a2a30"}}></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <Link href="/subjects/mathematics" style={{textDecoration:"none"}}><div style={{background:"#15151f",border:"1px solid #2a2a4a",borderRadius:20,padding:18,marginTop:16}}><div style={{fontSize:11,color:"#8b8cff",fontWeight:700}}>CONTINUE LEARNING</div><div style={{fontSize:20,fontWeight:800,marginTop:8,color:"white"}}>Arithmetic Sequences</div><div style={{fontSize:14,color:"#8b8da3",marginTop:4}}>Node A · Exam Hook</div></div></Link>
       </div>
+
+      {/* EVERYTHING BELOW STAYS SAME - YOU CAN KEEP YOUR ORIGINAL SECTIONS HERE */}
+      {/* Subjects, Pricing R149/R249/R349, Footer etc - don't delete them, just keep below this hero */}
     </div>
-  )
+  );
 }
