@@ -1,96 +1,108 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-export default function DashboardPage(){
+export default function Dashboard(){
   const [name,setName]=useState("Learner");
-  const [stats,setStats]=useState({streak:1, xp:0, progress:48, dailyXp:0, dailyGoal:100, daysSince:4});
-  const [menuOpen,setMenuOpen]=useState(false);
+  const [active,setActive]=useState("Dashboard");
+  const router = useRouter();
 
   useEffect(()=>{
-    // 1. Try your saved name from signup
     const n = localStorage.getItem("matric360_name");
-    const email = localStorage.getItem("matric360_email");
-    const googleName = localStorage.getItem("matric360_google_name");
-    const userStr = localStorage.getItem("matric360_user");
-
-    if (googleName) {
-      setName(googleName);
-    } else if (n) {
-      setName(n);
-    } else if (userStr) {
-      try {
-        const u = JSON.parse(userStr);
-        // Google user has full_name or name
-        setName(u.full_name || u.name || u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0] || "Learner");
-      } catch {
-        if(email) setName(email.split('@')[0]);
-      }
-    } else if (email) {
-      setName(email.split('@')[0]);
-    }
-
-    // 2. If using Supabase — get real logged in user (will override with real Google name)
-    // @ts-ignore
-    try {
-      const supabaseKey = Object.keys(localStorage).find(k=>k.startsWith('sb-') && k.endsWith('-auth-token'));
-      if(supabaseKey){
-        const session = JSON.parse(localStorage.getItem(supabaseKey) || "{}");
-        const realName = session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || session?.user?.email?.split('@')[0];
-        if(realName) setName(realName);
-      }
-    } catch {}
+    if(n && n !== "Mike Sibanda") setName(n);
   },[]);
 
+  const menu = [
+    { label:"Dashboard", icon:"⌂" },
+    { label:"Subjects", icon:"📖" },
+    { type:"title", label:"SUBJECTS" },
+    { label:"Mathematics", icon:"∑", sub:true },
+    { label:"Physical Sciences", icon:"🎓", sub:true },
+    { type:"divider" },
+    { label:"Mock Exams", icon:"📋" },
+    { label:"Live Lessons", icon:"◉" },
+    { label:"Announcements", icon:"📢" },
+    { label:"Progress", icon:"📊" },
+    { label:"Subscription", icon:"💳" },
+    { label:"How to use Matric360", icon:"?" },
+    { label:"Install Matric360", icon:"⬇" },
+    { label:"Profile", icon:"👤" },
+    { label:"Content Admin", icon:"🛡" },
+    { type:"divider" },
+    { label:"Logout", icon:"↪", danger:true },
+  ];
+
+  const handleClick = (label:string, danger?:boolean)=>{
+    if(danger){
+      localStorage.clear();
+      router.push("/");
+      return;
+    }
+    setActive(label);
+    // Later we will make each one go to real page:
+    // router.push(`/${label.toLowerCase().replace(/ /g,"-")}`)
+  };
+
   return(
-    <div style={{background:"#0e0e14",minHeight:"100vh",color:"white",paddingBottom:90}}>
-      <header style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",background:"#0e0e14",position:"sticky",top:0,zIndex:20,borderBottom:"1px solid #1a1a26"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div onClick={()=>setMenuOpen(true)} style={{width:36,height:36,background:"#15151f",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>☰</div>
-          <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:800}}>
-            <img src="/logo.png" alt="logo" style={{width:32,height:32,borderRadius:8}} />
+    <div style={{minHeight:"100vh",background:"#0a0d1a",color:"white",display:"flex"}}>
+      {/* SIDEBAR - Exactly like your screenshot */}
+      <div style={{width:280,background:"#13151f",borderRight:"1px solid #1e2235",display:"flex",flexDirection:"column",height:"100vh",position:"sticky",top:0}}>
+        {/* Header */}
+        <div style={{padding:"18px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #1e2235"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:900,fontSize:20}}>
+            <div style={{width:32,height:32,borderRadius:8,background:"#1e2235",display:"flex",alignItems:"center",justifyContent:"center"}}>M</div>
             Matric360
           </div>
+          <div style={{width:28,height:28,borderRadius:14,border:"1px solid #4f46e5",display:"flex",alignItems:"center",justifyContent:"center",color:"#6366f1"}}>✕</div>
         </div>
-        <div style={{display:"flex",gap:8}}>
-          <div style={{background:"#15151f",border:"1px solid #242436",borderRadius:999,padding:"6px 12px",fontSize:12}}>🛡️ Content</div>
-          <div style={{background:"#15151f",border:"1px solid #242436",borderRadius:999,padding:"6px 12px",fontSize:12,color:"#22c55e"}}>● Online</div>
-        </div>
-      </header>
 
-      {menuOpen && (
-        <>
-          <div onClick={()=>setMenuOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:50}}></div>
-          <div style={{position:"fixed",top:0,left:0,bottom:0,width:"78%",maxWidth:320,background:"#10101a",zIndex:60,padding:"16px",overflowY:"auto"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:800}}>
-                <img src="/logo.png" alt="logo" style={{width:34,height:34,borderRadius:999}} />
-                Matric360
-              </div>
-              <div onClick={()=>setMenuOpen(false)} style={{width:32,height:32,borderRadius:999,border:"1px solid #3a3a5a",display:"flex",alignItems:"center",justifyContent:"center",color:"#8b8cff",cursor:"pointer"}}>✕</div>
-            </div>
-            <Link href="/dashboard" style={{textDecoration:"none",color:"white",padding:"12px 8px",display:"flex",gap:12}}>⌂ Dashboard</Link>
-            <Link href="/subjects" style={{textDecoration:"none",color:"white",padding:"12px 8px",display:"flex",gap:12}}>📖 Subjects</Link>
-            <div style={{color:"#6b6d85",fontSize:11,margin:"12px 8px"}}>SUBJECTS</div>
-            <Link href="/subjects/mathematics" style={{textDecoration:"none",color:"white",padding:"12px 8px",display:"flex",gap:12}}><span style={{color:"#7c6cff"}}>∑</span> Mathematics</Link>
-            <Link href="/subjects/physical-sciences" style={{textDecoration:"none",color:"white",padding:"12px 8px",display:"flex",gap:12}}>🎓 Physical Sciences</Link>
-            <div style={{height:1,background:"#1e1e2e",margin:"16px 0"}}></div>
-            <Link href="/exams" style={{textDecoration:"none",color:"#c2c3d6",padding:"12px 8px",display:"flex",gap:12}}>📋 Mock Exams</Link>
-            <Link href="/progress" style={{textDecoration:"none",color:"#c2c3d6",padding:"12px 8px",display:"flex",gap:12}}>📊 Progress</Link>
-            <Link href="/profile" style={{textDecoration:"none",color:"#c2c3d6",padding:"12px 8px",display:"flex",gap:12}}>👤 Profile</Link>
+        {/* Menu */}
+        <div style={{flex:1,overflowY:"auto",padding:"12px 12px"}}>
+          {menu.map((item:any, i)=>{
+            if(item.type==="title") return <div key={i} style={{fontSize:11,letterSpacing:1,color:"#6b7280",padding:"16px 12px 8px",fontWeight:700}}>{item.label}</div>
+            if(item.type==="divider") return <div key={i} style={{height:1,background:"#1e2235",margin:"12px 0"}}></div>
+            const isActive = active===item.label;
+            return(
+              <button key={i} onClick={()=>handleClick(item.label,item.danger)} style={{width:"100%",display:"flex",alignItems:"center",gap:12,padding:"11px 12px",borderRadius:10,border:"none",cursor:"pointer",textAlign:"left",background:isActive?"#1c1f33":"transparent",color:item.danger?"#ef4444": isActive ?"white":"#94a3b8",fontSize:15,marginLeft:item.sub?8:0}}>
+                <span style={{width:20,textAlign:"center",color:item.danger?"#ef4444":isActive?"#818cf8":"#64748b"}}>{item.icon}</span>
+                {item.label}
+              </button>
+            )
+          })}
+        </div>
+
+        <div style={{padding:14,borderTop:"1px solid #1e2235"}}>
+          <div style={{background:"#1a1e32",padding:12,borderRadius:12}}>
+            <div style={{fontWeight:700,fontSize:14}}>{name}</div>
+            <div style={{fontSize:11,color:"#64748b"}}>Pure Maths + Physical Science</div>
           </div>
-        </>
-      )}
-
-      <div style={{padding:16,maxWidth:480,margin:"0 auto"}}>
-        <div style={{color:"#8b8da3",fontSize:14}}>Welcome back</div>
-        <div style={{fontSize:32,fontWeight:900}}>{name}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginTop:18}}>
-          <div style={{background:"#15151f",borderRadius:20,padding:14}}><div style={{fontSize:12,color:"#8b8da3"}}>🔥 Streak</div><div style={{fontSize:28,fontWeight:900,marginTop:8}}>{stats.streak} d</div></div>
-          <div style={{background:"#15151f",borderRadius:20,padding:14}}><div style={{fontSize:12,color:"#8b8da3"}}>🏆 XP</div><div style={{fontSize:28,fontWeight:900,marginTop:8}}>{stats.xp}</div></div>
-          <div style={{background:"#15151f",borderRadius:20,padding:14}}><div style={{fontSize:12,color:"#8b8da3"}}>✨ Progress</div><div style={{fontSize:28,fontWeight:900,marginTop:8}}>{stats.progress}%</div></div>
         </div>
-        <Link href="/subjects/mathematics" style={{textDecoration:"none"}}><div style={{background:"#15151f",border:"1px solid #2a2a4a",borderRadius:20,padding:18,marginTop:16}}><div style={{fontSize:11,color:"#8b8cff",fontWeight:700}}>CONTINUE LEARNING</div><div style={{fontSize:20,fontWeight:800,marginTop:8,color:"white"}}>Arithmetic Sequences</div><div style={{fontSize:14,color:"#8b8da3",marginTop:4}}>Node A · Exam Hook</div></div></Link>
+      </div>
+
+      {/* MAIN CONTENT - Inside landing after login */}
+      <div style={{flex:1,padding:28,overflowY:"auto"}}>
+        <h1 style={{fontSize:28,fontWeight:900}}>Welcome back, {name}!</h1>
+        <p style={{color:"#94a3b8",marginTop:6}}>You are in {active}</p>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginTop:24}}>
+          <div style={{background:"#151a33",border:"1px solid #1e2340",borderRadius:16,padding:20}}>
+            <div style={{fontSize:28}}>∑</div>
+            <div style={{fontWeight:800,marginTop:8}}>Pure Mathematics</div>
+            <div style={{height:6,background:"#0a0d1a",borderRadius:10,marginTop:12}}><div style={{width:"48%",height:6,background:"#818cf8",borderRadius:10}}></div></div>
+            <div style={{fontSize:12,color:"#64748b",marginTop:8}}>48% progress</div>
+          </div>
+          <div style={{background:"#151a33",border:"1px solid #1e2340",borderRadius:16,padding:20}}>
+            <div style={{fontSize:28}}>🎓</div>
+            <div style={{fontWeight:800,marginTop:8}}>Physical Sciences</div>
+            <div style={{height:6,background:"#0a0d1a",borderRadius:10,marginTop:12}}><div style={{width:"35%",height:6,background:"#c4b5fd",borderRadius:10}}></div></div>
+            <div style={{fontSize:12,color:"#64748b",marginTop:8}}>35% progress</div>
+          </div>
+        </div>
+
+        <div style={{marginTop:24,background:"#151a33",border:"1px solid #1e2340",borderRadius:16,padding:20}}>
+          <div style={{fontWeight:700}}>Ready to make clickable?</div>
+          <div style={{fontSize:13,color:"#94a3b8",marginTop:6}}>Right now clicking sidebar changes the title. Later we will make each button go to `/subjects`, `/mock-exams`, etc. Just tell me which one you want to build next.</div>
+        </div>
       </div>
     </div>
   )
