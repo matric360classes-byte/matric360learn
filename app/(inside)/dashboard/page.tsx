@@ -1,19 +1,115 @@
-"use client";
+""use client";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function DashboardPage() {
-  const router = useRouter();
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Welcome back</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div onClick={()=>router.push("/subjects/mathematics")} className="p-6 rounded-2xl bg-black text-white cursor-pointer">
-          <h2 className="text-xl font-bold">Mathematics</h2>
-          <p className="text-sm opacity-70">Tap to open Units → Topics → Nodes A-E + YouTube</p>
+export default function DashboardPage(){
+  const [name,setName]=useState("Mike Sibanda");
+  const router=useRouter();
+
+  useEffect(()=>{
+    const n = localStorage.getItem("matric360_name");
+    if(n) setName(n);
+  },[]);
+
+  return(
+    <div style={{padding:"8px 4px 90px"}}>
+      {/* Welcome */}
+      <div style={{margin:"10px 0 18px 4px"}}>
+        <div style={{fontSize:14,color:"#9ca3af"}}>Welcome back</div>
+        <div style={{fontSize:24,fontWeight:900,marginTop:2}}>{name}</div>
+      </div>
+
+      {/* 3 STATS - not hard generated yet, we will wire later */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+        <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:16,padding:"14px"}}>
+          <div style={{fontSize:12,color:"#9ca3af"}}>🔥 Streak</div>
+          <div style={{fontSize:22,fontWeight:800,marginTop:8}}>1<span style={{fontSize:13,fontWeight:400,color:"#9ca3af"}}> d</span></div>
         </div>
-        <div onClick={()=>router.push("/subjects/physical-sciences")} className="p-6 rounded-2xl bg-zinc-900 text-white cursor-pointer">
-          <h2 className="text-xl font-bold">Physical Sciences</h2>
-          <p className="text-sm opacity-70">Tap to open Units → Topics → Nodes A-E + YouTube</p>
+        <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:16,padding:"14px"}}>
+          <div style={{fontSize:12,color:"#9ca3af"}}>🏆 XP</div>
+          <div style={{fontSize:22,fontWeight:800,marginTop:8}}>15945</div>
+        </div>
+        <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:16,padding:"14px"}}>
+          <div style={{fontSize:12,color:"#9ca3af"}}>✨ Progress</div>
+          <div style={{fontSize:22,fontWeight:800,marginTop:8}}>48%</div>
+        </div>
+      </div>
+
+      {/* Daily goal */}
+      <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px",marginBottom:16}}>
+        <div style={{fontWeight:700,marginBottom:12}}>◎ Daily goal</div>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:13}}>
+          <div><b style={{fontSize:16}}>0</b> <span style={{color:"#9ca3af"}}>/ 100 XP today</span></div>
+          <div style={{color:"#9ca3af"}}>0%</div>
+        </div>
+        <div style={{height:8,background:"#232946",borderRadius:999,marginTop:10,overflow:"hidden"}}>
+          <div style={{width:"2%",height:"100%",background:"#6366f1"}}></div>
+        </div>
+        <div style={{fontSize:12,color:"#9ca3af",marginTop:10}}>Earn 100 more XP to hit today's goal.</div>
+      </div>
+
+      {/* Milestones */}
+      <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px",marginBottom:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
+          <div style={{fontWeight:700}}>🏅 Milestones</div>
+          <div style={{fontSize:12,color:"#9ca3af"}}>4 earned</div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <div style={{border:"1px solid #2a324f",borderRadius:999,padding:"8px 12px",fontSize:13}}>📖 First lesson</div>
+          <div style={{border:"1px solid #2a324f",borderRadius:999,padding:"8px 12px",fontSize:13}}>🔥 First streak</div>
+          <div style={{border:"1px solid #2a324f",borderRadius:999,padding:"8px 12px",fontSize:13}}>🔥 7-day streak</div>
+          <div style={{border:"1px solid #2a324f",borderRadius:999,padding:"8px 12px",fontSize:13}}>⭐ First mastery</div>
+        </div>
+      </div>
+
+      {/* Continue Learning */}
+      <div style={{background:"linear-gradient(180deg,#1c1f3a,#171a2e)",border:"1px solid #353ff0",borderRadius:18,padding:"16px",marginBottom:18}}>
+        <div style={{fontSize:11,letterSpacing:1,color:"#818cf8",marginBottom:8}}>CONTINUE LEARNING</div>
+        <div style={{fontWeight:800,fontSize:16}}>Arithmetic Sequences</div>
+        <div style={{fontSize:13,color:"#9ca3af",marginTop:4}}>Node A · Exam Hook — Concepts</div>
+        <button onClick={()=>router.push("/subjects/mathematics")} style={{marginTop:12,color:"#818cf8",background:"transparent",border:0,fontWeight:700,fontSize:14,cursor:"pointer"}}>Resume  ›</button>
+      </div>
+
+      {/* Your subjects */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{fontWeight:700,color:"#c7c7d1"}}>Your subjects</div>
+        <button onClick={()=>router.push("/subjects")} style={{color:"#818cf8",background:"transparent",border:0,fontSize:13,cursor:"pointer"}}>See all</button>
+      </div>
+
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px"}}>
+          <div style={{display:"flex",justifyContent:"space-between"}}>
+            <div style={{display:"flex",gap:12,alignItems:"center"}}>
+              <div style={{width:40,height:40,borderRadius:999,background:"#2a2d4a",display:"grid",placeItems:"center"}}>📖</div>
+              <div>
+                <div style={{fontWeight:800}}>Mathematics</div>
+                <div style={{fontSize:12,color:"#9ca3af"}}>16 units in progress</div>
+              </div>
+            </div>
+            <div style={{fontSize:13,color:"#9ca3af"}}>59%</div>
+          </div>
+          <div style={{height:6,background:"#2a2d4a",borderRadius:999,marginTop:12,overflow:"hidden",marginLeft:52}}>
+            <div style={{width:"59%",height:"100%",background:"#818cf8"}}></div>
+          </div>
+          <div style={{display:"flex",justifyContent:"flex-end",marginTop:12}}>
+            <button onClick={()=>router.push("/subjects/mathematics")} style={{background:"#2a2d4a",color:"#a5b4fc",border:0,borderRadius:999,padding:"6px 14px",fontSize:12,cursor:"pointer"}}>Continue  ›</button>
+          </div>
+        </div>
+
+        <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px"}}>
+          <div style={{display:"flex",justifyContent:"space-between"}}>
+            <div style={{display:"flex",gap:12,alignItems:"center"}}>
+              <div style={{width:40,height:40,borderRadius:999,background:"#2a2d4a",display:"grid",placeItems:"center"}}>🔬</div>
+              <div>
+                <div style={{fontWeight:800}}>Physical Sciences</div>
+                <div style={{fontSize:12,color:"#9ca3af"}}>12 units • Physics + Chemistry</div>
+              </div>
+            </div>
+            <div style={{fontSize:13,color:"#9ca3af"}}>26%</div>
+          </div>
+          <div style={{height:6,background:"#2a2d4a",borderRadius:999,marginTop:12,overflow:"hidden",marginLeft:52}}>
+            <div style={{width:"26%",height:"100%",background:"#818cf8"}}></div>
+          </div>
         </div>
       </div>
     </div>
