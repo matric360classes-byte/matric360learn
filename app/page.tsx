@@ -36,7 +36,7 @@ export default function Page(){
   return(
     <div style={{background:"#0a0d1a",minHeight:"100vh",color:"white"}}>
       <style>{`
-        @media(min-width: 1024px){
+       @media(min-width: 768px){
           .hero-wrap{ display:grid !important; grid-template-columns: 1.15fr 0.85fr !important; gap:32px !important; align-items:center !important; max-width:1240px !important; margin:0 auto !important; padding:40px 24px !important; }
           .hero-text{ text-align:left !important; align-items:flex-start !important; }
           .hero-text h1{ font-size:54px !important; line-height:1.05 !important; }
