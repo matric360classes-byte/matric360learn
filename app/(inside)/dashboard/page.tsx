@@ -5,7 +5,17 @@ import { useRouter } from "next/navigation";
 export default function DashboardPage(){
   const [name,setName]=useState("Mike Sibanda");
   const router=useRouter();
-  useEffect(()=>{ const n=localStorage.getItem("matric360_name"); if(n) setName(n); },[]);
+  useEffect(()=>{
+    const n=localStorage.getItem("matric360_name");
+    if(n) setName(n);
+  },[]);
+
+  const goMaths = ()=> router.push("/subjects/mathematics");
+  const goPhysics = ()=> router.push("/subjects/physical-sciences");
+  const goContinue = ()=> {
+    const last = localStorage.getItem("last_studied_unit") || "/subjects/mathematics";
+    router.push(last);
+  };
 
   return(
     <div style={{padding:"8px 4px 90px"}}>
@@ -36,27 +46,14 @@ export default function DashboardPage(){
           <div style={{color:"#9ca3af"}}>0%</div>
         </div>
         <div style={{height:8,background:"#232946",borderRadius:999,marginTop:10}}><div style={{width:"2%",height:"100%",background:"#6366f1"}}></div></div>
-        <div style={{fontSize:12,color:"#9ca3af",marginTop:10}}>Earn 100 more XP to hit today's goal.</div>
       </div>
 
-      <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px",marginBottom:16}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
-          <div style={{fontWeight:700}}>Milestones</div>
-          <div style={{fontSize:12,color:"#9ca3af"}}>4 earned</div>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          <div style={{border:"1px solid #2a324f",borderRadius:999,padding:"8px 12px",fontSize:13}}>First lesson</div>
-          <div style={{border:"1px solid #2a324f",borderRadius:999,padding:"8px 12px",fontSize:13}}>First streak</div>
-          <div style={{border:"1px solid #2a324f",borderRadius:999,padding:"8px 12px",fontSize:13}}>7-day streak</div>
-          <div style={{border:"1px solid #2a324f",borderRadius:999,padding:"8px 12px",fontSize:13}}>First mastery</div>
-        </div>
-      </div>
-
-      <div style={{background:"linear-gradient(180deg,#1c1f3a,#171a2e)",border:"1px solid #4f46e5",borderRadius:18,padding:"16px",marginBottom:18}}>
-        <div style={{fontSize:11,color:"#818cf8",marginBottom:8}}>CONTINUE LEARNING</div>
+      {/* CONTINUE LEARNING = RECENTLY STUDIED - CLICKABLE */}
+      <div onClick={goContinue} style={{background:"linear-gradient(180deg,#1c1f3a,#171a2e)",border:"1px solid #4f46e5",borderRadius:18,padding:"16px",marginBottom:18,cursor:"pointer"}}>
+        <div style={{fontSize:11,color:"#818cf8",marginBottom:8}}>CONTINUE LEARNING • RECENTLY STUDIED</div>
         <div style={{fontWeight:800}}>Arithmetic Sequences</div>
         <div style={{fontSize:13,color:"#9ca3af",marginTop:4}}>Node A - Exam Hook - Concepts</div>
-        <button onClick={()=>router.push("/subjects/mathematics")} style={{marginTop:12,color:"#818cf8",background:"transparent",border:0,fontWeight:700,cursor:"pointer"}}>Resume &gt;</button>
+        <div style={{marginTop:12,color:"#818cf8",fontWeight:700,fontSize:14}}>Resume &gt;</div>
       </div>
 
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
@@ -65,14 +62,17 @@ export default function DashboardPage(){
       </div>
 
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
-        <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px"}}>
+        {/* Mathematics CLICKABLE */}
+        <div onClick={goMaths} style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px",cursor:"pointer"}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div style={{display:"flex",gap:12}}><div style={{width:40,height:40,borderRadius:999,background:"#2a2d4a",display:"grid",placeItems:"center"}}>M</div><div><div style={{fontWeight:800}}>Mathematics</div><div style={{fontSize:12,color:"#9ca3af"}}>16 units in progress</div></div></div>
             <div style={{fontSize:13,color:"#9ca3af"}}>59%</div>
           </div>
           <div style={{height:6,background:"#2a2d4a",borderRadius:999,marginTop:12}}><div style={{width:"59%",height:"100%",background:"#818cf8"}}></div></div>
         </div>
-        <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px"}}>
+
+        {/* Physical Sciences CLICKABLE */}
+        <div onClick={goPhysics} style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px",cursor:"pointer"}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div style={{display:"flex",gap:12}}><div style={{width:40,height:40,borderRadius:999,background:"#2a2d4a",display:"grid",placeItems:"center"}}>P</div><div><div style={{fontWeight:800}}>Physical Sciences</div><div style={{fontSize:12,color:"#9ca3af"}}>12 units</div></div></div>
             <div style={{fontSize:13,color:"#9ca3af"}}>26%</div>
