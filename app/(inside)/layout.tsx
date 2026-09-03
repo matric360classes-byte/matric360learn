@@ -15,14 +15,6 @@ function Logo(){
           target.style.display = 'none';
         }}
       />
-      {/* Fallback circle if image missing - always shows */}
-      <div style={{
-        width:32,height:32,borderRadius:8,
-        background:"linear-gradient(135deg,#7c7cff,#38bdf8)",
-        display:"flex",alignItems:"center",justifyContent:"center",
-        fontSize:12,fontWeight:900,color:"white",
-        marginLeft:-2
-      }}>M3</div>
       <span>Matric360</span>
     </div>
   );
