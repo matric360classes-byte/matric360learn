@@ -7,98 +7,91 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
   const [open,setOpen]=useState(false);
   const path = usePathname();
 
-  const nav = [
+  const mainNav = [
     {label:"Dashboard", href:"/dashboard", icon:"⌂"},
-    {label:"Subjects", href:"/subjects", icon:"📚"},
-    {label:"Exams Hub", href:"/exams", icon:"📝"},
-    {label:"Progress", href:"/progress", icon:"📈"},
-    {label:"Profile", href:"/profile", icon:"👤"},
+    {label:"Subjects", href:"/subjects", icon:"📖"},
   ];
+  const subjectsNav = [
+    {label:"Mathematics", href:"/subjects/mathematics", icon:"∑"},
+    {label:"Physical Sciences", href:"/subjects/physical-sciences", icon:"🎓"},
+  ];
+  const toolsNav = [
+    {label:"Mock Exams", href:"/exams/mock", icon:"📋"},
+    {label:"Live Lessons", href:"/live", icon:"📡"},
+    {label:"Announcements", href:"/announcements", icon:"📢"},
+    {label:"Progress", href:"/progress", icon:"📊"},
+    {label:"Subscription", href:"/subscription", icon:"💳"},
+    {label:"How to use Matric360", href:"/help", icon:"❓"},
+    {label:"Install Matric360", href:"/install", icon:"⬇"},
+    {label:"Profile", href:"/profile", icon:"👤"},
+    {label:"Content Admin", href:"/admin", icon:"🛡"},
+  ];
+
+  const Item = ({label,href,icon}:any)=>{
+    const active = path===href;
+    return(
+      <Link href={href} onClick={()=>setOpen(false)} style={{
+        display:"flex",gap:12,padding:"12px 16px",borderRadius:10,
+        background: active? "#232646":"transparent",
+        color: active? "white":"#cbd5e1",
+        textDecoration:"none", fontSize:15
+      }}>
+        <span>{icon}</span> {label}
+      </Link>
+    )
+  };
 
   return(
     <div style={{display:"flex",minHeight:"100vh",background:"#0f111e",color:"white"}}>
-      {/* SIDEBAR */}
+      {/* SIDEBAR DRAWER */}
       <aside style={{
-        width:260,
-        background:"#15172a",
-        borderRight:"1px solid #252a44",
-        position:"fixed",
-        top:0,left:0,bottom:0,
-        zIndex:50,
+        width:280, background:"#15172a", borderRight:"1px solid #252a44",
+        position:"fixed", top:0,left:0,bottom:0, zIndex:60,
         transform: open? "translateX(0)" : "translateX(-100%)",
-        transition:"0.2s",
-        display:"flex",
-        flexDirection:"column"
-      }} className="lg:!translate-x-0">
-        {/* LOGO - ONLY HERE ON DESKTOP */}
-        <div style={{padding:"20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #252a44"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:800,fontSize:20}}>
-            <img src="/icon.png" alt="M360" style={{width:36,height:36,borderRadius:8}} />
-            Matric360
+        transition:"0.25s ease", display:"flex",flexDirection:"column",
+        overflowY:"auto"
+      }}>
+        <div style={{padding:"16px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #252a44"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:800,fontSize:18}}>
+            <img src="/icon.png" style={{width:32,height:32,borderRadius:8}} /> Matric360
           </div>
-          <button onClick={()=>setOpen(false)} className="lg:hidden" style={{color:"#9ca3af"}}>✕</button>
+          <button onClick={()=>setOpen(false)} style={{width:32,height:32,borderRadius:999,border:"2px solid #7c7cff",color:"#7c7cff",background:"transparent"}}>✕</button>
         </div>
 
-        <div style={{padding:"12px",flex:1}}>
-          {nav.map(n=>{
-            const active = path.startsWith(n.href);
-            return(
-              <Link key={n.href} href={n.href} onClick={()=>setOpen(false)}
-                style={{
-                  display:"flex",gap:10,padding:"14px 14px",borderRadius:12,marginBottom:6,
-                  background: active? "#232646" : "transparent",
-                  color: active? "white" : "#9ca3af",
-                  fontWeight: active? 700 : 400,
-                  textDecoration:"none"
-                }}>
-                <span>{n.icon}</span> {n.label}
-              </Link>
-            )
-          })}
+        <div style={{padding:"10px 8px"}}>
+          {mainNav.map(n=><Item key={n.href} {...n} />)}
+
+          <div style={{fontSize:11, color:"#6b7280", margin:"14px 0 6px 16px", letterSpacing:1}}>SUBJECTS</div>
+          {subjectsNav.map(n=><Item key={n.href} {...n} />)}
+
+          <div style={{height:1,background:"#252a44",margin:"14px 0"}} />
+
+          {toolsNav.map(n=><Item key={n.href} {...n} />)}
+
+          <div style={{height:1,background:"#252a44",margin:"14px 0"}} />
+          <Link href="/logout" style={{display:"flex",gap:12,padding:"12px 16px",color:"#ef4444",textDecoration:"none"}}><span>↪</span> Logout</Link>
         </div>
       </aside>
 
-      {/* MAIN AREA */}
-      <div style={{flex:1,marginLeft:0}} className="lg:ml-[260px]" id="main-wrapper">
-        {/* TOP BAR - MOBILE ONLY LOGO */}
-        <header style={{
-          height:64,
-          background:"#15172a",
-          borderBottom:"1px solid #252a44",
-          display:"flex",
-          alignItems:"center",
-          padding:"0 16px",
-          gap:12,
-          position:"sticky",
-          top:0,
-          zIndex:40
-        }}>
-          <button onClick={()=>setOpen(true)} className="lg:hidden" style={{fontSize:22}}>☰</button>
-
-          {/* THIS LOGO SHOWS ONLY ON MOBILE - hidden on desktop */}
-          <div className="flex lg:hidden" style={{display:"flex",alignItems:"center",gap:10,fontWeight:800}}>
-            <img src="/icon.png" alt="M360" style={{width:30,height:30,borderRadius:8}} />
-            Matric360
-          </div>
-
-          {/* DESKTOP: No logo here, empty spacer */}
-          <div className="hidden lg:block"></div>
+      {/* MAIN */}
+      <div style={{flex:1, display:"flex", flexDirection:"column", minWidth:0}}>
+        {/* TOP HEADER */}
+        <header style={{height:60, background:"#15172a", borderBottom:"1px solid #252a44", display:"flex",alignItems:"center",padding:"0 16px",gap:12, position:"sticky",top:0,zIndex:30}}>
+          <button onClick={()=>setOpen(true)} style={{fontSize:22,background:"transparent",border:0,color:"white"}}>☰</button>
+          
+          {/* LOGO IN TOP BAR - HIDE WHEN SIDEBAR OPEN */}
+          {!open && (
+            <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:800,fontSize:18}}>
+              <img src="/icon.png" style={{width:30,height:30,borderRadius:8}} /> Matric360
+            </div>
+          )}
+          <div style={{marginLeft:"auto",fontSize:12,color:"#22c55e"}}>● Online</div>
         </header>
 
-        <main style={{padding:0}}>{children}</main>
+        <main style={{flex:1}}>{children}</main>
       </div>
 
-      {/* overlay */}
-      {open && <div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:45}} className="lg:hidden"></div>}
-
-      <style>{`
-        @media(min-width: 1024px){
-          aside{transform: translateX(0)!important;}
-          #main-wrapper{margin-left:260px!important;}
-          header.lg\\:hidden{display:none!important;}
-         .lg\\:block{display:block!important;}
-        }
-      `}</style>
+      {open && <div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:55}}></div>}
     </div>
   );
 }
