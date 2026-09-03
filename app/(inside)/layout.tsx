@@ -3,6 +3,48 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+function Logo(){
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:800,fontSize:18}}>
+      <img 
+        src="/icon.png" 
+        alt="Matric360"
+        style={{width:32,height:32,borderRadius:8,objectFit:"contain"}}
+        onError={(e)=>{
+          const target = e.currentTarget as HTMLImageElement;
+          target.style.display = 'none';
+        }}
+      />
+      {/* Fallback circle if image missing - always shows */}
+      <div style={{
+        width:32,height:32,borderRadius:8,
+        background:"linear-gradient(135deg,#7c7cff,#38bdf8)",
+        display:"flex",alignItems:"center",justifyContent:"center",
+        fontSize:12,fontWeight:900,color:"white",
+        marginLeft:-2
+      }}>M3</div>
+      <span>Matric360</span>
+    </div>
+  );
+}
+
+function LogoSmall(){
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:800,fontSize:18}}>
+      <img 
+        src="/icon.png" 
+        alt="M360"
+        style={{width:30,height:30,borderRadius:8,objectFit:"contain"}}
+        onError={(e)=>{
+          const target = e.currentTarget as HTMLImageElement;
+          target.style.display = 'none';
+        }}
+      />
+      <span>Matric360</span>
+    </div>
+  );
+}
+
 export default function InsideLayout({children}:{children:React.ReactNode}){
   const [open,setOpen]=useState(false);
   const path = usePathname();
@@ -27,7 +69,7 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
     {label:"Content Admin", href:"/admin", icon:"🛡"},
   ];
 
-  const Item = ({label,href,icon}:any)=>{
+  const Item = ({label,href,icon}:{label:string,href:string,icon:string})=>{
     const active = path===href;
     return(
       <Link href={href} onClick={()=>setOpen(false)} style={{
@@ -43,7 +85,6 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
 
   return(
     <div style={{display:"flex",minHeight:"100vh",background:"#0f111e",color:"white"}}>
-      {/* SIDEBAR DRAWER */}
       <aside style={{
         width:280, background:"#15172a", borderRight:"1px solid #252a44",
         position:"fixed", top:0,left:0,bottom:0, zIndex:60,
@@ -52,46 +93,27 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
         overflowY:"auto"
       }}>
         <div style={{padding:"16px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #252a44"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:800,fontSize:18}}>
-            <img src="/icon.png" style={{width:32,height:32,borderRadius:8}} /> Matric360
-          </div>
-          <button onClick={()=>setOpen(false)} style={{width:32,height:32,borderRadius:999,border:"2px solid #7c7cff",color:"#7c7cff",background:"transparent"}}>✕</button>
+          <Logo />
+          <button onClick={()=>setOpen(false)} style={{width:32,height:32,borderRadius:999,border:"2px solid #7c7cff",color:"#7c7cff",background:"transparent",cursor:"pointer"}}>✕</button>
         </div>
 
         <div style={{padding:"10px 8px"}}>
           {mainNav.map(n=><Item key={n.href} {...n} />)}
-
           <div style={{fontSize:11, color:"#6b7280", margin:"14px 0 6px 16px", letterSpacing:1}}>SUBJECTS</div>
           {subjectsNav.map(n=><Item key={n.href} {...n} />)}
-
           <div style={{height:1,background:"#252a44",margin:"14px 0"}} />
-
           {toolsNav.map(n=><Item key={n.href} {...n} />)}
-
           <div style={{height:1,background:"#252a44",margin:"14px 0"}} />
           <Link href="/logout" style={{display:"flex",gap:12,padding:"12px 16px",color:"#ef4444",textDecoration:"none"}}><span>↪</span> Logout</Link>
         </div>
       </aside>
 
-      {/* MAIN */}
       <div style={{flex:1, display:"flex", flexDirection:"column", minWidth:0}}>
-        {/* TOP HEADER */}
         <header style={{height:60, background:"#15172a", borderBottom:"1px solid #252a44", display:"flex",alignItems:"center",padding:"0 16px",gap:12, position:"sticky",top:0,zIndex:30}}>
-          <button onClick={()=>setOpen(true)} style={{fontSize:22,background:"transparent",border:0,color:"white"}}>☰</button>
-          
-          {/* LOGO IN TOP BAR - HIDE WHEN SIDEBAR OPEN */}
-          {!open && (
-            <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:800,fontSize:18}}>
-              <img 
-  src="/logo.png" 
-  alt="M360"
-  onError={(e:any)=>{e.target.onerror=null; e.target.src="/icon.png"}}
-  style={{width:32,height:32,borderRadius:8,objectFit:"contain",background:"#0f111e"}} 
-/>
-          )}
+          <button onClick={()=>setOpen(true)} style={{fontSize:22,background:"transparent",border:0,color:"white",cursor:"pointer"}}>☰</button>
+          {!open && <LogoSmall />}
           <div style={{marginLeft:"auto",fontSize:12,color:"#22c55e"}}>● Online</div>
         </header>
-
         <main style={{flex:1}}>{children}</main>
       </div>
 
