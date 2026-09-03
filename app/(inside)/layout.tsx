@@ -82,8 +82,12 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
           {/* LOGO IN TOP BAR - HIDE WHEN SIDEBAR OPEN */}
           {!open && (
             <div style={{display:"flex",alignItems:"center",gap:10,fontWeight:800,fontSize:18}}>
-              <img src="/icon.png" style={{width:30,height:30,borderRadius:8}} /> Matric360
-            </div>
+              <img 
+  src="/logo.png" 
+  alt="M360"
+  onError={(e:any)=>{e.target.onerror=null; e.target.src="/icon.png"}}
+  style={{width:32,height:32,borderRadius:8,objectFit:"contain",background:"#0f111e"}} 
+/>
           )}
           <div style={{marginLeft:"auto",fontSize:12,color:"#22c55e"}}>● Online</div>
         </header>
