@@ -1,7 +1,4 @@
-import { SUBJECTS_DATA } from "./subjects";
-
 export type LessonStatus = "draft" | "published" | "review";
-
 export interface Lesson {
   id: string;
   subjectId: string;
@@ -9,52 +6,20 @@ export interface Lesson {
   title: string;
   unit: string;
   unitTitle: string;
-  youtubeId?: string;
   status: LessonStatus;
 }
 
-// Flatten SUBJECTS_DATA (your 123-line file) into 100+ lessons
-function flattenLessons(): Lesson[] {
-  const lessons: Lesson[] = [];
-  try {
-    const subjects = SUBJECTS_DATA as any;
-    for (const subjectKey of Object.keys(subjects)) {
-      const subject = subjects[subjectKey];
-      const subjectName = subject.name || subjectKey;
-      const sections = subject.sections || [];
-      for (const section of sections) {
-        const unit = section.unit || "";
-        const unitTitle = section.title || "";
-        const topics = section.topics || [];
-        for (const topic of topics) {
-          lessons.push({
-            id: topic.id,
-            subjectId: subject.id || subjectKey,
-            subjectName,
-            title: topic.title,
-            unit,
-            unitTitle,
-            youtubeId: topic.youtubeId || "",
-            status: "draft",
-          });
-        }
-      }
-    }
-  } catch (e) {
-    console.error("flatten error", e);
-  }
-  return lessons;
-}
+export const LESSONS: Lesson[] = [
+  { id: "math-algebra-1", subjectId: "math", subjectName: "Mathematics", title: "Algebra - Equations", unit: "1", unitTitle: "Algebra", status: "draft" },
+  { id: "math-functions-1", subjectId: "math", subjectName: "Mathematics", title: "Functions - Parabola", unit: "2", unitTitle: "Functions", status: "draft" },
+  { id: "ps-vectors", subjectId: "physical-sciences", subjectName: "Physical Sciences", title: "Vectors in 2D", unit: "1", unitTitle: "Mechanics", status: "draft" },
+];
 
-export const LESSONS: Lesson[] = flattenLessons();
-export const LESSONS_DATA = LESSONS.reduce((acc, l) => { acc[l.id] = l; return acc; }, {} as Record<string, Lesson>);
-export const getLesson = (id: string) => LESSONS.find(l => l.id === id) || null;
+export const SUBJECTS = [
+  { id: "math", name: "Mathematics" },
+  { id: "physical-sciences", name: "Physical Sciences" },
+];
 
-// Fallback for old SUBJECTS import
-export const SUBJECTS = Object.values(SUBJECTS_DATA as any).map((s: any) => ({
-  id: s.id,
-  name: s.name,
-  desc: s.desc,
-}));
-
+export const LESSONS_DATA = LESSONS.reduce((a:any,c)=>{a[c.id]=c; return a;},{});
+export const getLesson = (id:string)=> LESSONS.find(l=>l.id===id) || null;
 export default LESSONS_DATA;
