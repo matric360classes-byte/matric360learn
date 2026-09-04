@@ -1,29 +1,30 @@
-import Link from "next/link";
-import { LESSONS } from "../../../../lib/lessons";
+"use client";
+import { useRouter } from "next/navigation";
 
-export default function Page({ params }: { params: { id: string } }) {
-  const id = decodeURIComponent(params.id).toUpperCase();
-  const allLessons = (LESSONS as any[]) || [];
+export default function SubjectsPage(){
+  const router = useRouter();
 
-  const list = allLessons.filter((l: any) => {
-    const s = (l.subjectId || l.subject || "").toString().toUpperCase();
-    return s === id || s.includes(id);
-  });
+  return(
+    <div style={{padding:"8px 4px 90px"}}>
+      <h1 style={{fontSize:26,fontWeight:900,margin:"12px 0 16px 4px"}}>Subjects</h1>
 
-  return (
-    <div style={{padding:24, maxWidth:800, margin:"0 auto"}}>
-      <Link href="/subjects" style={{color:"#3b82f6"}}>← Back to Subjects</Link>
-      <h1 style={{marginTop:12, fontSize:28, fontWeight:"bold"}}>{id}</h1>
-      <p style={{color:"#666"}}>{list.length} approved CAPS topics</p>
-      
-      {list.map((t: any) => (
-        <Link key={t.id} href={`/lesson/${t.id}`} style={{display:"block", border:"1px solid #333", padding:16, marginTop:12, borderRadius:12, textDecoration:"none", color:"white", background:"#1a1a1a"}}>
-          <b>{t.topic || t.title || t.name || t.id}</b>
-          <div style={{fontSize:12, color:"#888", marginTop:4}}>{t.examWeight || t.weight || ""}</div>
-        </Link>
-      ))}
+      <div style={{display:"flex",flexDirection:"column",gap:16}}>
+        {/* Mathematics */}
+        <div 
+          onClick={()=>router.push("/subjects/mathematics")}
+          style={{background:"#1a1f35",border:"1px solid #2a324f",borderRadius:18,padding:"20px 18px",cursor:"pointer"}}>
+          <div style={{fontSize:18,fontWeight:800,marginBottom:6}}>Mathematics</div>
+          <div style={{fontSize:14,color:"#a1a1b5",lineHeight:"1.4"}}>CAPS-aligned exam practice, worked solutions and progress tracking.</div>
+        </div>
 
-      {list.length === 0 && <p style={{marginTop:20, color:"orange"}}>No lessons found for {id} — but route is working! Check lib/lessons.ts has subjectId: "{id}"</p>}
+        {/* Physical Sciences */}
+        <div 
+          onClick={()=>router.push("/subjects/physical-sciences")}
+          style={{background:"#1a1f35",border:"1px solid #2a324f",borderRadius:18,padding:"20px 18px",cursor:"pointer"}}>
+          <div style={{fontSize:18,fontWeight:800,marginBottom:6}}>Physical Sciences</div>
+          <div style={{fontSize:14,color:"#a1a1b5",lineHeight:"1.4"}}>CAPS Grade 12 Physical Sciences — Physics and Chemistry combined.</div>
+        </div>
+      </div>
     </div>
-  )
+  );
 }
