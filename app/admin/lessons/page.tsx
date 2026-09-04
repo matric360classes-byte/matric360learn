@@ -1,8 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { LESSONS } from "@/lib/lessons";
-import { SUBJECTS } from "@/lib/subjects";
+import { LESSONS, SUBJECTS } from "../../../lib/lessons";
 
 export default function LessonsAdmin(){
   const [search,setSearch]=useState("");
