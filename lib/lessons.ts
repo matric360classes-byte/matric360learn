@@ -1,64 +1,143 @@
-import { SUBJECTS_DATA } from "./subjects";
-
 export type LessonStatus = "draft" | "published" | "review";
-
-export interface Lesson {
-  id: string;
-  subjectId: string;
-  subjectName: string;
-  sectionTitle: string;
-  unit: string;
-  unitId: string;
-  unitTitle: string;
-  title: string;
-  youtubeId: string;
-  status: LessonStatus;
-}
-
-function flattenLessons(): Lesson[] {
-  const lessons: Lesson[] = [];
-  try {
-    const subjects = Object.values(SUBJECTS_DATA as any);
-    for (const subj of subjects) {
-      const sections = subj.sections || [];
-      for (const sec of sections) {
-        const units = sec.units || [];
-        for (const u of units) {
-          const topics = u.topics || [];
-          for (const t of topics) {
-            lessons.push({
-              id: t.id,
-              subjectId: subj.id,
-              subjectName: subj.name,
-              sectionTitle: sec.title || "",
-              unit: u.unit || "",
-              unitId: u.id || "",
-              unitTitle: u.title || "",
-              title: t.title || "",
-              youtubeId: t.youtubeId || "",
-              status: "draft",
-            });
-          }
-        }
-      }
-    }
-  } catch (e) {
-    console.error("flatten error", e);
-  }
-  return lessons;
-}
-
-export const LESSONS: Lesson[] = flattenLessons();
-export const SUBJECTS = Object.values(SUBJECTS_DATA as any).map((s: any) => ({
-  id: s.id,
-  name: s.name,
-  desc: s.desc,
-}));
-
-export const LESSONS_DATA = LESSONS.reduce((acc: any, cur) => {
-  acc[cur.id] = cur;
-  return acc;
-}, {} as Record<string, Lesson>);
-
-export const getLesson = (id: string) => LESSONS.find(l => l.id === id) || null;
+export interface Lesson { id: string; subjectId: string; subjectName: string; sectionTitle: string; unit: string; unitId: string; unitTitle: string; title: string; youtubeId: string; status: LessonStatus; }
+export const LESSONS: Lesson[] = [
+  { id: "algebraic-expressions", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 1", unitId: "algebra", unitTitle: 'Algebra, Equations and Inequalities', title: 'Algebraic Expressions and Factorisation', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "equations", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 1", unitId: "algebra", unitTitle: 'Algebra, Equations and Inequalities', title: 'Quadratic Equations and Nature of Roots', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "inequalities", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 1", unitId: "algebra", unitTitle: 'Algebra, Equations and Inequalities', title: 'Quadratic Inequalities', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "simultaneous", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 1", unitId: "algebra", unitTitle: 'Algebra, Equations and Inequalities', title: 'Simultaneous Equations', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "word-problems-algebra", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 1", unitId: "algebra", unitTitle: 'Algebra, Equations and Inequalities', title: 'Word Problems - Algebra', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "arithmetic-sequences", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 2", unitId: "number-patterns", unitTitle: 'Number Patterns, Sequences and Series', title: 'Arithmetic Sequences - nth Term', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "geometric-sequences", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 2", unitId: "number-patterns", unitTitle: 'Number Patterns, Sequences and Series', title: 'Geometric Sequences - nth Term', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "quadratic-sequences", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 2", unitId: "number-patterns", unitTitle: 'Number Patterns, Sequences and Series', title: 'Quadratic Sequences', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "sigma-notation", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 2", unitId: "number-patterns", unitTitle: 'Number Patterns, Sequences and Series', title: 'Sigma Notation and Sum', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "sum-infinity", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 2", unitId: "number-patterns", unitTitle: 'Number Patterns, Sequences and Series', title: 'Sum to Infinity', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "parabola", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 3", unitId: "functions-graphs", unitTitle: 'Functions and Graphs', title: 'Parabola - Turning Point and Intercepts', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "hyperbola", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 3", unitId: "functions-graphs", unitTitle: 'Functions and Graphs', title: 'Hyperbola - Asymptotes', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "exponential-graph", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 3", unitId: "functions-graphs", unitTitle: 'Functions and Graphs', title: 'Exponential Graph', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "cubic", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 3", unitId: "functions-graphs", unitTitle: 'Functions and Graphs', title: 'Cubic Functions', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "transformations", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 3", unitId: "functions-graphs", unitTitle: 'Functions and Graphs', title: 'Transformations of Graphs', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "inverse-definition", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 4", unitId: "inverses", unitTitle: 'Inverse Functions', title: 'Definition of Inverse Function', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "inverse-parabola", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 4", unitId: "inverses", unitTitle: 'Inverse Functions', title: 'Inverse of Parabola', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "inverse-exponential", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 4", unitId: "inverses", unitTitle: 'Inverse Functions', title: 'Inverse of Exponential', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "log-definition", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 4", unitId: "inverses", unitTitle: 'Inverse Functions', title: 'Logarithmic Function Definition', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "graphs-inverse", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 4", unitId: "inverses", unitTitle: 'Inverse Functions', title: 'Graphs of Inverses', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "log-laws", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 5", unitId: "exponential-log", unitTitle: 'Exponential and Logarithmic Functions', title: 'Log Laws', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "log-equations", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 5", unitId: "exponential-log", unitTitle: 'Exponential and Logarithmic Functions', title: 'Log Equations', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "exponential-equations", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 5", unitId: "exponential-log", unitTitle: 'Exponential and Logarithmic Functions', title: 'Exponential Equations', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "applications-exp", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 5", unitId: "exponential-log", unitTitle: 'Exponential and Logarithmic Functions', title: 'Applications of Logs', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "graphs-log", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 5", unitId: "exponential-log", unitTitle: 'Exponential and Logarithmic Functions', title: 'Graph of Log Function', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "simple-compound", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 6", unitId: "finance-growth", unitTitle: 'Finance, Growth and Decay', title: 'Simple and Compound Interest', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "nominal-effective", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 6", unitId: "finance-growth", unitTitle: 'Finance, Growth and Decay', title: 'Nominal and Effective Rates', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "future-value", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 6", unitId: "finance-growth", unitTitle: 'Finance, Growth and Decay', title: 'Future Value Annuity', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "present-value", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 6", unitId: "finance-growth", unitTitle: 'Finance, Growth and Decay', title: 'Present Value and Loans', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "growth-decay", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 6", unitId: "finance-growth", unitTitle: 'Finance, Growth and Decay', title: 'Growth and Decay', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "distance-midpoint", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 7", unitId: "analytical-geometry", unitTitle: 'Analytical Geometry', title: 'Distance and Midpoint Formula', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "gradient", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 7", unitId: "analytical-geometry", unitTitle: 'Analytical Geometry', title: 'Gradient and Equation of Line', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "inclination", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 7", unitId: "analytical-geometry", unitTitle: 'Analytical Geometry', title: 'Inclination of a Line', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "circle-equation", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 7", unitId: "analytical-geometry", unitTitle: 'Analytical Geometry', title: 'Equation of a Circle', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "tangent-circle", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 7", unitId: "analytical-geometry", unitTitle: 'Analytical Geometry', title: 'Tangent to a Circle', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "circle-theorems", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 8", unitId: "euclidean-geometry", unitTitle: 'Euclidean Geometry', title: 'Circle Theorems', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "cyclic-quads", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 8", unitId: "euclidean-geometry", unitTitle: 'Euclidean Geometry', title: 'Cyclic Quadrilaterals', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "tangent-chord", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 8", unitId: "euclidean-geometry", unitTitle: 'Euclidean Geometry', title: 'Tangent Chord Theorem', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "similarity", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 8", unitId: "euclidean-geometry", unitTitle: 'Euclidean Geometry', title: 'Similarity and Proportionality', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "midpoint-theorem", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 8", unitId: "euclidean-geometry", unitTitle: 'Euclidean Geometry', title: 'Midpoint Theorem', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "compound-angle", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 9", unitId: "trigonometry-identities", unitTitle: 'Trigonometry - Compound and Double Angle Identities', title: 'Compound Angle Identities', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "double-angle", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 9", unitId: "trigonometry-identities", unitTitle: 'Trigonometry - Compound and Double Angle Identities', title: 'Double Angle Identities', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "sum-difference", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 9", unitId: "trigonometry-identities", unitTitle: 'Trigonometry - Compound and Double Angle Identities', title: 'Sum and Difference Identities', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "proof-identities", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 9", unitId: "trigonometry-identities", unitTitle: 'Trigonometry - Compound and Double Angle Identities', title: 'Proof of Identities', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "simplification", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 9", unitId: "trigonometry-identities", unitTitle: 'Trigonometry - Compound and Double Angle Identities', title: 'Simplification of Trig Expressions', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "trig-equations", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 10", unitId: "trigonometry-equations", unitTitle: 'Trigonometry - Equations, Sine, Cosine and Area Rules', title: 'Trigonometric Equations', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "sine-rule", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 10", unitId: "trigonometry-equations", unitTitle: 'Trigonometry - Equations, Sine, Cosine and Area Rules', title: 'Sine Rule', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "cosine-rule", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 10", unitId: "trigonometry-equations", unitTitle: 'Trigonometry - Equations, Sine, Cosine and Area Rules', title: 'Cosine Rule', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "area-rule", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 10", unitId: "trigonometry-equations", unitTitle: 'Trigonometry - Equations, Sine, Cosine and Area Rules', title: 'Area Rule', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "trig-2d-3d", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 10", unitId: "trigonometry-equations", unitTitle: 'Trigonometry - Equations, Sine, Cosine and Area Rules', title: '2D and 3D Problems', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "standard-deviation", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 11", unitId: "statistics", unitTitle: 'Statistics', title: 'Standard Deviation and Variance', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "quartiles", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 11", unitId: "statistics", unitTitle: 'Statistics', title: 'Quartiles and Box and Whisker', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "regression", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 11", unitId: "statistics", unitTitle: 'Statistics', title: 'Regression and Least Squares', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "correlation", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 11", unitId: "statistics", unitTitle: 'Statistics', title: 'Correlation Coefficient', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "interpolation", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 11", unitId: "statistics", unitTitle: 'Statistics', title: 'Interpolation and Extrapolation', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "first-principles", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 12", unitId: "differential-calculus", unitTitle: 'Differential Calculus', title: 'First Principles', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "rules-differentiation", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 12", unitId: "differential-calculus", unitTitle: 'Differential Calculus', title: 'Rules of Differentiation', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "tangents", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 12", unitId: "differential-calculus", unitTitle: 'Differential Calculus', title: 'Tangents to Curves', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "maxima-minima", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 12", unitId: "differential-calculus", unitTitle: 'Differential Calculus', title: 'Maxima and Minima', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "sketching", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 12", unitId: "differential-calculus", unitTitle: 'Differential Calculus', title: 'Cubic Graphs Sketching', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "counting-principle", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 13", unitId: "counting-probability", unitTitle: 'Counting and Probability', title: 'Fundamental Counting Principle', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "permutations", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 13", unitId: "counting-probability", unitTitle: 'Counting and Probability', title: 'Permutations', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "combinations", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 13", unitId: "counting-probability", unitTitle: 'Counting and Probability', title: 'Combinations', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "venn-diagrams", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 13", unitId: "counting-probability", unitTitle: 'Counting and Probability', title: 'Venn Diagrams', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "probability-rules", subjectId: "mathematics", subjectName: "Mathematics", sectionTitle: "Mathematics", unit: "UNIT 13", unitId: "counting-probability", unitTitle: 'Counting and Probability', title: 'Probability Rules - And Or Not', youtubeId: "kQ0i8s3q6dM", status: "draft" },
+  { id: "first-law", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 1", unitId: "newtons-laws", unitTitle: 'Mechanics - Newtons Laws', title: 'First Law - Inertia', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "second-law", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 1", unitId: "newtons-laws", unitTitle: 'Mechanics - Newtons Laws', title: 'Second Law - Fnet equals ma', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "third-law", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 1", unitId: "newtons-laws", unitTitle: 'Mechanics - Newtons Laws', title: 'Third Law - Action Reaction', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "free-body", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 1", unitId: "newtons-laws", unitTitle: 'Mechanics - Newtons Laws', title: 'Free Body Diagrams', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "friction", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 1", unitId: "newtons-laws", unitTitle: 'Mechanics - Newtons Laws', title: 'Static and Kinetic Friction', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "momentum-def", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 2", unitId: "momentum", unitTitle: 'Momentum and Impulse', title: 'Momentum - p equals mv', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "impulse-def", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 2", unitId: "momentum", unitTitle: 'Momentum and Impulse', title: 'Impulse', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "conservation", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 2", unitId: "momentum", unitTitle: 'Momentum and Impulse', title: 'Conservation of Momentum', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "elastic", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 2", unitId: "momentum", unitTitle: 'Momentum and Impulse', title: 'Elastic and Inelastic Collisions', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "airbags", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 2", unitId: "momentum", unitTitle: 'Momentum and Impulse', title: 'Safety - Airbags and Seatbelts', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "free-fall", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 3", unitId: "projectile", unitTitle: 'Vertical Projectile Motion', title: 'Free Fall', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "equations", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 3", unitId: "projectile", unitTitle: 'Vertical Projectile Motion', title: 'Equations of Motion', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "graphs", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 3", unitId: "projectile", unitTitle: 'Vertical Projectile Motion', title: 'Graphs of Motion', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "bounce", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 3", unitId: "projectile", unitTitle: 'Vertical Projectile Motion', title: 'Bouncing', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "calc", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 3", unitId: "projectile", unitTitle: 'Vertical Projectile Motion', title: 'Projectile Calculations', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "work", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 4", unitId: "work-energy", unitTitle: 'Work, Energy and Power', title: 'Work Done', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "theorem", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 4", unitId: "work-energy", unitTitle: 'Work, Energy and Power', title: 'Work Energy Theorem', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "conservation-e", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 4", unitId: "work-energy", unitTitle: 'Work, Energy and Power', title: 'Conservation of Energy', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "power", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 4", unitId: "work-energy", unitTitle: 'Work, Energy and Power', title: 'Power', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "efficiency", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 4", unitId: "work-energy", unitTitle: 'Work, Energy and Power', title: 'Efficiency', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "definition", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 5", unitId: "doppler", unitTitle: 'Doppler Effect', title: 'Definition', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "red-blue", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 5", unitId: "doppler", unitTitle: 'Doppler Effect', title: 'Red and Blue Shift', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "equation", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 5", unitId: "doppler", unitTitle: 'Doppler Effect', title: 'Doppler Equation', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "applications-d", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 5", unitId: "doppler", unitTitle: 'Doppler Effect', title: 'Applications', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "light-d", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 5", unitId: "doppler", unitTitle: 'Doppler Effect', title: 'With Light', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "coulombs", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 6", unitId: "electrostatics", unitTitle: 'Electrostatics', title: 'Coulombs Law', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "field", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 6", unitId: "electrostatics", unitTitle: 'Electrostatics', title: 'Electric Field', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "potential", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 6", unitId: "electrostatics", unitTitle: 'Electrostatics', title: 'Electric Potential', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "millikan", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 6", unitId: "electrostatics", unitTitle: 'Electrostatics', title: 'Millikan Experiment', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "field-lines", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 6", unitId: "electrostatics", unitTitle: 'Electrostatics', title: 'Field Lines', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "ohms", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 7", unitId: "electric-circuits", unitTitle: 'Electric Circuits', title: 'Ohms Law', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "power-e", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 7", unitId: "electric-circuits", unitTitle: 'Electric Circuits', title: 'Power and Energy', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "internal", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 7", unitId: "electric-circuits", unitTitle: 'Electric Circuits', title: 'Internal Resistance', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "series-parallel", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 7", unitId: "electric-circuits", unitTitle: 'Electric Circuits', title: 'Series and Parallel', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "ac-dc", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 7", unitId: "electric-circuits", unitTitle: 'Electric Circuits', title: 'AC vs DC', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "faraday", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 8", unitId: "electrodynamics", unitTitle: 'Electrodynamics', title: 'Faradays Law', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "lenz", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 8", unitId: "electrodynamics", unitTitle: 'Electrodynamics', title: 'Lenz Law', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "generators", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 8", unitId: "electrodynamics", unitTitle: 'Electrodynamics', title: 'Generators and Motors', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "photoelectric", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 8", unitId: "electrodynamics", unitTitle: 'Electrodynamics', title: 'Photoelectric Effect', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "spectra", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Physics", unit: "UNIT 8", unitId: "electrodynamics", unitTitle: 'Electrodynamics', title: 'Spectra', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "homologous", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 1", unitId: "organic-nomenclature", unitTitle: 'Organic Nomenclature', title: 'Homologous Series', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "iupac", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 1", unitId: "organic-nomenclature", unitTitle: 'Organic Nomenclature', title: 'IUPAC Naming', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "isomers", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 1", unitId: "organic-nomenclature", unitTitle: 'Organic Nomenclature', title: 'Isomers', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "functional", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 1", unitId: "organic-nomenclature", unitTitle: 'Organic Nomenclature', title: 'Functional Groups', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "macromolecules", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 1", unitId: "organic-nomenclature", unitTitle: 'Organic Nomenclature', title: 'Macromolecules', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "properties", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 2", unitId: "organic-reactions", unitTitle: 'Organic Physical Properties and Reactions', title: 'Physical Properties', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "substitution", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 2", unitId: "organic-reactions", unitTitle: 'Organic Physical Properties and Reactions', title: 'Substitution', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "addition", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 2", unitId: "organic-reactions", unitTitle: 'Organic Physical Properties and Reactions', title: 'Addition', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "elimination", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 2", unitId: "organic-reactions", unitTitle: 'Organic Physical Properties and Reactions', title: 'Elimination', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "polymers", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 2", unitId: "organic-reactions", unitTitle: 'Organic Physical Properties and Reactions', title: 'Polymers', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "collision", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 3", unitId: "rate", unitTitle: 'Rate and Extent', title: 'Collision Theory', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "factors", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 3", unitId: "rate", unitTitle: 'Rate and Extent', title: 'Factors Affecting Rate', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "boltzmann", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 3", unitId: "rate", unitTitle: 'Rate and Extent', title: 'Maxwell Boltzmann', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "rate-calc", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 3", unitId: "rate", unitTitle: 'Rate and Extent', title: 'Rate Calculations', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "mechanism", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 3", unitId: "rate", unitTitle: 'Rate and Extent', title: 'Mechanism', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "kc", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 4", unitId: "equilibrium", unitTitle: 'Chemical Equilibrium', title: 'Kc Constant', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "le-chatelier", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 4", unitId: "equilibrium", unitTitle: 'Chemical Equilibrium', title: 'Le Chatelier', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "factors-eq", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 4", unitId: "equilibrium", unitTitle: 'Chemical Equilibrium', title: 'Factors Affecting Equilibrium', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "eq-calc", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 4", unitId: "equilibrium", unitTitle: 'Chemical Equilibrium', title: 'Equilibrium Calculations', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "haber", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 4", unitId: "equilibrium", unitTitle: 'Chemical Equilibrium', title: 'Haber Process', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "definitions", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 5", unitId: "acids-bases", unitTitle: 'Acids and Bases', title: 'Acid Base Definitions', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "ph", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 5", unitId: "acids-bases", unitTitle: 'Acids and Bases', title: 'pH Calculations', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "titrations", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 5", unitId: "acids-bases", unitTitle: 'Acids and Bases', title: 'Titrations', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "hydrolysis", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 5", unitId: "acids-bases", unitTitle: 'Acids and Bases', title: 'Hydrolysis', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "buffers", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 5", unitId: "acids-bases", unitTitle: 'Acids and Bases', title: 'Buffers', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "galvanic", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 6", unitId: "electrochemistry", unitTitle: 'Electrochemistry', title: 'Galvanic Cells', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "potentials", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 6", unitId: "electrochemistry", unitTitle: 'Electrochemistry', title: 'Standard Potentials', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "cell-potential", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 6", unitId: "electrochemistry", unitTitle: 'Electrochemistry', title: 'Cell Potential', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "electrolytic", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 6", unitId: "electrochemistry", unitTitle: 'Electrochemistry', title: 'Electrolytic Cells', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+  { id: "electroplating", subjectId: "physical-sciences", subjectName: "Physical Sciences", sectionTitle: "Chemistry", unit: "UNIT 6", unitId: "electrochemistry", unitTitle: 'Electrochemistry', title: 'Electroplating', youtubeId: "dQw4w9WgXcQ", status: "draft" },
+];
+export const SUBJECTS = [{ id: "mathematics", name: "Mathematics" }, { id: "physical-sciences", name: "Physical Sciences" }];
+export const LESSONS_DATA = LESSONS.reduce((acc:any,cur)=>{ acc[cur.id]=cur; return acc; }, {} as any);
+export const getLesson = (id:string)=> LESSONS.find(l=>l.id===id) || null;
 export default LESSONS_DATA;
