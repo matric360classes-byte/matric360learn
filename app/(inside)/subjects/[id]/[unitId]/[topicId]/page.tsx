@@ -18,8 +18,8 @@ export default function Page({ params }: any) {
 
   return (
     <div style={{padding:16}}>
-      <h2>{lesson.title}</h2>
-      <p>{lesson.unit} - {lesson.section}</p>
+            <h2>{lesson.title}</h2>
+      <p>{params.id} / {params.unitId} / {params.topicId}</p>
 
       <div style={{display:"flex", gap:8, overflowX:"auto", margin:"12px 0"}}>
         {NODES.map((n:any, i:number) => (
