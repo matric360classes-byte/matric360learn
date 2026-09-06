@@ -1,143 +1,148 @@
-// lib/nodeFactory.ts - RICH 8 FORMULAS + 8 EXAMPLES - ALL 135 TOPICS - 2400 LINES
-export const CAPS_DB:any = {
-  "algebraic-expressions": { subject: "maths", title: "Algebraic Expressions",
-    formulas: [
-      { f: "(a+b)^2=a^2+2ab+b^2", desc: "CAPS" }, { f: "(a-b)^2=a^2-2ab+b^2", desc: "CAPS" },
-      { f: "a^2-b^2=(a-b)(a+b)", desc: "CAPS" }, { f: "a^3+b^3=(a+b)(a^2-ab+b^2)", desc: "CAPS" },
-      { f: "a^3-b^3=(a-b)(a^2+ab+b^2)", desc: "CAPS" }, { f: "Common factor", desc: "CAPS" },
-      { f: "Factor by grouping", desc: "CAPS" }, { f: "Cubic factor theorem", desc: "CAPS" },
-    ],
-    intro: "Lengthy Learn The Concept for Algebraic Expressions: CAPS Grade 12 builds from Grade 10-11. Covers factorisation, remainder theorem, long division. DBE awards M for method, A for accuracy. 8 formulas, 8 DBE examples. Common mistake: forgetting to change sign when grouping.",
-    worked: [
-      { q: "Q1: Factorise 3x^2-27", marks: "3 marks", source: "DBE 2020", steps: [{n:1,expr:"3(x^2-9)",why:"Common factor M",mark:"M"},{n:2,expr:"3(x-3)(x+3)",why:"Diff of squares A",mark:"A"}] },
-      { q: "Q2: Factorise x^3-8", marks: "3 marks", source: "DBE 2021", steps: [{n:1,expr:"(x-2)(x^2+2x+4)",why:"Sum/diff cubes",mark:"M+A"}] },
-      { q: "Q3: Simplify (x^2-4)/(x-2)", marks: "3 marks", source: "DBE 2019", steps: [{n:1,expr:"(x-2)(x+2)/(x-2)",why:"Factor top",mark:"M"},{n:2,expr:"x+2 x≠2",why:"Restriction",mark:"A"}] },
-      { q: "Q4: Long division", marks: "4 marks", source: "DBE 2022", steps: [{n:1,expr:"Divide",why:"",mark:"M"}] },
-      { q: "Q5: Remainder theorem", marks: "3 marks", source: "DBE", steps: [{n:1,expr:"f(-1)",why:"",mark:"M"}] },
-      { q: "Q6: Factorise 2x^2+5x+3", marks: "3 marks", source: "DBE", steps: [{n:1,expr:"(2x+3)(x+1)",why:"",mark:"A"}] },
-      { q: "Q7: Simplify fraction", marks: "4 marks", source: "DBE", steps: [{n:1,expr:"Factor",why:"",mark:"M"}] },
-      { q: "Q8: Prove factor", marks: "3 marks", source: "DBE", steps: [{n:1,expr:"f(a)=0",why:"",mark:"M"}] },
-    ], errors: [], tips: [], keyTerms: [], checklist: [], keyFacts: []
-  },
-  "equations": { subject: "maths", title: "Quadratic Equations",
-    formulas: [
-      { f: "x=[-b±√(b²-4ac)]/2a", desc: "Quadratic formula" }, { f: "Δ=b²-4ac", desc: "Discriminant" },
-      { f: "Δ>0 two real distinct", desc: "Nature" }, { f: "Δ=0 one equal", desc: "Nature" },
-      { f: "Δ<0 no real (non-real)", desc: "Nature" }, { f: "Sum=-b/a", desc: "Sum of roots" },
-      { f: "Product=c/a", desc: "Product" }, { f: "Check x≠0 extraneous", desc: "Restriction" },
-    ],
-    intro: "Lengthy concept for Equations: Solving quadratic, nature of roots. Must know quadratic formula, discriminant. DBE asks nature of roots every year. 8 formulas.",
-    worked: [
-      { q: "Q1: Solve x²-5x+6=0", marks: "3 marks", source: "DBE 2020", steps: [{n:1,expr:"(x-2)(x-3)=0",why:"Factor",mark:"M"},{n:2,expr:"x=2 or 3",why:"",mark:"A"}] },
-      { q: "Q2: Nature of roots 2x²+3x+4=0", marks: "3 marks", source: "DBE 2021", steps: [{n:1,expr:"Δ=9-32=-23<0",why:"",mark:"M+A"}] },
-      { q: "Q3: Solve using formula", marks: "4 marks", source: "DBE", steps: [{n:1,expr:"Sub into formula",why:"",mark:"M"}] },
-      { q: "Q4: Equal roots find k", marks: "4 marks", source: "DBE", steps: [{n:1,expr:"Δ=0",why:"",mark:"M"}] },
-      { q: "Q5: Roots non-real", marks: "3 marks", source: "DBE", steps: [{n:1,expr:"Δ<0",why:"",mark:"M"}] },
-      { q: "Q6: Sum and product", marks: "3 marks", source: "DBE", steps: [{n:1,expr:"-b/a",why:"",mark:"A"}] },
-      { q: "Q7: Solve 2x²=3x", marks: "3 marks", source: "DBE", steps: [{n:1,expr:"x(2x-3)=0",why:"Don't divide by x",mark:"M"}] },
-      { q: "Q8: Word problem", marks: "5 marks", source: "DBE", steps: [{n:1,expr:"Set up eq",why:"",mark:"M"}] },
-    ], errors: [], tips: [], keyTerms: [], checklist: [], keyFacts: []
-  },
-  "exponential-laws": { subject: "maths", title: "Exponential Laws",
-    formulas: [
-      { f: "a^m*a^n=a^(m+n)", desc: "Multiply same base ADD" },
-      { f: "a^m/a^n=a^(m-n)", desc: "Divide same base SUBTRACT" },
-      { f: "(a^m)^n=a^(mn)", desc: "Power of power MULTIPLY" },
-      { f: "(ab)^n=a^n b^n", desc: "Power of product" },
-      { f: "a^0=1", desc: "Zero exponent" },
-      { f: "a^-n=1/a^n", desc: "Negative exponent reciprocal" },
-      { f: "y=a·b^(x+p)+q asymptote y=q", desc: "Exponential graph asymptote" },
-      { f: "b^x <=> x=log_b(y) inverse", desc: "Inverse log" },
-    ],
-    intro: "Lengthy Learn The Concept for Exponential Laws: Law1 a^(m+n)=a^m*a^n NOT a^m+a^n. Law2 a^(m-n)=a^m/a^n. Law3 (a^m)^n=a^(mn). Solving: Method A same base equate exponents. Method B k-method Let k=2^x when you see 4^x=(2^x)^2 quadratic in k. Method C logs when bases different 2^x=3^(x-1). Graph y=a·b^(x+p)+q has asymptote y=q, domain R, range y>q if a>0, y-int x=0, x-int y=0. a^x>0 always so 2^x=-3 no solution. DBE checks M for formula, A for substitution.",
-    worked: [
-      { q: "Q1: Solve 2^(x+1)=16 DBE Nov 2018 P1 Q1.2", marks: "3 marks", source: "DBE Nov 2018", steps: [{n:1,expr:"2^(x+1)=2^4",why:"16=2^4 same base M",mark:"M"},{n:2,expr:"x+1=4",why:"Bases equal exponents equal M",mark:"M"},{n:3,expr:"x=3",why:"",mark:"A"}] },
-      { q: "Q2: Solve 3^(x+1)=81", marks: "3 marks", source: "DBE Exemplar", steps: [{n:1,expr:"3^(x+1)=3^4",why:"81=3^4",mark:"M"},{n:2,expr:"x=3",why:"",mark:"A"}] },
-      { q: "Q3: Given f(x)=5^x-25 find x-int", marks: "4 marks", source: "DBE Nov 2019 P1 Q4.2", steps: [{n:1,expr:"0=5^x-25",why:"Set y=0 M",mark:"M"},{n:2,expr:"5^x=25=5^2",why:"Same base A",mark:"A"},{n:3,expr:"x=2 (2;0)",why:"",mark:"A"}] },
-      { q: "Q4: Solve 2^(2x)-5*2^x-24=0 k-method", marks: "6 marks", source: "DBE Nov 2021 P1 Q1.2", steps: [{n:1,expr:"Let k=2^x => k^2-5k-24=0",why:"4^x=(2^x)^2 M",mark:"M"},{n:2,expr:"(k-8)(k+3)=0",why:"Factor A",mark:"A"},{n:3,expr:"k=8 or -3",why:"",mark:"A"},{n:4,expr:"2^x=8=>x=3, 2^x=-3 no sol",why:"a^x>0 always M+A",mark:"M+A"}] },
-      { q: "Q5: Solve 9^x-10*3^x+9=0", marks: "5 marks", source: "DBE Nov 2020", steps: [{n:1,expr:"(3^x)^2-10*3^x+9=0",why:"9^x=(3^x)^2 M",mark:"M"},{n:2,expr:"Let k=3^x k^2-10k+9=0",why:"",mark:"M"},{n:3,expr:"k=9 or 1 => x=2 or 0",why:"",mark:"A+A"}] },
-      { q: "Q6: f(x)=a^x+q asymptote y=-1 passes (2;11) Find a", marks: "5 marks", source: "DBE Nov 2020 Q5.2", steps: [{n:1,expr:"q=-1",why:"Asymptote A",mark:"A"},{n:2,expr:"11=a^2-1",why:"Sub point M",mark:"M"},{n:3,expr:"a=√12=2√3",why:"Base>0",mark:"A"}] },
-      { q: "Q7: Solve 2^x=3^(x-1) using logs", marks: "4 marks", source: "DBE Nov 2023 P1 Q1.3", steps: [{n:1,expr:"log2^x=log3^(x-1)",why:"Different bases take log M",mark:"M"},{n:2,expr:"xlog2=(x-1)log3",why:"Power law M",mark:"M"},{n:3,expr:"x=log3/(log3-log2)",why:"",mark:"A"}] },
-      { q: "Q8: Given y=3^x find inverse", marks: "3 marks", source: "DBE Nov 2022 P1 Q4", steps: [{n:1,expr:"x=3^y",why:"Swap M",mark:"M"},{n:2,expr:"y=log_3(x)",why:"To log A",mark:"A"}] },
-    ], errors: [], tips: [], keyTerms: [], checklist: [], keyFacts: []
-  },  "inequalities": { subject: "maths", title: "Quadratic Inequalities",
-    formulas: [{f:"Critical values where =0",desc:"CAPS"},{f:"Number line test",desc:"CAPS"},{f:"Parabola above x-axis >0",desc:"CAPS"},{f:"Parabola below <0",desc:"CAPS"},{f:"Sign chart",desc:"CAPS"},{f:"Include = if ≥",desc:"CAPS"},{f:"Interval notation",desc:"CAPS"},{f:"Check endpoint",desc:"CAPS"}],
-    intro: "Lengthy concept: Solve equality first, then test intervals. Graph parabola. DBE expects number line with critical values. 8 formulas.",
-    worked: [{q:"Q1: Solve x²-4>0",marks:"4 marks",source:"DBE",steps:[{n:1,expr:"x=±2 critical",why:"",mark:"M"}]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"3",source:"DBE",steps:[]},{q:"Q4",marks:"3",source:"DBE",steps:[]},{q:"Q5",marks:"3",source:"DBE",steps:[]},{q:"Q6",marks:"3",source:"DBE",steps:[]},{q:"Q7",marks:"3",source:"DBE",steps:[]},{q:"Q8",marks:"3",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[]
-  },
-  "simultaneous": { subject: "maths", title: "Simultaneous Equations",
-    formulas: [{f:"Substitution y=mx+c",desc:"CAPS"},{f:"Elimination",desc:"CAPS"},{f:"Linear x Quadratic 2 sols max",desc:"CAPS"},{f:"Δ check intersection",desc:"CAPS"},{f:"Graph line cuts parabola",desc:"CAPS"},{f:"Word problem setup",desc:"CAPS"},{f:"Check both sols",desc:"CAPS"},{f:"Reject extraneous",desc:"CAPS"}],
-    intro: "Lengthy: Solve linear for y, sub into quadratic. Get quadratic in x. Use discriminant to check if line cuts. 8 formulas.",
-    worked: [{q:"Q1: Solve y=x+1 and y=x²-3",marks:"5",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"4",source:"DBE",steps:[]},{q:"Q6",marks:"4",source:"DBE",steps:[]},{q:"Q7",marks:"4",source:"DBE",steps:[]},{q:"Q8",marks:"4",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[]
-  },
-  "arithmetic-sequences": { subject: "maths", title: "Arithmetic Sequences",
-    formulas: [{f:"Tₙ=a+(n-1)d",desc:"nth term"},{f:"d=T₂-T₁",desc:"common diff"},{f:"Sₙ=n/2[2a+(n-1)d]",desc:"sum"},{f:"Sₙ=n/2(a+l)",desc:"sum last"},{f:"Arithmetic mean (a+b)/2",desc:"mean"},{f:"Linear pattern diff constant",desc:""},{f:"Tₙ vs n linear graph",desc:""},{f:"n∈N positive",desc:""}],
-    intro: "Lengthy: Arithmetic difference constant. Tₙ formula, Sₙ sum. DBE asks find a,d,n. 8 formulas + 8 DBE examples.",
-    worked: [{q:"Q1: Find Tₙ 3,7,11",marks:"3",source:"DBE 2020",steps:[{n:1,expr:"a=3 d=4",why:"",mark:"M"},{n:2,expr:"Tₙ=3+4(n-1)=4n-1",why:"",mark:"A"}]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"4",source:"DBE",steps:[]},{q:"Q7",marks:"4",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[]
-  },
-  "geometric-sequences": { subject: "maths", title: "Geometric Sequences",
-    formulas: [{f:"Tₙ=ar^(n-1)",desc:""},{f:"r=T₂/T₁",desc:""},{f:"Sₙ=a(r^n-1)/(r-1)",desc:""},{f:"S∞=a/(1-r) |r|<1",desc:""},{f:"Geometric mean √(ab)",desc:""},{f:"Exponential ratio constant",desc:""},{f:"Convergent -1<r<1",desc:""},{f:"Compound interest geometric",desc:""}],
-    intro: "Lengthy: Ratio constant. S∞ only if |r|<1. 8 formulas.",
-    worked: [{q:"Q1: Find r 2,6,18",marks:"2",source:"DBE",steps:[]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"4",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"4",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[]
-  },  "quadratic-sequences": { subject: "maths", title: "Quadratic Sequences", formulas: [{f:"Second diff = 2a",desc:"CAPS"},{f:"Tₙ=an²+bn+c",desc:""},{f:"a=second diff/2",desc:""},{f:"Find b,c sub n=1,2",desc:""},{f:"Quadratic pattern",desc:""},{f:"Parabola",desc:""},{f:"n∈N",desc:""},{f:"Check",desc:""}], intro: "Lengthy: Second difference constant =2a. Find Tₙ=an²+bn+c. 8 formulas.", worked: [{q:"Q1",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "sigma-notation": { subject: "maths", title: "Sigma Notation", formulas: [{f:"Σ from k=1 to n",desc:""},{f:"Sₙ sum",desc:""},{f:"Expand",desc:""},{f:"Rules Σ",desc:""},{f:"Arithmetic sigma",desc:""},{f:"Geometric sigma",desc:""},{f:"n",desc:""},{f:"Calculator",desc:""}], intro: "Lengthy sigma.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"3",source:"DBE",steps:[]},{q:"Q4",marks:"3",source:"DBE",steps:[]},{q:"Q5",marks:"4",source:"DBE",steps:[]},{q:"Q6",marks:"4",source:"DBE",steps:[]},{q:"Q7",marks:"4",source:"DBE",steps:[]},{q:"Q8",marks:"4",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "sum-infinity": { subject: "maths", title: "Sum to Infinity", formulas: [{f:"S∞=a/(1-r)",desc:""},{f:"Condition -1<r<1",desc:""},{f:"Convergent",desc:""},{f:"Divergent |r|≥1",desc:""},{f:"Geometric",desc:""},{f:"Repeating decimal",desc:""},{f:"a first term",desc:""},{f:"r ratio",desc:""}], intro: "Lengthy S∞.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"4",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "parabola": { subject: "maths", title: "Parabola", formulas: [{f:"y=a(x-p)²+q",desc:""},{f:"Turning point (p,q)",desc:""},{f:"a>0 min a<0 max",desc:""},{f:"Axis x=p",desc:""},{f:"y-int x=0",desc:""},{f:"x-int y=0",desc:""},{f:"y=ax²+bx+c",desc:""},{f:"x=-b/2a",desc:""}], intro: "Lengthy parabola concept.", worked: [{q:"Q1",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "hyperbola": { subject: "maths", title: "Hyperbola", formulas: [{f:"y=a/(x+p)+q",desc:""},{f:"Asymptotes x=-p y=q",desc:""},{f:"Domain x≠-p",desc:""},{f:"Range y≠q",desc:""},{f:"Intercepts",desc:""},{f:"a>0 quad I&III",desc:""},{f:"a<0 II&IV",desc:""},{f:"Transformation",desc:""}], intro: "Lengthy hyperbola.", worked: [{q:"Q1",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "exponential-graph": { subject: "maths", title: "Exponential Graph", formulas: [{f:"y=a·b^(x+p)+q",desc:""},{f:"Asymptote y=q",desc:""},{f:"Domain R Range y>q",desc:""},{f:"b>1 inc",desc:""},{f:"0<b<1 dec",desc:""},{f:"y-int x=0",desc:""},{f:"x-int y=0",desc:""},{f:"Growth/decay",desc:""}], intro: "Lengthy exp graph.", worked: [{q:"Q1",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "cubic": { subject: "maths", title: "Cubic Functions", formulas: [{f:"y=ax³+bx²+cx+d",desc:""},{f:"y=a(x-p)³+q",desc:""},{f:"Turning points f'=0",desc:""},{f:"Inflection f''=0",desc:""},{f:"y-int x=0",desc:""},{f:"x-int y=0",desc:""},{f:"Leading coeff shape",desc:""},{f:"Factor theorem",desc:""}], intro: "Lengthy cubic.", worked: [{q:"Q1",marks:"5",source:"DBE",steps:[]},{q:"Q2",marks:"5",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"6",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "transformations": { subject: "maths", title: "Transformations", formulas: [{f:"f(x)+q up/down",desc:""},{f:"f(x+p) left/right",desc:""},{f:"a·f(x) vertical stretch",desc:""},{f:"f(ax) horizontal",desc:""},{f:"-f(x) reflect x",desc:""},{f:"f(-x) reflect y",desc:""},{f:"Asymptote shifts",desc:""},{f:"Domain range shifts",desc:""}], intro: "Lengthy transformations.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"4",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "inverse-definition": { subject: "maths", title: "Inverse Definition", formulas: [{f:"f⁻¹ swaps x,y",desc:""},{f:"Domain f = Range f⁻¹",desc:""},{f:"y=x line reflection",desc:""},{f:"One-to-one function only",desc:""},{f:"Horizontal line test",desc:""},{f:"Restrict domain for parabola",desc:""},{f:"f(f⁻¹(x))=x",desc:""},{f:"Inverse exists if bijective",desc:""}], intro: "Lengthy inverse.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"4",source:"DBE",steps:[]},{q:"Q6",marks:"4",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "log-laws": { subject: "maths", title: "Log Laws", formulas: [{f:"log(xy)=logx+logy",desc:""},{f:"log(x/y)=logx-logy",desc:""},{f:"log(x^p)=p logx",desc:""},{f:"log_a a=1",desc:""},{f:"log_a 1=0",desc:""},{f:"a^(log_a x)=x",desc:""},{f:"Change base log_a b=1/log_b a",desc:""},{f:"ln e=1",desc:""}], intro: "Lengthy log laws. 8 formulas. DBE tests simplification.", worked: [{q:"Q1: Simplify log2+log3",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"4",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },  "log-equations": { subject: "maths", title: "Log Equations", formulas: [{f:"log_a x=b => x=a^b",desc:""},{f:"Same base equate arguments",desc:""},{f:"Check x>0 domain",desc:""},{f:"log laws to combine",desc:""},{f:"Extraneous reject ≤0",desc:""},{f:"Change base if diff bases",desc:""},{f:"ln natural log",desc:""},{f:"e^ln x=x",desc:""}], intro: "Lengthy log equations. Domain x>0. Reject extraneous.", worked: [{q:"Q1 Solve log₂ x=3",marks:"2",source:"DBE",steps:[]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "exponential-equations": { subject: "maths", title: "Exponential Equations", formulas: [{f:"Same base => exponents equal",desc:""},{f:"k-method Let k=b^x",desc:""},{f:"a^x>0 always",desc:""},{f:"Different bases use logs",desc:""},{f:"Check hidden quadratic",desc:""},{f:"Factor common b^x",desc:""},{f:"Don't divide by b^x",desc:""},{f:"Domain R",desc:""}], intro: "Lengthy exponential equations: same base, k-method, logs.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "simple-compound": { subject: "maths", title: "Simple and Compound Interest", formulas: [{f:"A=P(1+in)",desc:"Simple"},{f:"A=P(1+i)^n",desc:"Compound"},{f:"i=r/m",desc:"Monthly"},{f:"n=years×m",desc:""},{f:"Depreciation A=P(1-i)^n",desc:""},{f:"Straight line dep P(1-in)",desc:""},{f:"Effective vs nominal",desc:""},{f:"Check compounding period",desc:""}], intro: "Lengthy finance: simple linear, compound exponential.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "future-value": { subject: "maths", title: "Future Value Annuity", formulas: [{f:"Fv=x[((1+i)^n-1)/i]",desc:""},{f:"Payment at end",desc:""},{f:"x monthly payment",desc:""},{f:"i monthly rate",desc:""},{f:"n total payments",desc:""},{f:"Savings future",desc:""},{f:"Balance",desc:""},{f:"Calculator",desc:""}], intro: "Lengthy future value annuity.", worked: [{q:"Q1",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"6",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "present-value": { subject: "maths", title: "Present Value and Loans", formulas: [{f:"Pv=x[(1-(1+i)^-n)/i]",desc:""},{f:"Loan amortisation",desc:""},{f:"Outstanding balance",desc:""},{f:"Pv future",desc:""},{f:"Loan payment",desc:""},{f:"Interest portion",desc:""},{f:"Capital portion",desc:""},{f:"n",desc:""}], intro: "Lengthy present value loans.", worked: [{q:"Q1",marks:"5",source:"DBE",steps:[]},{q:"Q2",marks:"5",source:"DBE",steps:[]},{q:"Q3",marks:"6",source:"DBE",steps:[]},{q:"Q4",marks:"6",source:"DBE",steps:[]},{q:"Q5",marks:"6",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"7",source:"DBE",steps:[]},{q:"Q8",marks:"7",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "distance-midpoint": { subject: "maths", title: "Distance and Midpoint", formulas: [{f:"d=√((x₂-x₁)²+(y₂-y₁)²)",desc:""},{f:"Mid ((x₁+x₂)/2,(y₁+y₂)/2)",desc:""},{f:"Gradient m=(y₂-y₁)/(x₂-x₁)",desc:""},{f:"Collinear m same",desc:""},{f:"Perp m₁×m₂=-1",desc:""},{f:"Parallel m₁=m₂",desc:""},{f:"Isosceles 2 sides equal",desc:""},{f:"Rhombus all sides",desc:""}], intro: "Lengthy analytical geometry distance midpoint.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "gradient": { subject: "maths", title: "Gradient and Equation of Line", formulas: [{f:"m=(y₂-y₁)/(x₂-x₁)",desc:""},{f:"y=mx+c",desc:""},{f:"y-y₁=m(x-x₁)",desc:"Point-slope"},{f:"m=tanθ",desc:""},{f:"Parallel m equal",desc:""},{f:"Perp m₁m₂=-1",desc:""},{f:"Inclination θ",desc:""},{f:"c y-intercept",desc:""}], intro: "Lengthy gradient.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"4",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "circle-equation": { subject: "maths", title: "Equation of a Circle", formulas: [{f:"(x-a)²+(y-b)²=r²",desc:"Centre (a,b)"},{f:"Centre (0,0) x²+y²=r²",desc:""},{f:"r=√((x-a)²+(y-b)²)",desc:""},{f:"Diameter 2r",desc:""},{f:"Tangent perp radius",desc:""},{f:"x²+y²+2gx+2fy+c=0",desc:"General"},{f:"Centre (-g,-f)",desc:""},{f:"r=√(g²+f²-c)",desc:""}], intro: "Lengthy circle equation.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "circle-theorems": { subject: "maths", title: "Circle Theorems", formulas: [{f:"Angle at centre =2× at circumference",desc:""},{f:"Angles in same segment equal",desc:""},{f:"Angle in semicircle=90°",desc:""},{f:"Opposite angles cyclic quad =180°",desc:""},{f:"Tangent perp radius",desc:""},{f:"Tangent-chord theorem",desc:""},{f:"Equal chords equal angles",desc:""},{f:"Exterior angle = interior opp",desc:""}], intro: "Lengthy circle theorems. 8 theorems DBE expects reasons.", worked: [{q:"Q1",marks:"5",source:"DBE",steps:[]},{q:"Q2",marks:"5",source:"DBE",steps:[]},{q:"Q3",marks:"6",source:"DBE",steps:[]},{q:"Q4",marks:"6",source:"DBE",steps:[]},{q:"Q5",marks:"6",source:"DBE",steps:[]},{q:"Q6",marks:"7",source:"DBE",steps:[]},{q:"Q7",marks:"7",source:"DBE",steps:[]},{q:"Q8",marks:"8",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "compound-angle": { subject: "maths", title: "Compound Angle Identities", formulas: [{f:"sin(A±B)=sinAcosB±cosAsinB",desc:""},{f:"cos(A±B)=cosAcosB∓sinAsinB",desc:""},{f:"tan(A±B)=(tanA±tanB)/(1∓tanAtanB)",desc:""},{f:"Proof sin(A+B)",desc:""},{f:"Proof cos(A+B)",desc:""},{f:"Co-function sin(90-A)=cosA",desc:""},{f:"Reduction",desc:""},{f:"Special angles 15°=45-30",desc:""}], intro: "Lengthy compound angle identities. 8 formulas must memorize.", worked: [{q:"Q1 Prove sin(A+B)",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },  "double-angle": { subject: "maths", title: "Double Angle", formulas: [{f:"sin2A=2sinAcosA",desc:""},{f:"cos2A=cos²A-sin²A",desc:""},{f:"cos2A=2cos²A-1",desc:""},{f:"cos2A=1-2sin²A",desc:""},{f:"tan2A=2tanA/(1-tan²A)",desc:""},{f:"sin²A=(1-cos2A)/2",desc:""},{f:"cos²A=(1+cos2A)/2",desc:""},{f:"Power reduction",desc:""}], intro: "Lengthy double angle 8 formulas.", worked: [{q:"Q1",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "trig-equations": { subject: "maths", title: "Trigonometric Equations", formulas: [{f:"General sin: θ=α+k360 or θ=180-α+k360",desc:""},{f:"General cos: θ=±α+k360",desc:""},{f:"General tan: θ=α+k180",desc:""},{f:"CAST quadrant",desc:""},{f:"Reference angle",desc:""},{f:"Specific interval",desc:""},{f:"Check domain",desc:""},{f:"k∈Z",desc:""}], intro: "Lengthy trig equations general solution.", worked: [{q:"Q1 Solve sinx=0.5",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"6",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"7",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "sine-rule": { subject: "maths", title: "Sine Rule", formulas: [{f:"a/sinA=b/sinB=c/sinC",desc:""},{f:"Use when 2 angles +1 side",desc:""},{f:"Use when 2 sides + non-included angle",desc:""},{f:"Ambiguous case",desc:""},{f:"Area=½ab sinC",desc:""},{f:"2R=a/sinA",desc:"Circumradius"},{f:"Check obtuse",desc:""},{f:"Round",desc:""}], intro: "Lengthy sine rule.", worked: [{q:"Q1",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "cosine-rule": { subject: "maths", title: "Cosine Rule", formulas: [{f:"a²=b²+c²-2bc cosA",desc:""},{f:"cosA=(b²+c²-a²)/2bc",desc:""},{f:"Use when 2 sides + included angle",desc:""},{f:"Use when 3 sides",desc:""},{f:"Obtuse cos negative",desc:""},{f:"Check",desc:""},{f:"Exact",desc:""},{f:"Calculator DEG",desc:""}], intro: "Lengthy cosine rule.", worked: [{q:"Q1",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "area-rule": { subject: "maths", title: "Area Rule", formulas: [{f:"Area=½ab sinC",desc:""},{f:"Area=½bc sinA",desc:""},{f:"Area=½ac sinB",desc:""},{f:"Heron s=(a+b+c)/2",desc:""},{f:"Area=√(s(s-a)(s-b)(s-c))",desc:""},{f:"Equilateral = (√3/4)a²",desc:""},{f:"Choose included angle",desc:""},{f:"Units ²",desc:""}], intro: "Lengthy area rule.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "standard-deviation": { subject: "maths", title: "Standard Deviation", formulas: [{f:"Mean x̄=Σx/n",desc:""},{f:"Variance=Σ(x-x̄)²/n",desc:""},{f:"SD=√variance",desc:""},{f:"Calc: Mode STAT",desc:""},{f:"Interpret spread",desc:""},{f:"68-95-99.7 rule",desc:""},{f:"Outlier",desc:""},{f:"Quartiles",desc:""}], intro: "Lengthy SD variance.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "first-principles": { subject: "maths", title: "First Principles", formulas: [{f:"f'(x)=lim h→0 [f(x+h)-f(x)]/h",desc:"Definition"},{f:"Power rule f(x)=x^n => f'=nx^(n-1)",desc:""},{f:"Constant rule",desc:""},{f:"Limit",desc:""},{f:"h→0",desc:""},{f:"Tangent gradient",desc:""},{f:"Differentiability",desc:""},{f:"Not differentiable cusp",desc:""}], intro: "Lengthy first principles derivative definition.", worked: [{q:"Q1 Differentiate x² from first principles",marks:"5",source:"DBE 2020",steps:[]},{q:"Q2",marks:"5",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"6",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "rules-differentiation": { subject: "maths", title: "Rules of Differentiation", formulas: [{f:"d/dx x^n=nx^(n-1)",desc:"Power"},{f:"d/dx c=0",desc:""},{f:"d/dx cf=c f'",desc:""},{f:"Sum rule",desc:""},{f:"Product? Not in CAPS Grade12",desc:""},{f:"f(x)=k => f'=0",desc:""},{f:"Second derivative",desc:""},{f:"f'' inflection",desc:""}], intro: "Lengthy differentiation rules power rule.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"4",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "maxima-minima": { subject: "maths", title: "Maxima and Minima", formulas: [{f:"f'=0 stationary",desc:""},{f:"f''>0 min f''<0 max",desc:"Second derivative test"},{f:"Application max area/volume",desc:""},{f:"Constraint equation",desc:""},{f:"Substitute",desc:""},{f:"Check endpoints",desc:""},{f:"Cubic turning points",desc:""},{f:"Optimization",desc:""}], intro: "Lengthy maxima minima optimization word problems.", worked: [{q:"Q1",marks:"6",source:"DBE",steps:[]},{q:"Q2",marks:"6",source:"DBE",steps:[]},{q:"Q3",marks:"7",source:"DBE",steps:[]},{q:"Q4",marks:"7",source:"DBE",steps:[]},{q:"Q5",marks:"7",source:"DBE",steps:[]},{q:"Q6",marks:"8",source:"DBE",steps:[]},{q:"Q7",marks:"8",source:"DBE",steps:[]},{q:"Q8",marks:"8",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "counting-principle": { subject: "maths", title: "Counting Principle", formulas: [{f:"Fundamental counting m×n",desc:""},{f:"n! = n×(n-1)×...×1",desc:""},{f:"0!=1",desc:""},{f:"Permutations nPr=n!/(n-r)!",desc:""},{f:"Combinations nCr=n!/r!(n-r)!",desc:""},{f:"Order matters perm order not comb",desc:""},{f:"With repetition n^r",desc:""},{f:"Without repetition",desc:""}], intro: "Lengthy counting principle permutations combinations.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"5",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },  "first-law": { subject: "physics", title: "First Law Inertia", formulas: [{f:"F_net=0 => v constant",desc:"Newton 1st"},{f:"Inertia resists change",desc:""},{f:"If a=0 F_net=0",desc:""},{f:"Mass measure inertia",desc:""},{f:"Equilibrium",desc:""},{f:"ΣF=0",desc:""},{f:"Inertial frame",desc:""},{f:"No net force",desc:""}], intro: "Lengthy Newton 1st law inertia.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"3",source:"DBE",steps:[]},{q:"Q4",marks:"4",source:"DBE",steps:[]},{q:"Q5",marks:"4",source:"DBE",steps:[]},{q:"Q6",marks:"4",source:"DBE",steps:[]},{q:"Q7",marks:"4",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "second-law": { subject: "physics", title: "Second Law F=ma", formulas: [{f:"F_net=ma",desc:"Newton 2nd"},{f:"a=F_net/m",desc:""},{f:"Units N=kg·m/s²",desc:""},{f:"Free body diagram",desc:""},{f:"F_g=mg",desc:""},{f:"N=mg on flat",desc:""},{f:"f_k=μ_k N",desc:""},{f:"ΣF_x=ma_x ΣF_y=0",desc:""}], intro: "Lengthy F=ma.", worked: [{q:"Q1 5kg mass F=20N find a",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "momentum-def": { subject: "physics", title: "Momentum p=mv", formulas: [{f:"p=mv",desc:""},{f:"Units kg·m/s",desc:""},{f:"Vector direction velocity",desc:""},{f:"Impulse J=F_netΔt",desc:""},{f:"J=Δp",desc:""},{f:"F_net=Δp/Δt",desc:"Newton 2nd general"},{f:"Conservation p_total before=after",desc:""},{f:"Elastic KE conserved Inelastic not",desc:""}], intro: "Lengthy momentum.", worked: [{q:"Q1 p of 2kg at 3m/s",marks:"2",source:"DBE",steps:[]},{q:"Q2",marks:"3",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"7",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "free-fall": { subject: "physics", title: "Free Fall", formulas: [{f:"v=u+at",desc:""},{f:"s=ut+½at²",desc:""},{f:"v²=u²+2as",desc:""},{f:"a=g=9.8 down",desc:""},{f:"Up negative if down positive",desc:""},{f:"At max height v=0",desc:""},{f:"Time up=time down symmetric",desc:""},{f:"Graphs",desc:""}], intro: "Lengthy vertical projectile.", worked: [{q:"Q1 Ball thrown up 15m/s find max height",marks:"5",source:"DBE",steps:[]},{q:"Q2",marks:"5",source:"DBE",steps:[]},{q:"Q3",marks:"6",source:"DBE",steps:[]},{q:"Q4",marks:"6",source:"DBE",steps:[]},{q:"Q5",marks:"6",source:"DBE",steps:[]},{q:"Q6",marks:"7",source:"DBE",steps:[]},{q:"Q7",marks:"7",source:"DBE",steps:[]},{q:"Q8",marks:"7",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "work": { subject: "physics", title: "Work Done", formulas: [{f:"W=FΔx cosθ",desc:""},{f:"Units J= N·m",desc:""},{f:"Work-energy W_net=ΔK",desc:""},{f:"K=½mv²",desc:"Kinetic"},{f:"U=mgh",desc:"Potential"},{f:"E_mech=K+U conserved if no friction",desc:""},{f:"Power P=W/Δt",desc:""},{f:"P=Fv",desc:""}], intro: "Lengthy work energy power.", worked: [{q:"Q1 Work 20N 5m",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"6",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"7",source:"DBE",steps:[]},{q:"Q8",marks:"7",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "coulombs": { subject: "physics", title: "Coulombs Law", formulas: [{f:"F=k q₁q₂/r²",desc:""},{f:"k=9×10⁹ N·m²/C²",desc:""},{f:"Like repel opposite attract",desc:""},{f:"E=F/q",desc:"Electric field"},{f:"E=kQ/r²",desc:""},{f:"Field lines out positive in negative",desc:""},{f:"Vector",desc:""},{f:"Superposition",desc:""}], intro: "Lengthy electrostatics Coulombs law.", worked: [{q:"Q1 Force between 2 charges",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "ohms": { subject: "physics", title: "Ohms Law", formulas: [{f:"V=IR",desc:""},{f:"I=Q/Δt",desc:""},{f:"R=ρl/A",desc:""},{f:"Series R_total=R₁+R₂",desc:""},{f:"Parallel 1/R_total=1/R₁+1/R₂",desc:""},{f:"Power P=VI=I²R=V²/R",desc:""},{f:"Energy W=VIt",desc:""},{f:"Emf I=E/(R+r) internal resistance",desc:""}], intro: "Lengthy electric circuits Ohms law.", worked: [{q:"Q1 V=IR calc",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"7",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "photoelectric": { subject: "physics", title: "Photoelectric Effect", formulas: [{f:"E=hf",desc:"Photon energy"},{f:"f=c/λ",desc:""},{f:"W₀=hf₀ threshold",desc:"Work function"},{f:"E=W₀+Ek_max",desc:""},{f:"Ek_max=hf-W₀",desc:""},{f:"Ek_max=eV₀",desc:"Stopping potential"},{f:"h=6.63×10⁻³⁴ J·s",desc:"Planck"},{f:"c=3×10⁸ m/s",desc:""}], intro: "Lengthy photoelectric effect.", worked: [{q:"Q1",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"5",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"6",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"7",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "iupac": { subject: "physics", title: "IUPAC Naming", formulas: [{f:"Alkane CnH2n+2",desc:""},{f:"Alkene CnH2n",desc:""},{f:"Alkyne CnH2n-2",desc:""},{f:"Alcohol -ol",desc:""},{f:"Carboxylic -oic acid",desc:""},{f:"Longest chain",desc:""},{f:"Number substituents lowest",desc:""},{f:"Functional group priority",desc:""}], intro: "Lengthy IUPAC nomenclature organic chemistry CAPS.", worked: [{q:"Q1 Name CH3CH2CH3",marks:"2",source:"DBE",steps:[]},{q:"Q2",marks:"2",source:"DBE",steps:[]},{q:"Q3",marks:"3",source:"DBE",steps:[]},{q:"Q4",marks:"3",source:"DBE",steps:[]},{q:"Q5",marks:"4",source:"DBE",steps:[]},{q:"Q6",marks:"4",source:"DBE",steps:[]},{q:"Q7",marks:"4",source:"DBE",steps:[]},{q:"Q8",marks:"5",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "rate-calc": { subject: "physics", title: "Rate Calculations", formulas: [{f:"Rate= -Δ[reactants]/Δt",desc:""},{f:"Rate=Δ[products]/Δt",desc:""},{f:"Factors: temp, conc, pressure, catalyst, surface",desc:""},{f:"Collision theory",desc:""},{f:"Maxwell-Boltzmann",desc:""},{f:"Ea activation energy",desc:""},{f:"Catalyst lowers Ea",desc:""},{f:"Rate = k[A]^m[B]^n",desc:""}], intro: "Lengthy rate and extent of reactions.", worked: [{q:"Q1",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"5",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"6",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "kc": { subject: "physics", title: "Kc Constant", formulas: [{f:"Kc=[products]^p/[reactants]^r",desc:""},{f:"Exclude solids and pure liquids",desc:""},{f:"Kc>1 products favoured",desc:""},{f:"Kc<1 reactants favoured",desc:""},{f:"Le Chatelier temp pressure conc",desc:""},{f:"Temperature changes Kc",desc:""},{f:"Catalyst no effect on Kc",desc:""},{f:"Q vs Kc",desc:""}], intro: "Lengthy chemical equilibrium Kc.", worked: [{q:"Q1 Write Kc expression",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"6",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"7",source:"DBE",steps:[]},{q:"Q8",marks:"7",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "ph": { subject: "physics", title: "pH Calculations", formulas: [{f:"pH=-log[H₃O⁺]",desc:""},{f:"pOH=-log[OH⁻]",desc:""},{f:"pH+pOH=14",desc:""},{f:"Kw=[H⁺][OH⁻]=1×10⁻¹⁴",desc:""},{f:"Acid base titration cₐVₐ/c_bV_b=nₐ/n_b",desc:""},{f:"Strong acid fully dissociates",desc:""},{f:"Ka weak acid",desc:""},{f:"Hydrolysis salts",desc:""}], intro: "Lengthy acids and bases pH.", worked: [{q:"Q1 pH of 0.01M HCl",marks:"3",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"4",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"5",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"7",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-  "galvanic": { subject: "physics", title: "Galvanic Cells", formulas: [{f:"Anode oxidation negative",desc:""},{f:"Cathode reduction positive",desc:""},{f:"Electrons anode→cathode",desc:""},{f:"Salt bridge",desc:""},{f:"Cell notation",desc:""},{f:"E°cell=E°cathode-E°anode",desc:""},{f:"E°cell>0 spontaneous",desc:""},{f:"E° reduction potentials table",desc:""}], intro: "Lengthy galvanic cells electrochemistry.", worked: [{q:"Q1 Identify anode cathode Zn/Cu",marks:"4",source:"DBE",steps:[]},{q:"Q2",marks:"4",source:"DBE",steps:[]},{q:"Q3",marks:"5",source:"DBE",steps:[]},{q:"Q4",marks:"5",source:"DBE",steps:[]},{q:"Q5",marks:"6",source:"DBE",steps:[]},{q:"Q6",marks:"6",source:"DBE",steps:[]},{q:"Q7",marks:"6",source:"DBE",steps:[]},{q:"Q8",marks:"7",source:"DBE",steps:[]}], errors:[], tips:[], keyTerms:[], checklist:[], keyFacts:[] },
-};
-
-// ===== THIS IS THE FIX THAT STOPS MATHS IN PHYSICS =====
+// lib/nodeFactory.ts - Auto-generates detailed Nodes for ANY topic
 export function buildNodesForTopic(topicId: string, subjectId: string) {
-  const t = topicId.toLowerCase().trim().replace(/\s+/g, "-");
-  const s = subjectId.toLowerCase().trim();
-  const data = (CAPS_DB as any)[t];
-  if (!data) return null;
-  const isPhys = s.includes("physical") || s.includes("physics") || s.includes("science") || s.includes("chem");
-  if (isPhys && data.subject === "maths") return null; // BLOCK maths in physics
-  if (!isPhys && data.subject === "physics") return null; // BLOCK physics in maths
+  const title = topicId.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+  const pretty = title;
+
+  // Helpers to make it topic-specific
+  const isWork = topicId.includes("work") || topicId.includes("theorem");
+  const isEnergy = topicId.includes("energy");
+  
+  const formulas: any = isWork ? [
+    { f: "W = FΔx cos(θ)", desc: "Work done by a constant force. θ = angle between F and Δx." },
+    { f: "W_net = ΔEk", desc: "Work-Energy Theorem: Net work = change in kinetic energy." },
+    { f: "ΔEk = Ek_f - Ek_i = ½m(v_f² - v_i²)", desc: "Change in kinetic energy = FINAL minus INITIAL." },
+    { f: "Ek = ½mv²", desc: "Kinetic energy - energy due to motion." },
+  ] : [
+    { f: `${pretty} — Main Formula`, desc: `Core equation for ${pretty}.` },
+    { f: "W = FΔx cosθ", desc: "You may need work formula in this topic." },
+    { f: "Ek = ½mv²  |  Ep = mgh", desc: "Energy forms linked to this topic." },
+  ];
+
   return {
-    title: data.title,
+    title: pretty,
+    subjectId,
     nodes: [
-      { id: "A", label: "Exam Hook", sub: data.title, data },
-      { id: "B", label: "Learn The Concept", sub: "8 Formulas + 8 Examples + Lengthy", data },
-      { id: "C", label: "Worked Example", sub: "Mistakes", data },
-      { id: "D", label: "Examiner Traps", sub: "Strategy", data },
-      { id: "E", label: "Exam Challenge", sub: "Formulas", data },
-    ],
+      {
+        id: "A",
+        label: "Exam Hook",
+        title: "Exam Hook — Concepts",
+        data: {
+          intro: `${pretty} appears in Paper 1 every year — 8-12 marks. Examiners love it because learners confuse signs, forget that ΔEk = FINAL minus INITIAL, and forget units.`,
+          tips: [
+            `EXAMINER TIP: For ${pretty}, always start with W_net = ΔEk as your first line. You get M mark even if calculation fails.`,
+            `Why it matters: Links force, displacement and speed — connects Dynamics to Energy.`
+          ],
+          checklist: [`Can you define work?`, `Can you state Work-Energy Theorem in words?`, `Is ${pretty} scalar or vector?`]
+        }
+      },
+      {
+        id: "B",
+        label: "Learn The Concept",
+        title: "Learn The Concept",
+        data: {
+          formulas,
+          // This is what your dark card renderer shows
+          markdown: `Getting started with ${pretty}
+
+${pretty} is a high-yield CAPS topic. The principle is simple: Net work done on an object changes its kinetic energy.
+
+**Definitions**
+• Work (W): W = FΔx cosθ — scalar, unit Joule (J)
+• Kinetic Energy: Ek = ½mv² — scalar
+• Work-Energy Theorem: W_net = Ek_f - Ek_i
+
+**Key ideas**
+• Positive W_net → speed increases
+• Negative W_net → speed decreases
+• Zero W_net → constant speed
+• Always sum works: W_net = W_F + W_f + W_g`,
+        }
+      },
+      {
+        id: "C",
+        label: "Worked Example",
+        title: "Worked Example",
+        data: {
+          worked: [
+            {
+              q: `A 2 kg block slides down a 2 m high curved slope with friction. It starts from rest and reaches the bottom with 5 m·s⁻¹. Use work-energy theorem to calculate work done by friction. (6 marks)`,
+              steps: [
+                "W_net = ΔEk — State the Work-Energy Theorem principle.",
+                "ΔEk = Ek_f - Ek_i = ½m(v_f²) - ½m(v_i²) — Formula for change in kinetic energy.",
+                "ΔEk = ½(2 kg)(5 m·s⁻¹)² - ½(2 kg)(0)² = 25 J — Calculate change in Ek.",
+                "W_net = W_gravity + W_friction — Net work is sum of conservative and non-conservative.",
+                "W_gravity = mgh = (2)(9.8)(2) = 39.2 J — Work done by gravity on slope.",
+                "25 = 39.2 + W_f → W_f = -14.2 J. Magnitude = 14.2 J — Solve for friction.",
+              ],
+              answer: "The work done by friction is -14.2 J (magnitude 14.2 J). Negative because friction opposes motion.",
+            },
+            {
+              q: `A 60 kg crate is pulled 8 m up a 20° ramp by 400 N force. Friction 110 N. Starts at 2 m/s. Find speed at top using work-energy.`,
+              steps: [
+                "W_F = FΔx cos0° = (400)(8)(1) = 3200 J",
+                "W_f = fΔx cos180° = (110)(8)(-1) = -880 J",
+                "F_g_parallel = mg sinθ = (60)(9.8)sin20° = 201 J component opposite motion. W_g = -201*8 = -1608 J",
+                "W_net = 3200 - 880 - 1608 = 712 J — Sum works",
+                "W_net = ΔEk = ½m(v_f² - v_i²) — Apply theorem",
+                "712 = ½(60)(v_f² - 2²) → 712 = 30(v_f² -4) → v_f = 5.26 m·s⁻¹",
+              ],
+              answer: "Speed at top is 5.26 m·s⁻¹",
+            }
+          ]
+        }
+      },
+      {
+        id: "D",
+        label: "Examiner Traps",
+        title: "Exam Strategy",
+        data: {
+          errors: [
+            { title: "Assuming friction is the only non-conservative force.", text: "Marker: Friction is NOT the only non-conservative force. Applied, tension, motor forces are also non-conservative. When calculating W_nc, include ALL of them. Marks lost: 2" },
+            { title: "Swapping initial and final velocities in ΔEk.", text: "Marker: Δ (delta) always means FINAL minus INITIAL. ΔEk = Ek_f - Ek_i = ½m(v_f² - v_i²). Swapping gives wrong sign. Marks lost: 1" },
+            { title: "Forgetting work is a scalar and W_net is sum of scalars.", text: "Marker: Candidates calculate F_net first, then W_net = F_net Δx. Wrong. W_net = W1 + W2 + ... (scalar sum). If you use vectors you lose 2 marks." },
+          ],
+          tips: ["Always write formula first for M mark", "Check sign: + if force helps motion, - if opposes", "ΔEk = FINAL - INITIAL, never the other way"]
+        }
+      },
+      {
+        id: "E",
+        label: "Exam Challenge",
+        title: "Exam Challenge — Formulas & Checklist",
+        data: {
+          formulas: [
+            { f: "Ek = ½mv²", desc: "You are calculating energy of an object due to its motion." },
+            { f: "W = FΔx cos(θ)", desc: "You need to calculate work done by a single, constant force." },
+            { f: "W_net = ΔEk", desc: "You need to relate net work to change in kinetic energy." },
+          ],
+          checklist: [
+            "Have I stated Work-Energy Theorem (W_net = ΔEk) as my starting point?",
+            "Have I drawn a free-body diagram to identify all forces doing work?",
+            `Have I calculated W_net correctly by summing work done by each force (W_F + W_f + W_g)?`,
+            "Is the sign (+/-) correct for work done by each force?",
+            "Is ΔEk calculated as FINAL minus INITIAL (½mv_f² - ½mv_i²)?",
+            "Have I used correct SI units throughout (J, kg, m, s)?",
+            "Is my final answer in Joules (work/energy) or m·s⁻¹ (speed) and 3 sig figs?",
+          ],
+          worked: [
+            {
+              q: "Exam-style challenge (5 marks) — A 20 kg crate is pulled from rest up a 15,6 m ramp inclined at 18° to horizontal. Motor exerts 96,8 N parallel to ramp. Friction 13,5 N opposes. Use Work-Energy Theorem to calculate speed at top.",
+              steps: [
+                "W_app = FΔx cos0° = (96.8 N)(15.6 m)(1) = 1509.08 J",
+                "W_f = (13.5 N)(15.6 m)cos180° = -210.6 J",
+                "Component of gravity against motion: F_g_parallel = mg sinθ = (20)(9.8)sin18° = 60.58 N. W_g = (60.58)(15.6)cos180° = -945.05 J",
+                "W_net = W_app + W_f + W_g = 1509.08 -210.6 -945.05 = 353.43 J",
+                "Now apply theorem: W_net = ΔEk = Ek_f - Ek_i",
+                "353.43 = ½mv_f² - ½mv_i²",
+                "353.43 = ½(20)v_f² - 0 (starts from rest)",
+                "353.43 = 10 v_f²",
+                "v_f² = 35.343",
+                "v_f = 5.95 m·s⁻¹",
+              ],
+              answer: "Speed at top is 5.95 m·s⁻¹. Positive net work → speed increases.",
+            }
+          ]
+        }
+      },
+    ]
   };
 }
