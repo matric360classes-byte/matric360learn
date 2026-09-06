@@ -3,37 +3,39 @@ import { useState } from "react";
 import { buildNodesForTopic } from "@/lib/nodeFactory";
 
 export default function Page({ params }: any) {
-  const subjectId = params.id; // mathematics or physical-sciences
-  const topicId = params.topicId;
+  const subjectId = params.id as string;
+  const topicId = params.topicId as string;
 
-  const lesson = buildNodesForTopic(topicId, subjectId);
+  // use any to bypass type checks
+  const lesson: any = buildNodesForTopic(topicId, subjectId);
 
   if (!lesson) {
-    return <div style={{padding:20}}>No lesson for {topicId} in {subjectId} — check ID</div>;
+    return <div style={{padding:20}}>No lesson for {topicId} in {subjectId}</div>;
   }
 
-  const NODES = lesson.nodes;
+  const NODES: any[] = lesson.nodes;
   const [active, setActive] = useState(0);
-  const node = NODES[active];
+  const node: any = NODES[active];
+  const payload: any = node.content || node.data || node;
 
   return (
     <div style={{padding:16}}>
-            <h2>{lesson.title}</h2>
-      <p>{params.id} / {params.unitId} / {params.topicId}</p>
+      <h2>{lesson.title || topicId}</h2>
+      <p>{subjectId} / {params.unitId} / {topicId}</p>
 
       <div style={{display:"flex", gap:8, overflowX:"auto", margin:"12px 0"}}>
         {NODES.map((n:any, i:number) => (
-          <button key={n.id} onClick={()=>setActive(i)}
+          <button key={n.id || i} onClick={()=>setActive(i)}
             style={{padding:"8px 12px", background: i===active?"black":"#eee", color:i===active?"white":"black", borderRadius:8}}>
-            {n.id}: {n.label}
+            {n.id}: {n.label || n.title}
           </button>
         ))}
       </div>
 
       <div style={{border:"1px solid #ddd", borderRadius:12, padding:16}}>
-        <h3>{node.label} - {node.sub}</h3>
-        <pre style={{whiteSpace:"pre-wrap", fontFamily:"inherit"}}>
-          {JSON.stringify(node.content, null, 2)}
+        <h3>{node.label || node.title} - {node.sub || ""}</h3>
+        <pre style={{whiteSpace:"pre-wrap", fontFamily:"inherit", fontSize:14}}>
+          {JSON.stringify(payload, null, 2)}
         </pre>
       </div>
     </div>
