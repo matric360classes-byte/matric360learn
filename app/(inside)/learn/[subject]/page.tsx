@@ -13,7 +13,7 @@ export default function SubjectPage(){
     async function load(){
       const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-      const res=await fetch(`${url}/rest/v1/topic_knowledge?subject=eq.${subject}&order=title.asc,node_label.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      const res=await fetch(`${url}/rest/v1/topic_knowledge?subject=eq.${subject}&order=title.asc,node_label.asc&limit=10000`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       const data=await res.json();
       if(Array.isArray(data)&&data.length){setRows(data); if(!selected) setSelected(data[0].title);}
     }
