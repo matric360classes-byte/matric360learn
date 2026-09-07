@@ -1,148 +1,72 @@
-// lib/nodeFactory.ts - Auto-generates detailed Nodes for ANY topic
-export function buildNodesForTopic(topicId: string, subjectId: string) {
-  const title = topicId.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase());
-  const pretty = title;
+// NEW APP — lib/nodeFactory.ts — v21 topic-aware (mirrors old app proper content)
+export function buildNodesForTopic(topicId: string) {
+  const pretty = topicId.replace(/-/g," ").replace(/\b\w/g,l=>l.toUpperCase());
+  const low = topicId.toLowerCase();
 
-  // Helpers to make it topic-specific
-  const isWork = topicId.includes("work") || topicId.includes("theorem");
-  const isEnergy = topicId.includes("energy");
-  
-  const formulas: any = isWork ? [
-    { f: "W = FΔx cos(θ)", desc: "Work done by a constant force. θ = angle between F and Δx." },
-    { f: "W_net = ΔEk", desc: "Work-Energy Theorem: Net work = change in kinetic energy." },
-    { f: "ΔEk = Ek_f - Ek_i = ½m(v_f² - v_i²)", desc: "Change in kinetic energy = FINAL minus INITIAL." },
-    { f: "Ek = ½mv²", desc: "Kinetic energy - energy due to motion." },
-  ] : [
-    { f: `${pretty} — Main Formula`, desc: `Core equation for ${pretty}.` },
-    { f: "W = FΔx cosθ", desc: "You may need work formula in this topic." },
-    { f: "Ek = ½mv²  |  Ep = mgh", desc: "Energy forms linked to this topic." },
-  ];
-
-  return {
-    title: pretty,
-    subjectId,
-    nodes: [
-      {
-        id: "A",
-        label: "Exam Hook",
-        title: "Exam Hook — Concepts",
-        data: {
-          intro: `${pretty} appears in Paper 1 every year — 8-12 marks. Examiners love it because learners confuse signs, forget that ΔEk = FINAL minus INITIAL, and forget units.`,
-          tips: [
-            `EXAMINER TIP: For ${pretty}, always start with W_net = ΔEk as your first line. You get M mark even if calculation fails.`,
-            `Why it matters: Links force, displacement and speed — connects Dynamics to Energy.`
-          ],
-          checklist: [`Can you define work?`, `Can you state Work-Energy Theorem in words?`, `Is ${pretty} scalar or vector?`]
-        }
-      },
-      {
-        id: "B",
-        label: "Learn The Concept",
-        title: "Learn The Concept",
-        data: {
-          formulas,
-          // This is what your dark card renderer shows
-          markdown: `Getting started with ${pretty}
-
-${pretty} is a high-yield CAPS topic. The principle is simple: Net work done on an object changes its kinetic energy.
-
-**Definitions**
-• Work (W): W = FΔx cosθ — scalar, unit Joule (J)
-• Kinetic Energy: Ek = ½mv² — scalar
-• Work-Energy Theorem: W_net = Ek_f - Ek_i
-
-**Key ideas**
-• Positive W_net → speed increases
-• Negative W_net → speed decreases
-• Zero W_net → constant speed
-• Always sum works: W_net = W_F + W_f + W_g`,
-        }
-      },
-      {
-        id: "C",
-        label: "Worked Example",
-        title: "Worked Example",
-        data: {
-          worked: [
-            {
-              q: `A 2 kg block slides down a 2 m high curved slope with friction. It starts from rest and reaches the bottom with 5 m·s⁻¹. Use work-energy theorem to calculate work done by friction. (6 marks)`,
-              steps: [
-                "W_net = ΔEk — State the Work-Energy Theorem principle.",
-                "ΔEk = Ek_f - Ek_i = ½m(v_f²) - ½m(v_i²) — Formula for change in kinetic energy.",
-                "ΔEk = ½(2 kg)(5 m·s⁻¹)² - ½(2 kg)(0)² = 25 J — Calculate change in Ek.",
-                "W_net = W_gravity + W_friction — Net work is sum of conservative and non-conservative.",
-                "W_gravity = mgh = (2)(9.8)(2) = 39.2 J — Work done by gravity on slope.",
-                "25 = 39.2 + W_f → W_f = -14.2 J. Magnitude = 14.2 J — Solve for friction.",
-              ],
-              answer: "The work done by friction is -14.2 J (magnitude 14.2 J). Negative because friction opposes motion.",
-            },
-            {
-              q: `A 60 kg crate is pulled 8 m up a 20° ramp by 400 N force. Friction 110 N. Starts at 2 m/s. Find speed at top using work-energy.`,
-              steps: [
-                "W_F = FΔx cos0° = (400)(8)(1) = 3200 J",
-                "W_f = fΔx cos180° = (110)(8)(-1) = -880 J",
-                "F_g_parallel = mg sinθ = (60)(9.8)sin20° = 201 J component opposite motion. W_g = -201*8 = -1608 J",
-                "W_net = 3200 - 880 - 1608 = 712 J — Sum works",
-                "W_net = ΔEk = ½m(v_f² - v_i²) — Apply theorem",
-                "712 = ½(60)(v_f² - 2²) → 712 = 30(v_f² -4) → v_f = 5.26 m·s⁻¹",
-              ],
-              answer: "Speed at top is 5.26 m·s⁻¹",
-            }
-          ]
-        }
-      },
-      {
-        id: "D",
-        label: "Examiner Traps",
-        title: "Exam Strategy",
-        data: {
-          errors: [
-            { title: "Assuming friction is the only non-conservative force.", text: "Marker: Friction is NOT the only non-conservative force. Applied, tension, motor forces are also non-conservative. When calculating W_nc, include ALL of them. Marks lost: 2" },
-            { title: "Swapping initial and final velocities in ΔEk.", text: "Marker: Δ (delta) always means FINAL minus INITIAL. ΔEk = Ek_f - Ek_i = ½m(v_f² - v_i²). Swapping gives wrong sign. Marks lost: 1" },
-            { title: "Forgetting work is a scalar and W_net is sum of scalars.", text: "Marker: Candidates calculate F_net first, then W_net = F_net Δx. Wrong. W_net = W1 + W2 + ... (scalar sum). If you use vectors you lose 2 marks." },
-          ],
-          tips: ["Always write formula first for M mark", "Check sign: + if force helps motion, - if opposes", "ΔEk = FINAL - INITIAL, never the other way"]
-        }
-      },
-      {
-        id: "E",
-        label: "Exam Challenge",
-        title: "Exam Challenge — Formulas & Checklist",
-        data: {
-          formulas: [
-            { f: "Ek = ½mv²", desc: "You are calculating energy of an object due to its motion." },
-            { f: "W = FΔx cos(θ)", desc: "You need to calculate work done by a single, constant force." },
-            { f: "W_net = ΔEk", desc: "You need to relate net work to change in kinetic energy." },
-          ],
-          checklist: [
-            "Have I stated Work-Energy Theorem (W_net = ΔEk) as my starting point?",
-            "Have I drawn a free-body diagram to identify all forces doing work?",
-            `Have I calculated W_net correctly by summing work done by each force (W_F + W_f + W_g)?`,
-            "Is the sign (+/-) correct for work done by each force?",
-            "Is ΔEk calculated as FINAL minus INITIAL (½mv_f² - ½mv_i²)?",
-            "Have I used correct SI units throughout (J, kg, m, s)?",
-            "Is my final answer in Joules (work/energy) or m·s⁻¹ (speed) and 3 sig figs?",
-          ],
-          worked: [
-            {
-              q: "Exam-style challenge (5 marks) — A 20 kg crate is pulled from rest up a 15,6 m ramp inclined at 18° to horizontal. Motor exerts 96,8 N parallel to ramp. Friction 13,5 N opposes. Use Work-Energy Theorem to calculate speed at top.",
-              steps: [
-                "W_app = FΔx cos0° = (96.8 N)(15.6 m)(1) = 1509.08 J",
-                "W_f = (13.5 N)(15.6 m)cos180° = -210.6 J",
-                "Component of gravity against motion: F_g_parallel = mg sinθ = (20)(9.8)sin18° = 60.58 N. W_g = (60.58)(15.6)cos180° = -945.05 J",
-                "W_net = W_app + W_f + W_g = 1509.08 -210.6 -945.05 = 353.43 J",
-                "Now apply theorem: W_net = ΔEk = Ek_f - Ek_i",
-                "353.43 = ½mv_f² - ½mv_i²",
-                "353.43 = ½(20)v_f² - 0 (starts from rest)",
-                "353.43 = 10 v_f²",
-                "v_f² = 35.343",
-                "v_f = 5.95 m·s⁻¹",
-              ],
-              answer: "Speed at top is 5.95 m·s⁻¹. Positive net work → speed increases.",
-            }
-          ]
-        }
-      },
-    ]
+  const T = (title:string, formulas:any[], q:string, steps:string[], ans:string, traps:any[]) => {
+    return {
+      title, 
+      nodes: [
+        { id:"A", title:`Exam Hook — ${title}`, data:{ intro:`${title} — 8-15 marks CAPS. Old app showed this as high-yield.`, tip:`EXAMINER TIP: Start with ${formulas[0].f}`, hook: q }},
+        { id:"B", title:"Learn The Concept", data:{ formulas }},
+        { id:"C", title:"Worked Example", data:{ question: q, steps, answer: ans }},
+        { id:"D", title:"Examiner Traps", data:{ traps }},
+        { id:"E", title:"Exam Challenge", data:{ formulas: formulas.slice(0,3), challenge:{ q, steps, ans }}},
+      ]
+    }
   };
+
+  if(low.includes("analytical")||low.includes("circle"))
+    return T("Analytical Geometry",
+      [{f:"m=(y2-y1)/(x2-x1)",d:"Gradient"},{f:"(x-a)²+(y-b)²=r²",d:"Circle"},{f:"y=mx+c",d:"Line"},{f:"d=√[(x2-x1)²+(y2-y1)²]",d:"Distance"}],
+      "Circle centre (2,-3) through (5,1). Find equation (4 marks)",
+      ["(x-a)²+(y-b)²=r² — M","r²=(5-2)²+(1+3)²=25 — A","(x-2)²+(y+3)²=25 — CA","r=5","Quick: (x-2) means centre +2"],
+      "(x-2)²+(y+3)²=25, r=5",
+      [{mistake:"Sign flip (x-2) → centre -2",loss:"1 mark"}]
+    );
+
+  if(low.includes("annuit")||low.includes("future")||low.includes("present")||low.includes("investment"))
+    return T("Finance — Annuities",
+      [{f:"A=P(1+i)ⁿ",d:"Compound"},{f:"Fv=x[((1+i)ⁿ-1)/i]",d:"Future value"},{f:"Pv=x[(1-(1+i)⁻ⁿ)/i]",d:"Present value"}],
+      "R500 pm for 5 years at 9% p.a. monthly. FV? (5)",
+      ["i=0.09/12=0.0075 n=60","Fv=x[((1+i)ⁿ-1)/i]","(1.0075)^60=1.5657","Fv=500*75.42=R37712"],
+      "R37 712.24",
+      [{mistake:"Using annual i not monthly",loss:"2 marks"}]
+    );
+
+  if(low.includes("calculus")||low.includes("differential")||low.includes("limit"))
+    return T("Differential Calculus",
+      [{f:"f'(x)=lim(h→0)[f(x+h)-f(x)]/h",d:"First principles"},{f:"d/dx xⁿ=n xⁿ⁻¹",d:"Power rule"}],
+      "Differentiate f(x)=3x³-4x²+5 from first principles (5)",
+      ["f(x+h)=3(x+h)³-4(x+h)²+5","Subtract f(x)","Divide by h, let h→0","f'(x)=9x²-8x"],
+      "f'(x)=9x²-8x",
+      [{mistake:"Leaving h in final",loss:"1 mark"}]
+    );
+
+  if(low.includes("work")||low.includes("energy")||low.includes("theorem"))
+    return T("Work, Energy & Power",
+      [{f:"W=FΔx cosθ",d:"Work"},{f:"W_net=ΔEk=½m(vf²-vi²)",d:"Theorem FINAL-INITIAL"},{f:"Ek=½mv² Ep=mgh",d:"Energy"}],
+      "20kg crate pulled 15.6m up 18° ramp, F=96.8N, f=13.5N, find vf (5)",
+      ["W_app=1509J","W_f=-210J","W_g=-945J","W_net=353J=½(20)vf²","vf=5.95 m/s"],
+      "5.95 m/s",
+      [{mistake:"W_net scalar not vector",loss:"2 marks"}]
+    );
+
+  if(low.includes("organic")||low.includes("ester")||low.includes("isomer"))
+    return T("Organic Chemistry",
+      [{f:"C_nH_2n+2 alkane",d:"Alkanes"},{f:"-OH alcohol -COOH acid -COO- ester",d:"Functional groups"},{f:"Isomers same formula diff structure",d:"Isomers"}],
+      "Draw isomers of C4H8O2 as esters (4)",
+      ["Ester R-COO-R'","methyl propanoate","ethyl ethanoate","Name with -oate"],
+      "methyl propanoate & ethyl ethanoate",
+      [{mistake:"Missing COO linkage",loss:"1 mark"}]
+    );
+
+  // Fallback — uses topic name, NOT Work-Energy
+  return T(pretty,
+    [{f:`${pretty} — Main CAPS Formula`,d:`Core for ${pretty}`},{f:"Formula→Substitute→Solve",d:"Method"},{f:"Check units/signs",d:"Check"}],
+    `${pretty} — CAPS exam (5 marks)`,
+    [`Write ${pretty} formula`,`Substitute`,`Solve`,`Check`],
+    `Answer for ${pretty}`,
+    [{mistake:"Sign/mode error",loss:"1"}]
+  );
 }
