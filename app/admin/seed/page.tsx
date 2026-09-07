@@ -3,66 +3,61 @@ import { useState } from "react";
 
 const CAPS_TOPICS = [
   { subject: "physical-sciences", name: "Newton's Laws", grade: 11, content: "Newton's 1st, 2nd, 3rd laws, F=ma" },
-  { subject: "physical-sciences", name: "Work Energy Power", grade: 12, content: "Work, kinetic energy, potential, power" },
-  { subject: "physical-sciences", name: "Momentum Impulse", grade: 12, content: "Momentum p=mv, conservation" },
-  { subject: "physical-sciences", name: "Electric Circuits", grade: 11, content: "Ohm's Law V=IR, series parallel" },
-  { subject: "physical-sciences", name: "Electrostatics", grade: 11, content: "Coulomb's law, electric fields" },
-  { subject: "mathematics", name: "Algebra", grade: 10, content: "Equations, factorization, quadratic" },
-  { subject: "mathematics", name: "Functions", grade: 11, content: "Linear quadratic exponential" },
-  { subject: "mathematics", name: "Trigonometry", grade: 11, content: "Sin cos tan, identities" },
-  { subject: "mathematics", name: "Calculus", grade: 12, content: "Limits differentiation" },
 ];
 
 export default function SeedPage() {
-  const [status, setStatus] = useState("Ready to seed");
-  const [count, setCount] = useState(0);
+  const [status, setStatus] = useState("Ready");
+  const [debug, setDebug] = useState("");
 
   async function handleSeed() {
-    setStatus("Seeding... Wait 10 sec");
-    // Use fetch, not supabase-js library
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
+    setDebug(`URL: ${url ? 'Found ✅' : 'MISSING ❌'}\nKey: ${key ? 'Found ✅' : 'MISSING ❌'}`);
+
     if (!url || !key) {
-      setStatus("❌ Supabase keys not found in Vercel env");
+      setStatus("❌ Vercel env keys missing!");
       return;
     }
 
-    let seeded = 0;
-    for (const t of CAPS_TOPICS) {
-      try {
-        const res = await fetch(`${url}/rest/v1/topic_knowledge`, {
-          method: "POST",
-          headers: {
-            "apikey": key,
-            "Authorization": `Bearer ${key}`,
-            "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates"
-          },
-          body: JSON.stringify({
-            subject: t.subject,
-            topic_name: t.name,
-            grade: t.grade,
-            content: t.content,
-            caps_code: `${t.subject}-${t.name.toLowerCase().replace(/\s+/g,'-')}`,
-          })
-        });
-        if (res.ok) seeded++;
-      } catch(e) {}
+    try {
+      const res = await fetch(`${url}/rest/v1/topic_knowledge`, {
+        method: "POST",
+        headers: {
+          "apikey": key,
+          "Authorization": `Bearer ${key}`,
+          "Content-Type": "application/json",
+          "Prefer": "resolution=merge-duplicates"
+        },
+        body: JSON.stringify({
+          subject: "physical-sciences",
+          topic_name: "Newton's Laws",
+          grade: 11,
+          content: "Test",
+          caps_code: "physical-sciences-newtons-laws",
+        })
+      });
+      const text = await res.text();
+      setStatus(`Status: ${res.status} ${res.statusText}`);
+      setDebug(prev => prev + `\n\nResponse: ${text}\n`);
+      if (res.ok) setStatus(`✅ SUCCESS! 1 seeded! Status ${res.status}`);
+    } catch (e: any) {
+      setStatus("Fetch failed");
+      setDebug(prev => prev + `\nError: ${e.message}`);
     }
-    setCount(seeded);
-    setStatus(`✅ Done! ${seeded} topics seeded`);
   }
 
   return (
-    <div className="p-6 min-h-screen bg-[#f8f9ff]">
-      <h1 className="text-2xl font-bold mb-2">Seed CAPS Knowledge</h1>
-      <p className="text-sm text-gray-500 mb-6">No library needed — uses direct API</p>
-      <div className="bg-white p-6 rounded-xl shadow">
-        <p className="mb-4">Topics: {CAPS_TOPICS.length}</p>
-        <button onClick={handleSeed} className="bg-black text-white px-6 py-3 rounded-full font-bold w-full">Seed Now →</button>
-        <p className="mt-4 text-center font-bold">{status}</p>
-        {count>0 && <p className="text-center text-green-600">AI now knows {count} topics!</p>}
+    <div className="p-6 min-h-screen bg-white">
+      <h1 className="text-2xl font-bold">Seed DEBUG</h1>
+      <button onClick={handleSeed} className="mt-4 bg-black text-white px-6 py-3 rounded-full w-full font-bold">Test Seed 1 Topic →</button>
+      <p className="mt-4 font-bold">{status}</p>
+      <pre className="mt-4 text-xs bg-gray-100 p-3 rounded whitespace-pre-wrap">{debug}</pre>
+      
+      <div className="mt-6 text-sm">
+        <p>If it says 401 or 403 → RLS still blocking. Run SQL again.</p>
+        <p>If it says 404 → table doesn't exist.</p>
+        <p>If URL MISSING → Add env in Vercel Settings.</p>
       </div>
     </div>
   );
