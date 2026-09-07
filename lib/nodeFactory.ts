@@ -1,4 +1,4 @@
-// lib/nodeFactory.ts - FIXED WITH COMPATIBILITY
+// lib/nodeFactory.ts - FINAL FIX - 2 or 3 args both work
 export type CapsNodeType = 'A' | 'B' | 'C' | 'D' | 'E';
 
 export interface CapsNode {
@@ -18,17 +18,18 @@ export const NODE_TEMPLATES = {
   E: { title: "E - Example", desc: "Worked example" },
 };
 
-// NEW NAME
-export function createNodesForTopic(topicId: string, subject: string, topicName: string): CapsNode[] {
+// Allow 2 OR 3 arguments
+export function createNodesForTopic(topicId: string, subject: string, topicName?: string): CapsNode[] {
+  const displayName = topicName || topicId; // if no name, use ID
   return (['A','B','C','D','E'] as CapsNodeType[]).map(type => ({
     id: `${topicId}-${type}`,
     topicId,
     type,
-    title: `${NODE_TEMPLATES[type].title}: ${topicName}`,
-    status: type === 'A'? 'scaffolded' : 'draft',
+    title: `${NODE_TEMPLATES[type].title}: ${displayName}`,
+    status: (type === 'A'? 'scaffolded' : 'draft') as any,
     content: {
       subject,
-      topic: topicName,
+      topic: displayName,
       template: NODE_TEMPLATES[type].desc,
       createdAt: new Date().toISOString(),
       knowledgeRef: `topic_knowledge:${subject}:${topicId}`,
@@ -36,12 +37,14 @@ export function createNodesForTopic(topicId: string, subject: string, topicName:
   }));
 }
 
-// OLD NAME - KEEP FOR COMPATIBILITY - THIS FIXES YOUR RED ERROR
+// COMPATIBILITY - OLD NAME
 export const buildNodesForTopic = createNodesForTopic;
+// ALSO support default export
+export default createNodesForTopic;
 
 export function ensureAllTopicsHaveNodes(topics: any[]) {
   const missing: any[] = [];
-  topics.forEach(t => {
+  topics.forEach((t: any) => {
     const existingTypes = t.nodes?.map((n:any) => n.type) || [];
     (['A','B','C','D','E'] as CapsNodeType[]).forEach(type => {
       if (!existingTypes.includes(type)) {
