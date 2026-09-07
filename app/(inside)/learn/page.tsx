@@ -13,5 +13,5 @@ export default function LearnPage(){
     }
     setStats({total:all.length, phys:all.filter((d:any)=>d.subject==='physical-sciences').length, math:all.filter((d:any)=>d.subject==='mathematics').length});
   })(); },[]);
-  return(<div className="min-h-screen bg-[#0f0f12] text-white p-4"><h1 className="font-bold">Matric360 • {stats.total} topics total</h1><div className="grid grid-cols-2 gap-4 mt-6"><Link href="/learn/physical-sciences" className="bg-[#1c1c20] rounded-[24px] p-5 border">Physical Sciences<br/>{stats.phys} topics</Link><Link href="/learn/mathematics" className="bg-[#1c1c20] rounded-[24px] p-5 border">Mathematics<br/>{stats.math} topics</Link></div><div className="mt-6 p-3 bg-green-500/10 rounded">Should be 2095 total - currently {stats.total}</div></div>);
+  return(<div className="min-h-screen bg-[#0f0f12] text-white p-4"><h1 className="font-bold">Matric360</h1><div className="grid grid-cols-2 gap-4 mt-6"><Link href="/learn/physical-sciences" className="bg-[#1c1c20] rounded-[24px] p-5 border">Physical Sciences<br/>{stats.phys} topics</Link><Link href="/learn/mathematics" className="bg-[#1c1c20] rounded-[24px] p-5 border">Mathematics<br/>{stats.math} topics</Link></div><div className="mt-6 p-3 bg-green-500/10 rounded">Should be 2095 total - currently {stats.total}</div></div>);
 }
