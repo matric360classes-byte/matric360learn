@@ -1,6 +1,6 @@
-import KBCoverage from '@/components/admin/KBCoverage'
-import MathBatch from '@/components/admin/MathBatch'
-import ReviewLessons from '@/components/admin/ReviewLessons'
+import KBCoverage from '../../components/admin/KBCoverage'
+import MathBatch from '../../components/admin/MathBatch'
+import ReviewLessons from '../../components/admin/ReviewLessons'
 
 export default function AdminPage() {
   return (
