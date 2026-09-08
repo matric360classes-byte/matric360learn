@@ -157,7 +157,18 @@ export default function AdminPage(){
               <div style={{marginTop:"12px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", fontSize:"11px"}}>
                 <div style={{background:"#11121a", padding:"8px", borderRadius:"10px"}}>MODEL: gemini-2.5-pro</div><div style={{background:"#11121a", padding:"8px", borderRadius:"10px"}}>COST/TOPIC: $0.0475</div>
               </div>
-              <button onClick={()=>alert(`Next: Will generate ${topics.slice(0,10).length} topics\n`+topics.slice(0,10).map(t=>t.caps_code).join(", "))} style={{marginTop:"12px", width:"100%", background:"#7c7cff", color:"#000", padding:"12px", borderRadius:"14px", fontWeight:800, border:"none"}}>▶ Run Batch (10) — WIRED</button>
+              <button onClick={async ()=>{
+  const batch = topics.slice(0,3);
+  for(const t of batch){
+    const res = await fetch('/api/generate', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({caps_code: t.caps_code})
+    });
+    const data = await res.json();
+    alert(`Generated ${t.caps_code}: ${data.success ? 'OK - saved to lesson_previews' : data.error}`);
+  }
+}} style={{marginTop:"12px", width:"100%", background:"#7c7cff", color:"#000", padding:"12px", borderRadius:"14px", fontWeight:800, border:"none"}}>▶ Run Batch (3) — LIVE GENERATE</button>
               <div style={{marginTop:"12px"}}>{topics.slice(0,15).map(t=><div key={t.caps_code} style={{padding:"5px 0", borderBottom:"1px solid #1e2235", fontSize:"12px"}}><span style={{color:"#7c7cff"}}>{t.caps_code}</span> {t.topic_name}</div>)}</div>
             </div>
           )}
