@@ -7,7 +7,7 @@ export async function POST(req: NextRequest){
     const { caps_code } = await req.json();
     if(!caps_code) return NextResponse.json({error:"caps_code required"}, {status:400});
 
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const supabase = createClient("https://civwluydzbwqlnipmcmkhe.supabase.co", "sb_secret_UlK_LoRsi6zy2EKFfqbwTg_7KnAqq9w");
 
     // 1. Get CAPS knowledge
     const { data: kb } = await supabase.from('topic_knowledge').select('*').eq('caps_code', caps_code).single();
