@@ -8,7 +8,11 @@ const supabase = createClient(
 );
 
 export default function Page() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(true);
+  const [contentOpen, setContentOpen] = useState(true);
+  const [kbOpen, setKbOpen] = useState(false);
+  const [examOpen, setExamOpen] = useState(false);
+  const [genOpen, setGenOpen] = useState(true);
   const [stats, setStats] = useState<any>(null);
   const [bySubject, setBySubject] = useState<any>({});
 
@@ -16,105 +20,141 @@ export default function Page() {
     (async () => {
       const { count: total } = await supabase.from("topic_knowledge").select("id", { count: "exact", head: true });
       const { data: topics } = await supabase.from("topic_knowledge").select("*");
-      const { data: lessons } = await supabase.from("lesson_previews").select("topic_id");
+      const { data: lessons } = await supabase.from("lesson_previews").select("topic_id, nodes");
       const { data: questions } = await supabase.from("questions").select("topic_id");
 
       const qMap: any = {};
-      questions?.forEach((q: any) => { qMap[q.topic_id] = (qMap[q.topic_id] || 0) + 1; });
-      const lessonSet = new Set(lessons?.map((l: any) => l.topic_id));
+      questions?.forEach((q: any) => qMap[q.topic_id] = (qMap[q.topic_id] || 0) + 1);
+      const lessonMap: any = {};
+      lessons?.forEach((l: any) => lessonMap[l.topic_id] = true);
 
-      // LIVE calculations only
-      const missingMeta = topics?.filter((t: any) =>!t.caps_code ||!t.subject).length || 0;
-      const missingNodes = topics?.filter((t: any) =>!lessonSet.has(t.id)).length || 0;
-      const lessThan3 = topics?.filter((t: any) => (qMap[t.id] || 0) < 3).length || 0;
-      const missingPaper = topics?.filter((t: any) =>!t.paper &&!t.section).length || 0;
-      const published = topics?.filter((t: any) => t.status === 'published' || t.is_published === true).length || 0;
+      const t = topics || [];
+      const totalLive = total || t.length;
 
-      // LIVE by subject grouping
+      // LIVE only - no numbers typed
+      const publishedLive = t.filter((x: any) => x.status === 'published' || x.is_published === true || x.is_published === 1).length;
+      const inReviewLive = t.filter((x: any) => x.status === 'in_review').length;
+      const draftsLive = t.filter((x: any) => x.status === 'draft').length;
+      const needsLive = t.filter((x: any) => x.status === 'needs_changes').length;
+      const missingMetaLive = t.filter((x: any) =>!x.caps_code ||!x.subject ||!x.paper).length;
+      const missingNodesLive = t.filter((x: any) =>!lessonMap[x.id]).length;
+      const lessThan3Live = t.filter((x: any) => (qMap[x.id] || 0) < 3).length;
+      const missingPaperLive = t.filter((x: any) =>!x.paper ||!x.section).length;
+
+      // LIVE grouping by subject
       const grouped: any = {};
-      topics?.forEach((t: any) => {
-        const subj = t.subject || t.caps_code?.split(' ')[0] || 'Unassigned';
+      t.forEach((row: any) => {
+        const subj = row.subject || 'Unassigned';
         if (!grouped[subj]) grouped[subj] = { topics: 0, scaffolded: 0, qs: 0, inReview: 0 };
         grouped[subj].topics++;
-        if (lessonSet.has(t.id)) grouped[subj].scaffolded++;
-        if ((qMap[t.id] || 0) >= 3) grouped[subj].qs++;
-        if (t.status === 'in_review') grouped[subj].inReview++;
+        if (lessonMap[row.id]) grouped[subj].scaffolded++;
+        if ((qMap[row.id] || 0) >= 3) grouped[subj].qs++;
+        if (row.status === 'in_review') grouped[subj].inReview++;
       });
 
       setStats({
-        total: total || 0,
-        published,
-        inReview: topics?.filter((t: any) => t.status === 'in_review').length || 0,
-        drafts: topics?.filter((t: any) => t.status === 'draft').length || 0,
-        needsChanges: topics?.filter((t: any) => t.status === 'needs_changes').length || 0,
-        missingMeta,
-        missingNodes,
-        lessThan3,
-        missingPaper
+        total: totalLive,
+        published: publishedLive || 0,
+        inReview: inReviewLive,
+        drafts: draftsLive,
+        needsChanges: needsLive,
+        missingMeta: missingMetaLive,
+        missingNodes: missingNodesLive,
+        lessThan3: lessThan3Live,
+        missingPaper: missingPaperLive,
       });
       setBySubject(grouped);
     })();
   }, []);
 
-  const Card = ({ label, value, icon }: any) => (
-    <div style={{ background: "#1A1D29", borderRadius: "24px", padding: "18px", border: "1px solid #252836" }}>
-      <div>{icon}</div>
-      <div style={{ color: "#8A8EA6", fontSize: "13px", marginTop: "8px" }}>{label}</div>
-      <div style={{ fontSize: "32px", fontWeight: "800", marginTop: "6px" }}>{stats? value : "..."}</div>
-    </div>
-  );
+  const card = { background: "#1E1E26", borderRadius: "24px", padding: "20px", border: "1px solid #2A2A35" };
 
   return (
-    <div style={{ background: "#0F111A", minHeight: "100vh", color: "white", paddingBottom: "90px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #1A1D29" }}>
-        <button onClick={() => setMenuOpen(!menuOpen)} style={{ width: "40px", height: "40px", borderRadius: "12px", background: "#1A1D29", border: "1px solid #252836", color: "white" }}>☰</button>
-        <b>Matric360</b>
-        <span style={{ fontSize: "12px", color: "#22C55E" }}>Online</span>
+    <div style={{ background: "#0F0F12", minHeight: "100vh", color: "white", paddingBottom: "90px", fontFamily: "system-ui" }}>
+      {/* Top */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #1E1E26" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button onClick={() => setMenuOpen(!menuOpen)} style={{ width: "40px", height: "40px", borderRadius: "12px", background: "#1E1E26", border: "1px solid #2A2A35", color: "white" }}>☰</button>
+          <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#000" }} />
+          <b>Matric360</b>
+        </div>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <span style={{ padding: "6px 12px", borderRadius: "20px", background: "#1E1E26", border: "1px solid #2A2A35", fontSize: "13px" }}>🛡️ Content</span>
+          <span style={{ padding: "6px 12px", borderRadius: "20px", background: "#1E1E26", border: "1px solid #2A2A35", fontSize: "13px", color: "#22C55E" }}>🛜 Online</span>
+        </div>
       </div>
 
-      {menuOpen? (
-        <div style={{ margin: "16px", background: "#1A1D29", borderRadius: "20px", padding: "16px", border: "1px solid #252836" }}>
-          <div style={{ background: "#151A23", borderRadius: "16px", padding: "12px", marginBottom: "16px" }}><b style={{ color: "#22C55E" }}>Content Admin mode</b> — lessons, videos, CAPS and question bank.</div>
-          <div>⊞ Dashboard</div>
-          <div style={{ marginTop: "12px", fontWeight: "700" }}>📄 Content</div>
-          <div style={{ marginLeft: "12px", borderLeft: "1px solid #252836", paddingLeft: "12px", color: "#8A8EA6", lineHeight: "2" }}>Lesson Manager<br/>Live Lessons<br/>Review Lessons<br/>Content Health<br/>Content Cleanup</div>
-          <div style={{ marginTop: "12px", fontWeight: "700" }}>🛠️ Generation Tools</div>
-          <div style={{ marginLeft: "12px", marginTop: "8px" }}>
-            <div style={{ background: "#7C7CFF", color: "black", borderRadius: "20px", padding: "6px 14px", display: "inline-block", fontWeight: "700" }}>Factory</div>
-          </div>
-        </div>
-      ) : (
-        <div style={{ padding: "16px" }}>
-          <h1 style={{ fontSize: "24px", fontWeight: "800", margin: 0 }}>CAPS Content Factory</h1>
-          <p style={{ color: "#8A8EA6", fontSize: "13px" }}>Command center for Grade 12 curriculum production.</p>
+      {/* Banner */}
+      <div style={{ margin: "16px", background: "#121F16", borderRadius: "24px", padding: "16px", border: "1px solid #1E3A2A", display: "flex", justifyContent: "space-between" }}>
+        <div style={{ fontSize: "14px", color: "#9CA3AF", lineHeight: "1.4" }}><span style={{ color: "#22C55E", fontWeight: "700" }}>Content Admin mode</span> — lessons, videos, CAPS and the question bank. Payments, roles and system settings are restricted.</div>
+        <button onClick={() => setMenuOpen(!menuOpen)} style={{ width: "40px", height: "40px", borderRadius: "50%", background: "#1E1E26", border: "1px solid #2A2A35", color: "white", flexShrink: 0 }}>{menuOpen? "✕" : "☰"}</button>
+      </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "20px" }}>
-            <Card label="Total topics" value={stats?.total} icon="📘" />
-            <Card label="Published" value={stats?.published} icon="✅" />
-            <Card label="In review" value={stats?.inReview} icon="🕐" />
-            <Card label="Drafts" value={stats?.drafts} icon="☰" />
-            <Card label="Needs changes" value={stats?.needsChanges} icon="⚠️" />
-            <Card label="Missing CAPS meta" value={stats?.missingMeta} icon="✨" />
-          </div>
+      {/* Menu Card - FULL from your screenshots */}
+      {menuOpen && (
+        <div style={{ margin: "0 16px", background: "#1E1E26", borderRadius: "24px", padding: "20px", border: "1px solid #2A2A35" }}>
+          <div style={{ padding: "8px 0", display: "flex", gap: "10px" }}>⊞ Dashboard</div>
+          <div onClick={() => setContentOpen(!contentOpen)} style={{ display: "flex", justifyContent: "space-between", padding: "14px 0", fontWeight: "700" }}>📄 Content <span>{contentOpen? "⌄" : "›"}</span></div>
+          {contentOpen && <div style={{ marginLeft: "12px", borderLeft: "1px solid #2A2A35", paddingLeft: "16px", color: "#8A8EA6", lineHeight: "2.5", fontSize: "15px" }}>Lesson Manager<br/>Live Lessons<br/>⚡ Review Lessons<br/>🩺 Content Health<br/>🧹 Content Cleanup<br/>Content Coverage<br/>Announcements</div>}
 
-          <h3 style={{ marginTop: "24px" }}>Missing content</h3>
-          <div style={{ display: "grid", gap: "12px", marginTop: "12px" }}>
-            <div style={{ background: "#1A1D29", borderRadius: "20px", padding: "16px", border: "1px solid #252836" }}><div style={{ color: "#8A8EA6", fontSize: "13px" }}>Topics missing nodes A-E</div><div style={{ color: "#EF4444", fontSize: "28px", fontWeight: "800" }}>{stats?.missingNodes?? "..."}</div></div>
-            <div style={{ background: "#1A1D29", borderRadius: "20px", padding: "16px", border: "1px solid #252836" }}><div style={{ color: "#8A8EA6", fontSize: "13px" }}>Topics with &lt;3 questions</div><div style={{ color: "#EF4444", fontSize: "28px", fontWeight: "800" }}>{stats?.lessThan3?? "..."}</div></div>
-            <div style={{ background: "#1A1D29", borderRadius: "20px", padding: "16px", border: "1px solid #252836" }}><div style={{ color: "#8A8EA6", fontSize: "13px" }}>Topics missing paper/section</div><div style={{ color: "#EF4444", fontSize: "28px", fontWeight: "800" }}>{stats?.missingPaper?? "..."}</div></div>
-          </div>
+          <div onClick={() => setKbOpen(!kbOpen)} style={{ display: "flex", justifyContent: "space-between", padding: "14px 0", fontWeight: "700" }}>📖 Knowledge Base <span>{kbOpen? "⌄" : "›"}</span></div>
+          {kbOpen && <div style={{ marginLeft: "12px", borderLeft: "1px solid #2A2A35", paddingLeft: "16px", color: "#8A8EA6", lineHeight: "2.5" }}>Knowledge Base<br/>CAPS KB<br/>Source PDFs<br/>KB Coverage</div>}
 
-          <h3 style={{ marginTop: "24px" }}>Completion by subject</h3>
-          <div style={{ background: "#1A1D29", borderRadius: "20px", border: "1px solid #252836", marginTop: "12px" }}>
-            {Object.keys(bySubject).length === 0 && <div style={{ padding: "16px", color: "#8A8EA6" }}>{stats? `${stats.total} topics live` : "Loading..."}</div>}
-            {Object.entries(bySubject).map(([subj, v]: any) => (
-              <div key={subj} style={{ display: "grid", gridTemplateColumns: "1.5fr 0.7fr 0.7fr 0.6fr", padding: "14px 16px", borderTop: "1px solid #252836", fontSize: "14px" }}>
-                <b>{subj}</b><span style={{ textAlign: "center" }}>{v.topics}</span><span style={{ textAlign: "center" }}>{v.scaffolded}</span><span style={{ textAlign: "center" }}>{v.qs}</span>
-              </div>
-            ))}
-          </div>
+          <div style={{ padding: "14px 0", display: "flex", gap: "10px" }}>🎥 Videos</div>
+
+          <div onClick={() => setExamOpen(!examOpen)} style={{ display: "flex", justifyContent: "space-between", padding: "14px 0", fontWeight: "700" }}>📋 Exam Hub <span>{examOpen? "⌄" : "›"}</span></div>
+          {examOpen && <div style={{ marginLeft: "12px", borderLeft: "1px solid #2A2A35", paddingLeft: "16px", color: "#8A8EA6", lineHeight: "2.5" }}>Questions<br/>Question Bank Audit<br/>Question Coverage</div>}
+
+          <div onClick={() => setGenOpen(!genOpen)} style={{ display: "flex", justifyContent: "space-between", padding: "14px 0", fontWeight: "700" }}>🛠️ Generation Tools <span>{genOpen? "⌄" : "›"}</span></div>
+          {genOpen && (
+            <div style={{ marginLeft: "12px", borderLeft: "1px solid #2A2A35", paddingLeft: "12px" }}>
+              <div style={{ background: "#7C7CFF", color: "black", borderRadius: "20px", padding: "10px 16px", fontWeight: "700", marginBottom: "8px" }}>Factory</div>
+              <div style={{ color: "#8A8EA6", lineHeight: "2.6" }}>Direct Generate<br/>Curriculum AI<br/>Upgrade Lessons<br/>Content Repair<br/>Math Regen<br/>Math Batch<br/>Publishing Queue</div>
+            </div>
+          )}
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 0", marginTop: "8px" }}>🧪 Beta & QA <span>›</span></div>
+          <div style={{ padding: "8px 0", display: "flex", gap: "10px" }}>👥 Users</div>
         </div>
       )}
+
+      {/* CAPS Factory - ALWAYS below menu like your screenshots */}
+      <div style={{ padding: "20px 16px 0 16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div><h1 style={{ fontSize: "26px", fontWeight: "800", margin: 0 }}>CAPS Content Factory</h1><p style={{ color: "#8A8EA6", fontSize: "14px", marginTop: "4px" }}>Command center for Grade 12 curriculum production.</p></div>
+          <button style={{ background: "#7C7CFF", color: "black", border: "none", borderRadius: "16px", padding: "14px 18px", fontWeight: "700", fontSize: "14px", lineHeight: "1.2" }}>Open Content<br/>Studio</button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "20px" }}>
+          <div style={card}><div>📘</div><div style={{ color: "#8A8EA6", fontSize: "14px", marginTop: "8px" }}>Total topics</div><div style={{ fontSize: "32px", fontWeight: "800", marginTop: "6px" }}>{stats? stats.total : "..."}</div></div>
+          <div style={card}><div>✅</div><div style={{ color: "#8A8EA6", fontSize: "14px", marginTop: "8px" }}>Published</div><div style={{ fontSize: "32px", fontWeight: "800", marginTop: "6px" }}>{stats? stats.published : "..."}</div></div>
+          <div style={card}><div>🕐</div><div style={{ color: "#8A8EA6", fontSize: "14px", marginTop: "8px" }}>In review</div><div style={{ fontSize: "32px", fontWeight: "800", marginTop: "6px" }}>{stats? stats.inReview : "..."}</div></div>
+          <div style={card}><div>☰</div><div style={{ color: "#8A8EA6", fontSize: "14px", marginTop: "8px" }}>Drafts</div><div style={{ fontSize: "32px", fontWeight: "800", marginTop: "6px" }}>{stats? stats.drafts : "..."}</div></div>
+          <div style={card}><div>⚠️</div><div style={{ color: "#8A8EA6", fontSize: "14px", marginTop: "8px" }}>Needs changes</div><div style={{ fontSize: "32px", fontWeight: "800", marginTop: "6px" }}>{stats? stats.needsChanges : "..."}</div></div>
+          <div style={card}><div>✨</div><div style={{ color: "#8A8EA6", fontSize: "14px", marginTop: "8px" }}>Missing CAPS meta</div><div style={{ fontSize: "32px", fontWeight: "800", marginTop: "6px" }}>{stats? stats.missingMeta : "..."}</div></div>
+        </div>
+
+        <h3 style={{ marginTop: "24px", fontSize: "18px" }}>Missing content</h3>
+        <div style={{ display: "grid", gap: "12px", marginTop: "12px" }}>
+          <div style={card}><div style={{ color: "#8A8EA6" }}>Topics missing nodes A-E</div><div style={{ color: "#EF4444", fontSize: "32px", fontWeight: "800" }}>{stats? stats.missingNodes : "..."}</div></div>
+          <div style={card}><div style={{ color: "#8A8EA6" }}>Topics with &lt;3 questions</div><div style={{ color: "#EF4444", fontSize: "32px", fontWeight: "800" }}>{stats? stats.lessThan3 : "..."}</div></div>
+          <div style={card}><div style={{ color: "#8A8EA6" }}>Topics missing paper/section</div><div style={{ color: "#EF4444", fontSize: "32px", fontWeight: "800" }}>{stats? stats.missingPaper : "..."}</div></div>
+        </div>
+
+        <h3 style={{ marginTop: "24px", fontSize: "18px" }}>Completion by subject</h3>
+        <div style={{ background: "#1E1E26", borderRadius: "24px", border: "1px solid #2A2A35", marginTop: "12px", overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 0.6fr 0.9fr 0.5fr 0.6fr", padding: "12px 16px", fontSize: "12px", color: "#8A8EA6", fontWeight: "600" }}><span>SUBJECT</span><span>TOPICS</span><span>SCAFFOLDED</span><span>≥3 QS</span><span>IN REVIEW</span></div>
+          {Object.entries(bySubject).map(([subj, v]: any) => (
+            <div key={subj} style={{ display: "grid", gridTemplateColumns: "1.4fr 0.6fr 0.9fr 0.5fr 0.6fr", padding: "14px 16px", borderTop: "1px solid #2A2A35" }}>
+              <b style={{ fontSize: "15px" }}>{subj}</b><span style={{ textAlign: "center" }}>{v.topics}</span><span style={{ textAlign: "center" }}>{v.scaffolded}</span><span style={{ textAlign: "center" }}>{v.qs}</span><span style={{ textAlign: "center", color: "#FBBF24" }}>{v.inReview}</span>
+            </div>
+          ))}
+          {Object.keys(bySubject).length === 0 && <div style={{ padding: "16px", color: "#8A8EA6" }}>Loading live from DB...</div>}
+        </div>
+      </div>
+
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#1A1A22", borderTop: "1px solid #2A2A35", display: "flex", justifyContent: "space-around", padding: "10px 0" }}>
+        <div style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6" }}>🏠<br/>Dashboard</div><div style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6" }}>📖<br/>Subjects</div><div style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6" }}>📋<br/>Exams</div><div style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6" }}>📊<br/>Progress</div><div style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6" }}>👤<br/>Profile</div>
+      </div>
     </div>
   );
 }
