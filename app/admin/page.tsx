@@ -90,9 +90,9 @@ export default function Page() {
       )}
 
       <div style={{ padding: "20px 16px 0 16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
           <div><h1 style={{ fontSize: "26px", fontWeight: "800", margin: 0 }}>CAPS Content Factory</h1><p style={{ color: "#8A8EA6", fontSize: "14px" }}>Command center for Grade 12 curriculum production.</p></div>
-          <button style={{ background: "#7C7CFF", color: "black", border: "none", borderRadius: "16px", padding: "14px 18px", fontWeight: "700" }}>Open Content<br/>Studio</button>
+          <Link href="/admin/studio"><button style={{ background: "#7C7CFF", color: "black", border: "none", borderRadius: "16px", padding: "14px 18px", fontWeight: "700" }}>Open Content<br/>Studio</button></Link>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "20px" }}>
