@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -152,9 +152,12 @@ export default function Page() {
         </div>
       </div>
 
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#1A1A22", borderTop: "1px solid #2A2A35", display: "flex", justifyContent: "space-around", padding: "10px 0" }}>
-        <div style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6" }}>🏠<br/>Dashboard</div><div style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6" }}>📖<br/>Subjects</div><div style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6" }}>📋<br/>Exams</div><div style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6" }}>📊<br/>Progress</div><div style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6" }}>👤<br/>Profile</div>
+            <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#1A1A22", borderTop: "1px solid #2A2A35", display: "flex", justifyContent: "space-around", padding: "10px 0", zIndex: 50 }}>
+        <Link href="/dashboard" style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6", textDecoration: "none" }}>🏠<br/>Dashboard</Link>
+        <Link href="/subjects" style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6", textDecoration: "none" }}>📖<br/>Subjects</Link>
+        <Link href="/mock-exams" style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6", textDecoration: "none" }}>📋<br/>Exams</Link>
+        <Link href="/progress" style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6", textDecoration: "none" }}>📊<br/>Progress</Link>
+        <Link href="/profile" style={{ textAlign: "center", fontSize: "11px", color: "#8A8EA6", textDecoration: "none" }}>👤<br/>Profile</Link>
       </div>
-    </div>
   );
 }
