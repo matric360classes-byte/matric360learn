@@ -21,8 +21,8 @@ export default function Page() {
     (async () => {
       const { count: total } = await supabase.from("topic_knowledge").select("id", { count: "exact", head: true });
       const { data: topics } = await supabase.from("topic_knowledge").select("*");
-      const { data: lessons } = await supabase.from("lesson_previews").select("topic_id");
-      const { data: questions } = await supabase.from("questions").select("topic_id");
+      const { data: lessons } = await supabase.from("lesson_previews").select("topic_id").then(r=>r).catch(()=>({data:[]})) as any;
+const { data: questions } = await supabase.from("questions").select("topic_id").then(r=>r).catch(()=>({data:[]})) as any;
       const qMap: any = {};
       questions?.forEach((q: any) => { qMap[q.topic_id] = (qMap[q.topic_id] || 0) + 1; });
       const lessonSet = new Set(lessons?.map((l: any) => l.topic_id));
