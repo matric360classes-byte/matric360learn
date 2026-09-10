@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 const supabase = createClient(
   "https://civwluydzbwqlnipmcll.supabase.co",
-  "PASTE_YOUR_ANON_KEY"
+  "sb_publishable_9oINVwf0HWzC80NsBBP-WA_D5IyEng_"
 );
 
 export default function MathBatchPage(){
