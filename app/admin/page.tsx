@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 const supabase = createClient(
   "https://civwluydzbwqlnipmcll.supabase.co",
-  "PASTE_YOUR_sb_publishable_KEY_HERE"
+  "sb_publishable_9oINVwf0HWzC80NsBBP-WA_D5IyEng_"
 );
 
 const ALLOWED = ["mathematics","pure maths","maths","physical sciences","physical science"];
