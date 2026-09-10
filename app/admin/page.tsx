@@ -9,7 +9,6 @@ const supabase = createClient(
 );
 
 const ALLOWED_SUBJECTS = ["mathematics", "pure maths", "pure mathematics", "maths", "physical sciences", "physical science"];
-
 const isAllowed = (subj: string) => {
   const s = (subj||"").toLowerCase();
   return ALLOWED_SUBJECTS.some(a=> s.includes(a));
@@ -18,19 +17,18 @@ const isAllowed = (subj: string) => {
 export default function AdminPage(){
   const router = useRouter();
   const [menuOpen,setMenuOpen]=useState(false);
-  const [sections,setSections]=useState({content:false,kb:false,exam:false,gen:false});
-  const toggle=(k:string)=>setSections(s=>({...s,[k]:!s[k as any]} as any));
+  const [sections,setSections]=useState<any>({content:false,kb:false,exam:false,gen:false});
+  const toggle=(k:string)=>setSections((s:any)=>({...s,[k]:!s[k]}));
 
-  const [stats,setStats]=useState({
+  const [stats,setStats]=useState<any>({
     total:0, published:0, inReview:0, drafts:0, needsChanges:0, missingCaps:0,
     missingNodes:0, lessThan3Q:0, missingPaper:0,
-    bySubject: [] as any[]
+    bySubject: []
   });
 
   useEffect(()=>{(async()=>{
     const { data: allTopics } = await supabase.from("topic_knowledge").select("*");
-    const topics = (allTopics||[]).filter((t:any)=> isAllowed(t.subject));
-
+    const topics:any[] = (allTopics||[]).filter((t:any)=> isAllowed(t.subject));
     const total = topics.length;
     let published=0, inReview=0, drafts=0, needsChanges=0, missingCaps=0;
     published = topics.filter((t:any)=> t.status==="published" || t.is_published===true).length;
@@ -45,9 +43,7 @@ export default function AdminPage(){
       if(qs){
         qs.forEach((q:any)=>{ qCounts[q.topic_id]=(qCounts[q.topic_id]||0)+1; });
         lessThan3Q = topics.filter((t:any)=> (qCounts[t.id]||0) < 3).length;
-      } else {
-        lessThan3Q = total;
-      }
+      } else { lessThan3Q = total; }
     }catch{ lessThan3Q = total; }
 
     let missingNodes = total;
@@ -60,7 +56,6 @@ export default function AdminPage(){
     }catch{}
 
     const missingPaper = topics.filter((t:any)=>!t.paper &&!t.section &&!t.paper_section).length;
-
     const bySub:any = {};
     topics.forEach((t:any)=>{
       const key = t.subject?.toLowerCase().includes("physical")? "Physical Sciences" : "Mathematics";
@@ -143,7 +138,7 @@ export default function AdminPage(){
             <div key={r.subject} style={{display:"grid", gridTemplateColumns:"2fr 1fr 1fr 0.7fr 0.7fr", padding:12, borderTop:"1px solid #222"}}><span style={{fontWeight:"bold"}}>{r.subject}</span><span>{r.topics}</span><span>{r.scaffolded}</span><span>{r.ge3}</span><span style={{color:"#fbbf24"}}>{r.review}</span></div>
           ))}
         </div>
-        <p style={{color:"#666", fontSize:11, marginTop:8}}>Showing Pure Maths & Physical Sciences only. Other subjects will be added after a month.</p>
+        <p style={{color:"#666", fontSize:11, marginTop:8}}>Pure Maths & Physical Sciences only.</p>
       </div>
 
       <div style={{position:"fixed", bottom:0, left:0, right:0, background:"#15151c", display:"flex", justifyContent:"space-around", padding:"8px 0 16px", borderTop:"1px solid #222"}}>
