@@ -18,11 +18,13 @@ export default function Page() {
   const [bySubject, setBySubject] = useState<any>({});
 
   useEffect(() => {
-    (async () => {
-      const { count: total } = await supabase.from("topic_knowledge").select("id", { count: "exact", head: true });
+    (async () => {      const { count: total } = await supabase.from("topic_knowledge").select("id", { count: "exact", head: true });
       const { data: topics } = await supabase.from("topic_knowledge").select("*");
-      const { data: lessons } = await supabase.from("lesson_previews").select("topic_id").then(r=>r).catch(()=>({data:[]})) as any;
-const { data: questions } = await supabase.from("questions").select("topic_id").then(r=>r).catch(()=>({data:[]})) as any;
+      
+      let lessons: any[] = [];
+      let questions: any[] = [];
+      try { const r = await supabase.from("lesson_previews").select("topic_id"); lessons = (r.data as any) || []; } catch {}
+      try { const r = await supabase.from("questions").select("topic_id"); questions = (r.data as any) || []; } catch {}
       const qMap: any = {};
       questions?.forEach((q: any) => { qMap[q.topic_id] = (qMap[q.topic_id] || 0) + 1; });
       const lessonSet = new Set(lessons?.map((l: any) => l.topic_id));
