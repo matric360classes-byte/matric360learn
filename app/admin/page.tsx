@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
-  "https://civwluydzbwqinipmcmkhe.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpdndsdXlkemJ3cWxuaXBtY2xsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3NDAyNzEsImV4cCI6MjEwNDMxNjI3MX0.vo_4_bAfi0owDoUf-EdIznBdQs25tG3nxRUorbPXCB0"
+  "https://civwluydzbwqlnipmcll.supabase.co",
+  "sb_publishable_9oINVwf0HWzC80NsBBP-WA_D5IyEng_"
 );
 
 export default function AdminPage() {
