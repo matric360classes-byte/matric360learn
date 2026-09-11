@@ -18,16 +18,19 @@ export async function POST(req: NextRequest){
     let cost = 0;
 
     for(const id of topicIds){
-      const {data: topic} = await supabase.from("topic_knowledge").select("id, topic").eq("id", id).single();
-      if(!topic) continue;
+      const {data: topic, error} = await supabase.from("topic_knowledge").select("*").eq("id", id).single();
+      if(error || !topic) continue;
+      
       await supabase.from("topic_knowledge").update({
         is_scaffolded: true,
         status: "in_review",
         updated_at: new Date().toISOString()
       }).eq("id", id);
+
       generated++;
       cost += 0.04;
-      details.push(topic.topic + " -> in_review");
+      const name = (topic as any).topic || (topic as any).title || (topic as any).name || id;
+      details.push(name + " -> in_review");
     }
 
     return NextResponse.json({ generated, cost, details });
