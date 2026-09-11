@@ -10,43 +10,37 @@ export async function POST(req: NextRequest){
   try{
     const body = await req.json();
     const topicIds = body.topicIds as string[];
-    if(!topicIds || topicIds.length===0) return NextResponse.json({error:"No topics"}, {status:400});
-    if(topicIds.length>50) return NextResponse.json({error:"Max 50 - cost guard"}, {status:400});
+    if(!topicIds?.length) return NextResponse.json({error:"No topics"}, {status:400});
 
     let generated = 0;
     const details: string[] = [];
-    let cost = 0;
 
     for(const id of topicIds){
-      const {data: topic, error} = await supabase.from("topic_knowledge").select("*").eq("id", id).single();
-      if(error || !topic) {
-        details.push(`${id} -> not found`);
-        continue;
-      }
+      const {data: topic} = await supabase.from("topic_knowledge").select("*").eq("id", id).single();
+      if(!topic) continue;
       
       const topicName = (topic as any).topic_name || (topic as any).title || "Topic";
-      const grade = (topic as any).grade || "";
+      const caps = (topic as any).caps_code;
       
-      // 1. Update topic_knowledge to in_review
-      await supabase.from("topic_knowledge").update({
-        status: "in_review",
-        updated_at: new Date().toISOString()
-      }).eq("id", id);
+      // Update status
+      await supabase.from("topic_knowledge").update({ status: "in_review" }).eq("id", id);
 
-      // 2. Create lesson_preview (Nodes A-E scaffold)
-      const lessonContent = `# ${topicName} - Grade ${grade}\n\n**Node A: Concept**\nExplain ${topicName}\n\n**Node B: Example**\nWorked example for ${topicName}\n\n**Node C: Practice**\n3 Questions\n\n**Node D: Exam Style**\nDBE past paper style\n\n**Node E: Summary**\nKey formulas for ${topicName}`;
+      const lessonContent = `# ${topicName} - Grade ${topic.grade}\n\nNode A: Concept\nNode B: Example\nNode C: Practice\nNode D: Exam\nNode E: Summary for ${topicName}`;
 
-      await supabase.from("lesson_previews").insert({
-        topic_id: id,
+      // INSERT using caps_code (your table's real column)
+      const { error: insertError } = await supabase.from("lesson_previews").insert({
+        caps_code: caps,
         content: lessonContent
       });
 
-      generated++;
-      cost += 0.04;
-      details.push(`${topicName} - Grade ${grade} -> in_review + preview created`);
+      if(insertError){
+        details.push(`${topicName} FAILED: ${insertError.message}`);
+      } else {
+        generated++;
+        details.push(`${topicName} -> created in lesson_previews`);
+      }
     }
-
-    return NextResponse.json({ generated, cost, details });
+    return NextResponse.json({ generated, cost: generated*0.04, details });
   }catch(e:any){
     return NextResponse.json({error: e.message}, {status:500});
   }
