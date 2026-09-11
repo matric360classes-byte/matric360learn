@@ -1,39 +1,49 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-export async function POST(req: Request) {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+export async function POST(req: NextRequest) {
   try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if(!url ||!key) return NextResponse.json({error:`Env missing: URL=${!!url} KEY=${!!key} - Go to Vercel Settings`, queued:0}, {status:500})
-
-    const supabase = createClient(url, key)
-    const { topic_ids, pdf_files, topics_meta } = await req.json()
-
-    if(!topic_ids?.length) return NextResponse.json({error:'Tick at least 1 topic in Step 2', queued:0}, {status:400})
-    if(!pdf_files?.length) return NextResponse.json({error:'Tick 2 PDFs in Step 1', queued:0}, {status:400})
-
-    let queued = 0
-    let lastError = null
-    for(let i=0; i<topic_ids.length; i++){
-      const id = topic_ids[i]
-      const meta = topics_meta?.find((t:any)=>t.id===id) || {}
-      const { error } = await supabase.from('lesson_previews').insert({
-        topic_id: id,
-        topic_name: meta.name || meta.topic_name || id,
-        grade: (meta.grade || '12').toString(),
-        subject: 'Mathematics',
-        source_pdfs: pdf_files, // ONLY checked PDFs
-        status: 'queued',
-        quality_score: 0
-      })
-      if(error) lastError = error.message
-      else queued++
+    const { topic_ids, pdf_files } = await req.json()
+    
+    if (!topic_ids || topic_ids.length === 0) {
+      return NextResponse.json({ queued: 0, error: 'No topics selected' })
     }
 
-    return NextResponse.json({ queued, pdf_files_used: pdf_files, message: `Queued ${queued} topics with ${pdf_files.length} PDFs only`, lastError })
-  } catch(e:any){
-    return NextResponse.json({error:e.message, queued:0}, {status:500})
+    // Get topic details from topic_knowledge
+    const { data: topics, error: topicErr } = await supabase
+      .from('topic_knowledge')
+      .select('id, caps_code, topic_name, subject, grade')
+      .in('id', topic_ids)
+
+    if (topicErr) return NextResponse.json({ queued: 0, error: topicErr.message })
+    if (!topics || topics.length === 0) return NextResponse.json({ queued: 0, error: 'No topics found for those IDs' })
+
+    // Insert into lesson_previews using REAL columns
+    const rows = topics.map((t: any) => ({
+      caps_code: t.caps_code,
+      subject: t.subject || 'Mathematics',
+      topic_name: t.topic_name,
+      grade: String(t.grade),
+      source_pdfs: pdf_files, // jsonb
+      status: 'queued',
+      content: {},
+      cost_usd: 0
+    }))
+
+    const { data, error } = await supabase
+      .from('lesson_previews')
+      .insert(rows)
+      .select()
+
+    if (error) return NextResponse.json({ queued: 0, error: error.message, details: error })
+
+    return NextResponse.json({ queued: data.length, data })
+  } catch (e: any) {
+    return NextResponse.json({ queued: 0, error: e.message })
   }
 }
