@@ -51,8 +51,9 @@ export default function AdminPage(){
           <div onClick={()=>{setMenuOpen(false); router.push("/admin/videos")}} style={{padding:10, cursor:"pointer"}}>🎥 Videos</div>
           <div onClick={()=>toggle("exam")} style={{display:"flex", justifyContent:"space-between", padding:10, fontWeight:"bold"}}><span>📋 Exam Hub</span><span>{sections.exam?"∨":">"}</span></div>
           {sections.exam && <div style={{borderLeft:"1px solid #222", marginLeft:12, paddingLeft:12}}><Item label="Questions" path="/admin/questions"/><Item label="Question Bank Audit" path="/admin/qb-audit"/><Item label="Question Coverage" path="/admin/q-coverage"/></div>}
-          <div onClick={()=>toggle("gen")} style={{display:"flex", justifyContent:"space-between", padding:10, fontWeight:"bold"}}><span>🔧 Generation Tools</span><span>{sections.gen?"∨":">"}</span></div>
-          {sections.gen && <div style={{borderLeft:"1px solid #222", marginLeft:12, paddingLeft:12}}><div onClick={()=>{setMenuOpen(false); setActiveView("factory")}} style={{background: activeView==="factory"? "#8b7cf8":"transparent", color: activeView==="factory"? "black":"#9ca3af", padding:"8px 16px", borderRadius:20, fontWeight:"bold", width:"fit-content", cursor:"pointer"}}>Factory</div><Item label="Direct Generate" path="/admin/generate"/><Item label="Curriculum AI" path="/admin/curriculum"/><Item label="Upgrade Lessons" path="/admin/upgrade"/><Item label="Content Repair" path="/admin/repair"/><Item label="Math Regen" path="/admin/math-regen"/><Item label="Math Batch" path="" action={()=>{setMenuOpen(false); setActiveView("math-batch")}}/><Item label="Publishing Queue" path="/admin/publish"/></div>}
+          <div onClick={()=>toggle("gen")} style={{display:"flex", justifyContent:"space-between", padding:10, fontWeight:"bold"}}><span>🔧 Generation Tools</span><span>{sections.gen?"∨":">"}</span></          {sections.gen && <div style={{borderLeft:"1px solid #222", marginLeft:12, paddingLeft:12}}><div onClick={()=>{setMenuOpen(false); setActiveView("factory")}} style={{background: activeView==="factory"? "#8b7cf8":"transparent", color: activeView==="factory"? "black":"#9ca3af", padding:"8px 16px", borderRadius:20, fontWeight:"bold", width:"fit-content", cursor:"pointer"}}>Factory</div><Item label="Direct Generate" path="/admin/generate"/><Item label="Curriculum AI" path="/admin/curriculum"/><Item label="Upgrade Lessons" path="/admin/upgrade"/><Item label="Content Repair" path="/admin/repair"/><Item label="Math Regen" path="/admin/math-regen"/><Item label="Math Batch" path="" action={()=>{setMenuOpen(false); setActiveView("math-batch")}}/><Item label="Publishing Queue" path="/admin/publish"/></div>}
+          <div onClick={()=>{setMenuOpen(false); router.push("/admin/beta")}} style={{padding:10, cursor:"pointer"}}>🐞 Beta & QA</div>
+          <div onClick={()=>{setMenuOpen(false); router.push("/admin/users")}} style={{padding:10, fontWeight:"bold", color:"white", background:"#222", borderRadius:10, cursor:"pointer"}}>👥 Users ← NOW WIRED</div>
         </div>
       )}
 
@@ -80,6 +81,9 @@ export default function AdminPage(){
           </div>
         </>
         )}
+          </div>
+      <div style={{position:"fixed", bottom:0, left:0, right:0, background:"#15151c", display:"flex", justifyContent:"space-around", padding:"8px 0 16px", borderTop:"1px solid #222"}}>
+        {[["🏠","Dashboard","/"],["📖","Subjects","/subjects"],["📋","Exams","/exams"],["📊","Progress","/progress"],["👤","Profile","/profile"]].map(([ic,lb,pa]:any)=>(<button key={lb} onClick={()=>router.push(pa)} style={{background:"none", border:"none", color:"#9ca3af", textAlign:"center"}}>{ic}<br/><span style={{fontSize:10}}>{lb}</span></button>))}
       </div>
     </div>
   );
