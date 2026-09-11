@@ -1,105 +1,113 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { useRouter } from "next/navigation";
 
 const supabase = createClient(
   "https://civwluydzbwqlnipmcll.supabase.co",
   "sb_publishable_9oINVwf0HWzC80NsBBP-WA_D5IyEng_"
 );
 
-export default function MathBatchPage(){
-  const router = useRouter();
+export default function FactoryFlatPage(){
   const [topics,setTopics]=useState<any[]>([]);
-  const [selected,setSelected]=useState<string[]>([]);
-  const [subject,setSubject]=useState("Mathematics");
-  const [limit,setLimit]=useState(10);
-  const [provider,setProvider]=useState("Matric360 AI Gateway");
-  const [model,setModel]=useState("google/gemini-2.5-pro");
-  const [cap,setCap]=useState(2.00);
+  const [pdfs,setPdfs]=useState<any[]>([]);
+  const [selectedTopics,setSelectedTopics]=useState<string[]>([]);
+  const [selectedPdfs,setSelectedPdfs]=useState<string[]>([]);
+  const [subjectFilter,setSubjectFilter]=useState<'ALL'|'MATH'|'PHYS'>('ALL');
   const [running,setRunning]=useState(false);
-  const [logs,setLogs]=useState<string[]>([]);
 
   useEffect(()=>{(async()=>{
-    // FIXED: use REAL columns caps_code, topic_name not topic,title
-    const { data, error } = await supabase
-     .from("topic_knowledge")
-     .select("id, caps_code, topic_name, subject, grade")
-     .ilike("subject", `%${subject}%`)
-     .limit(200);
-    console.log("topics", data, error);
-    setTopics(data||[]);
-  })()},[subject]);
+    // FETCH BOTH MATH + PHYS
+    const { data: tData } = await supabase
+      .from("topic_knowledge")
+      .select("id, caps_code, topic_name, subject, grade")
+      .or("caps_code.ilike.MATH%,caps_code.ilike.PHYS%,subject.ilike.%math%,subject.ilike.%phys%")
+      .limit(100);
+    setTopics(tData||[]);
 
-  const estCost = selected.length * 0.0475;
-  const perTopic = 0.0475;
-
-  const runBatch = async()=>{
-    setRunning(true); setLogs([`Starting batch ${selected.length} topics...`]);
-    for(let i=0;i<selected.length;i++){
-      const tid = selected[i];
-      const tObj = topics.find(t=>t.id===tid);
-      setLogs(l=>[...l, `→ Generating ${i+1}/${selected.length} : ${tObj?.topic_name} (delay 10s, concurrency 1)`]);
-      try{
-        const res = await fetch("/api/factory/batch-generate",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({ topic_id: tid, provider, model, subject })
-        });
-        const j = await res.json();
-        setLogs(l=>[...l, `✓ Staging saved: quality ${j.quality_score||'--'} cost $${j.cost||'0.0475'}`]);
-
-        // FIXED: use REAL columns in lesson_previews
-        await supabase.from("lesson_previews").insert({
-          caps_code: tObj.caps_code,
-          subject: tObj.subject || subject,
-          topic_name: tObj.topic_name,
-          grade: String(tObj.grade),
-          status: 'queued',
-          content: {
-            node_a: j.node_a,
-            node_b: j.node_b,
-            node_c: j.node_c,
-            node_d: j.node_d,
-            node_e: j.node_e,
-            quality_score: j.quality_score
-          },
-          cost_usd: perTopic,
-          source_pdfs: []
-        });
-      }catch(e:any){ setLogs(l=>[...l, `✗ Failed ${tid}: ${e.message}`]); }
-      await new Promise(r=>setTimeout(r,10000));
-      if(estCost > cap){ setLogs(l=>[...l, `HARD CAP $${cap} hit - stopping`]); break; }
+    // FETCH PDFs - try pdf_sources table, fallback to storage
+    const { data: pData } = await supabase.from("pdf_sources").select("id, file_name, storage_path").limit(50);
+    if(pData && pData.length>0){
+      setPdfs(pData.map(p=>p.file_name||p.storage_path));
+    } else {
+      // fallback if you use storage bucket called 'pdfs'
+      const { data: sData } = await supabase.storage.from("pdfs").list();
+      setPdfs((sData||[]).map((f:any)=>f.name));
     }
-    setRunning(false); setLogs(l=>[...l, `DONE - check Publishing Queue`]);
+  })()},[]);
+
+  const filteredTopics = topics.filter(t=>{
+    if(subjectFilter==='ALL') return true;
+    if(subjectFilter==='MATH') return t.caps_code?.startsWith('MATH') || t.subject?.toLowerCase().includes('math');
+    if(subjectFilter==='PHYS') return t.caps_code?.startsWith('PHYS') || t.subject?.toLowerCase().includes('phys');
+    return true;
+  });
+
+  const estCost = selectedTopics.length * selectedPdfs.length * 0.0475;
+
+  const generate = async()=>{
+    if(selectedTopics.length===0 || selectedPdfs.length===0) return alert("Select 1+ topics and 1+ PDFs");
+    setRunning(true);
+    try{
+      const payload = {
+        topic_ids: selectedTopics,
+        pdf_files: selectedPdfs,
+        provider: "Matric360 AI Gateway",
+        model: "google/gemini-2.5-pro"
+      };
+      const res = await fetch("/api/factory/batch",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      alert(`Queued: ${j.queued} | Failed: ${j.failed||0}\nEST $${j.total_estimated_cost||estCost}`);
+    }catch(e:any){ alert("Failed: "+e.message); }
+    setRunning(false);
   };
 
   return (
-    <div style={{minHeight:"100vh", background:"#0f0f14", color:"white", fontFamily:"system-ui", padding:12}}>
-      <button onClick={()=>router.push("/admin")} style={{background:"#1e1e28", border:"none", color:"white", borderRadius:12, padding:"8px 16px", marginBottom:12}}>← Factory</button>
-      <h1 style={{fontSize:20, fontWeight:"800"}}>Math Batch Regeneration</h1>
-      <p style={{color:"#9ca3af", fontSize:12}}>Regenerate Nodes A-E for every Grade 12 topic. Stored in staging only.</p>
-
-      <div style={{background:"#1c1c24", borderRadius:16, padding:12, marginTop:12, border:"1px solid #8b7cf8"}}>
-        <div style={{display:"flex", justifyContent:"space-between", fontSize:12, fontWeight:"bold"}}><span>COST GUARD: TOPICS {selected.length}</span><span>EST COST ${estCost.toFixed(4)}</span><span>PER TOPIC ${perTopic}</span><span>HARD CAP ${cap.toFixed(2)}</span></div>
-        <div style={{height:8, background:"#222", borderRadius:10, marginTop:8}}><div style={{width:`${Math.min(100,(estCost/cap)*100)}%`, height:8, background: estCost>cap?"#ef4444":"#22c55e", borderRadius:10}}></div></div>
+    <div style={{minHeight:"100vh", background:"#0f0f14", color:"white", padding:16, fontFamily:"system-ui"}}>
+      <h1 style={{fontSize:22, fontWeight:800}}>Math Batch - Flat + Bulk PDFs</h1>
+      
+      <div style={{marginTop:16}}>
+        <b>Step 1: Bulk Source PDFs ({pdfs.length} found)</b>
+        <div style={{display:"flex", flexWrap:"wrap", gap:8, marginTop:8}}>
+          {pdfs.map((p:string)=><label key={p} style={{background:"#1c1c24", padding:"6px 10px", borderRadius:10, fontSize:12, border: selectedPdfs.includes(p)?"1px solid #8b7cf8":"1px solid #222"}}>
+            <input type="checkbox" checked={selectedPdfs.includes(p)} onChange={e=>{
+              if(e.target.checked) setSelectedPdfs([...selectedPdfs,p]);
+              else setSelectedPdfs(selectedPdfs.filter(x=>x!==p));
+            }} /> {p}
+          </label>)}
+        </div>
       </div>
 
-      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginTop:12}}>
-        <select value={subject} onChange={e=>setSubject(e.target.value)} style={{background:"#1c1c24", color:"white", padding:10, borderRadius:12, border:"1px solid #333"}}><option>Mathematics</option><option>Physical Sciences</option></select>
-        <select value={provider} onChange={e=>setProvider(e.target.value)} style={{background:"#1c1c24", color:"white", padding:10, borderRadius:12, border:"1px solid #333"}}><option>Matric360 AI Gateway</option></select>
-        <select value={model} onChange={e=>setModel(e.target.value)} style={{background:"#1c1c24", color:"white", padding:10, borderRadius:12, border:"1px solid #333"}}><option>google/gemini-2.5-pro</option><option>google/gemini-2.5-flash</option></select>
-        <input type="number" value={limit} onChange={e=>setLimit(parseInt(e.target.value))} style={{background:"#1c1c24", color:"white", padding:10, borderRadius:12, border:"1px solid #333"}} placeholder="Limit 10"/>
+      <div style={{marginTop:20}}>
+        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+          <b>Step 2: Maths Topics Only ({filteredTopics.length} found / {topics.length} total)</b>
+          <div style={{display:"flex", gap:6}}>
+            <button onClick={()=>setSubjectFilter('ALL')} style={{background:subjectFilter==='ALL'?'#8b7cf8':'#1c1c24', color:subjectFilter==='ALL'?'black':'white', padding:"4px 10px", borderRadius:10, border:"none", fontSize:12, fontWeight:700}}>ALL</button>
+            <button onClick={()=>setSubjectFilter('MATH')} style={{background:subjectFilter==='MATH'?'#8b7cf8':'#1c1c24', color:subjectFilter==='MATH'?'black':'white', padding:"4px 10px", borderRadius:10, border:"none", fontSize:12, fontWeight:700}}>Pure Maths</button>
+            <button onClick={()=>setSubjectFilter('PHYS')} style={{background:subjectFilter==='PHYS'?'#8b7cf8':'#1c1c24', color:subjectFilter==='PHYS'?'black':'white', padding:"4px 10px", borderRadius:10, border:"none", fontSize:12, fontWeight:700}}>Physical Sciences</button>
+          </div>
+        </div>
+
+        <div style={{marginTop:10, display:"flex", flexDirection:"column", gap:6, maxHeight:400, overflow:"auto", background:"#121218", padding:10, borderRadius:12}}>
+          {filteredTopics.map((t:any)=><label key={t.id} style={{display:"flex", gap:8, background:"#1c1c24", padding:"8px 10px", borderRadius:10, fontSize:13, border: selectedTopics.includes(t.id)?"1px solid #8b7cf8":"1px solid #222"}}>
+            <input type="checkbox" checked={selectedTopics.includes(t.id)} onChange={e=>{
+              if(e.target.checked) setSelectedTopics([...selectedTopics,t.id]);
+              else setSelectedTopics(selectedTopics.filter(x=>x!==t.id));
+            }} />
+            <span>{t.topic_name} - Grade {t.grade} - {t.grade?.toString().startsWith('10')?'G10':t.grade?.toString().startsWith('11')?'G11':'G12'} | {t.caps_code} | {t.id.slice(0,8)}</span>
+          </label>)}
+        </div>
       </div>
 
-      <div style={{marginTop:12, background:"#1c1c24", borderRadius:16, padding:12, maxHeight:400, overflow:"auto"}}>
-        <div style={{display:"flex", justifyContent:"space-between", marginBottom:8}}><b>Select Topics ({topics.length}) - FIXED</b><button onClick={()=>setSelected(topics.slice(0,limit).map((t:any)=>t.id))} style={{background:"#8b7cf8", border:"none", padding:"4px 10px", borderRadius:10, fontSize:11}}>Select first {limit}</button></div>
-        {topics.map((t:any)=><div key={t.id} style={{display:"flex", gap:8, padding:6, borderBottom:"1px solid #222"}}><input type="checkbox" checked={selected.includes(t.id)} onChange={e=>{if(e.target.checked)setSelected([...selected,t.id]); else setSelected(selected.filter(s=>s!==t.id))}}/><span style={{fontSize:12}}>{t.topic_name} - {t.caps_code} G{t.grade}</span></div>)}
+      <div style={{position:"sticky", bottom:0, marginTop:16, background:"#1c1c24", padding:"12px 16px", borderRadius:16, display:"flex", justifyContent:"space-between", alignItems:"center", border:"1px solid #333"}}>
+        <b style={{fontSize:13}}>TOPICS {selectedTopics.length} | PDFs {selectedPdfs.length} | EST ${estCost.toFixed(4)}</b>
+        <button disabled={running||selectedTopics.length===0} onClick={generate} style={{background: running?"#333":"white", color:"black", fontWeight:800, padding:"10px 18px", borderRadius:20, border:"none"}}>
+          {running?"QUEUING...":"Generate Nodes A-E"}
+        </button>
       </div>
-
-      <button disabled={running||selected.length===0} onClick={runBatch} style={{width:"100%", marginTop:12, background: running?"#333":"#8b7cf8", color: running?"#999":"black", fontWeight:"800", padding:14, borderRadius:16, border:"none"}}>{running?"GENERATING... (1 concurrency, 10s delay)":"GENERATE BATCH → STAGING (lesson_previews)"}</button>
-
-      <div style={{marginTop:12, background:"black", borderRadius:12, padding:10, fontSize:11, fontFamily:"monospace", maxHeight:200, overflow:"auto"}}>{logs.map((l,i)=><div key={i}>{l}</div>)}</div>
     </div>
   );
 }
