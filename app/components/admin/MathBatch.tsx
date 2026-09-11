@@ -1,6 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  "https://civwluydzbwqlnipmcll.supabase.co",
+  "sb_publishable_9oINVwf0HWzC80NsBBP-WA_D5IyEng_"
+)
 
 export default function MathBatch() {
   const [topics, setTopics] = useState<any[]>([])
@@ -8,88 +13,82 @@ export default function MathBatch() {
   const [pdfs, setPdfs] = useState<any[]>([])
   const [selectedPdfs, setSelectedPdfs] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  const [filter, setFilter] = useState('')
 
   useEffect(() => {
-    supabase.from('topic_knowledge').select('*').eq('subject','Mathematics').then(({data})=>data&&setTopics(data))
-    loadPdfs()
+    (async()=>{
+      const { data } = await supabase.from('topic_knowledge').select('*')
+      if(data) setTopics(data)
+      const { data: files } = await supabase.storage.from('source-pdfs').list('', {limit:100})
+      if(files) setPdfs(files)
+    })()
   }, [])
-
-  const loadPdfs = async () => {
-    const { data } = await supabase.storage.from('source-pdfs').list('', {limit:100})
-    if(data) setPdfs(data)
-  }
 
   const handleBulkUpload = async (e:any) => {
     const files = e.target.files
-    if(!files.length) return
+    if(!files?.length) return
     setUploading(true)
     for (const file of files) {
       await supabase.storage.from('source-pdfs').upload(file.name, file, { upsert: true })
     }
     setUploading(false)
-    loadPdfs()
-    alert(`Uploaded ${files.length} PDFs to source-pdfs`)
+    const { data } = await supabase.storage.from('source-pdfs').list('', {limit:100})
+    if(data) setPdfs(data)
+    alert(`Uploaded ${files.length} PDFs`)
   }
 
-  const byStrand = topics.reduce((acc:any,t)=>{
-    if(!acc[t.strand]) acc[t.strand]=[]
-    acc[t.strand].push(t)
+  const filtered = topics.filter(t=> !filter || t.topic_name?.toLowerCase().includes(filter.toLowerCase()) || t.strand?.toLowerCase().includes(filter.toLowerCase()))
+  const byStrand = filtered.reduce((acc:any,t)=>{
+    const key = t.strand || 'Other'
+    if(!acc[key]) acc[key]=[]
+    acc[key].push(t)
     return acc
   },{})
 
   const handleGenerate = async () => {
     if(!selected.length) return alert('Select topics')
-    if(!selectedPdfs.length) return alert('Select at least 1 PDF as source')
-    
+    if(!selectedPdfs.length) return alert('Select at least 1 PDF')
     const res = await fetch('/api/factory/batch', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        topic_ids: selected,
-        pdf_files: selectedPdfs,
-        provider: 'google/gemini-2.5-pro'
-      })
+      body: JSON.stringify({ topic_ids: selected, pdf_files: selectedPdfs })
     })
     const json = await res.json()
     if(!res.ok) return alert(json.error)
-    alert(`Queued ${json.queued} topics using ${selectedPdfs.length} PDFs`)
+    alert(`Queued ${json.queued} topics with ${selectedPdfs.length} PDFs → lesson_previews`)
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">Math Batch - Nodes A-E Factory (Flat, Bulk PDFs)</h1>
+    <div className="p-4 space-y-4">
+      <h2 className="text-xl font-bold">Math Batch - Flat (No Terms) + Bulk PDFs</h2>
 
-      {/* BULK PDF SECTION - THIS IS NEW */}
-      <div className="border-2 border-dashed p-4 rounded bg-gray-50">
-        <h2 className="font-bold">Step 1: Bulk Source PDFs (Textbooks + DBE Papers + Memos)</h2>
-        <p className="text-xs text-gray-500">Upload 20-50 PDFs once. They will be reused for all topics. No need to upload one by one.</p>
-        
-        <input type="file" multiple accept=".pdf" onChange={handleBulkUpload} className="mt-3" />
-        {uploading && <div className="text-sm text-blue-600">Uploading bulk PDFs...</div>}
-        
-        <div className="mt-3 max-h-40 overflow-y-auto border bg-white p-2">
-          {pdfs.map(f=>(
-            <label key={f.name} className="flex items-center gap-2 text-sm py-1">
+      <div className="border-2 border-dashed p-3 rounded bg-gray-50">
+        <div className="font-bold text-sm">Step 1: Bulk Source PDFs (Upload once, reuse)</div>
+        <input type="file" multiple accept=".pdf" onChange={handleBulkUpload} className="mt-2" />
+        {uploading && <div className="text-xs text-blue-600 mt-1">Uploading...</div>}
+        <div className="mt-2 max-h-32 overflow-auto bg-white border p-2">
+          {pdfs.map((f:any)=>(
+            <label key={f.name} className="flex gap-2 text-xs py-1">
               <input type="checkbox" checked={selectedPdfs.includes(f.name)} onChange={()=>setSelectedPdfs(p=>p.includes(f.name)?p.filter(x=>x!==f.name):[...p,f.name])} />
-              {f.name} <span className="text-xs text-gray-400">({(f.metadata?.size/1024/1024).toFixed(2)} MB)</span>
+              {f.name}
             </label>
           ))}
-          {pdfs.length===0 && <div className="text-xs text-gray-400">No PDFs yet. Upload above.</div>}
+          {pdfs.length===0 && <div className="text-xs text-gray-400">No PDFs yet - upload textbooks + DBE papers + memos</div>}
         </div>
-        <div className="text-xs mt-1">Selected PDFs: {selectedPdfs.length} → These will be context for Nodes A-E generation</div>
+        <div className="text-xs">Selected PDFs: {selectedPdfs.length}</div>
       </div>
 
-      {/* TOPICS SECTION - YOUR 9 TOPICS */}
-      <div className="border p-4 rounded">
-        <h2 className="font-bold">Step 2: Select Approved Topics (YOUR new app topics)</h2>
-        <div className="mt-3 space-y-4">
+      <div className="border p-3 rounded">
+        <div className="font-bold text-sm">Step 2: Select YOUR Approved Topics</div>
+        <input placeholder="Filter by strand or topic" value={filter} onChange={e=>setFilter(e.target.value)} className="mt-2 w-full border p-2 rounded text-sm" />
+        <div className="mt-3 space-y-3 max-h-96 overflow-auto">
           {Object.entries(byStrand).map(([strand, list]:any)=>(
             <div key={strand}>
-              <div className="font-bold bg-gray-100 p-1">{strand} ({list.length})</div>
+              <div className="bg-gray-100 p-1 font-bold text-sm">{strand} ({list.length})</div>
               {list.map((t:any)=>(
-                <label key={t.id} className="flex gap-2 text-sm p-1 hover:bg-gray-50">
+                <label key={t.id} className="flex gap-2 text-xs p-1 hover:bg-gray-50">
                   <input type="checkbox" checked={selected.includes(t.id)} onChange={()=>setSelected(p=>p.includes(t.id)?p.filter(x=>x!==t.id):[...p,t.id])} />
-                  {t.topic_name} <span className="text-xs text-gray-400 ml-auto">{t.grade} | {t.id.slice(0,8)}</span>
+                  {t.topic_name} <span className="text-[10px] text-gray-400 ml-auto">{t.grade} | {t.id.slice(0,8)}</span>
                 </label>
               ))}
             </div>
@@ -97,13 +96,9 @@ export default function MathBatch() {
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <div className="bg-black text-white p-2 rounded text-sm">TOPICS {selected.length} | PDFs {selectedPdfs.length} | EST ${(selected.length*0.0475).toFixed(4)}</div>
-        <button onClick={handleGenerate} className="ml-auto bg-blue-600 text-white px-6 py-2 rounded font-bold">Generate Nodes A-E → lesson_previews</button>
-      </div>
-
-      <div className="text-xs text-gray-500">
-        Flow: source-pdfs (bulk) + YOUR topic_id → Gemini → lesson_previews (staging, quality 0-100) → Publish Queue → YOUR Nodes table (no pop-up). Practice Exams factory is separate.
+      <div className="flex gap-2 items-center">
+        <div className="bg-black text-white px-3 py-2 rounded text-xs">TOPICS {selected.length} | PDFs {selectedPdfs.length} | EST ${(selected.length*0.0475).toFixed(4)}</div>
+        <button onClick={handleGenerate} className="ml-auto bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold">Generate Nodes A-E → staging</button>
       </div>
     </div>
   )
