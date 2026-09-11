@@ -20,6 +20,9 @@ export default function MathBatch(){
 
   const toggle=(id:string)=> setSelected(s=> s.includes(id)? s.filter(x=>x!==id) : [...s,id]);
   const cost = selected.length * 0.04;
+  const overBudget = cost > 2;
+  const bgCost = overBudget ? "#3a1f1f" : "#0f0f14";
+  const colorCost = overBudget ? "#ef4444" : "#9ca3af";
 
   const runBatch = async () => {
     if(!selected.length) return;
@@ -34,10 +37,10 @@ export default function MathBatch(){
       });
       const json = await res.json();
       if(!res.ok) throw new Error(json.error || "Failed");
-      setLogs(l=>[...l, `✅ Done: ${json.generated} generated, $${json.cost?.toFixed(2)} spent`, ...json.details || []]);
+      setLogs(l=>[...l, `Done: ${json.generated} generated, $${json.cost?.toFixed(2)} spent`].concat(json.details || []));
       setSelected([]);
     } catch(e:any){
-      setLogs(l=>[...l, `❌ Error: ${e.message}`]);
+      setLogs(l=>[...l, `Error: ${e.message}`]);
     } finally { setLoading(false); }
   };
 
@@ -46,9 +49,9 @@ export default function MathBatch(){
       <h2 style={{margin:0}}>Math Topic Regeneration - Matric 360</h2>
       <div style={{display:"flex", gap:12, marginTop:8}}>
         <span style={{background:"#0f0f14", padding:"8px 12px", borderRadius:20, fontSize:12}}>TOPICS {selected.length}</span>
-        <span style={{background: cost>2?"#3a1f1f":"#0f0f14", color: cost>2?"#ef4444":"#9ca3af", padding:"8px 12px", borderRadius:20, fontSize:12}}>EST COST ${cost.toFixed(2)}</span>
+        <span style={{background:bgCost, color:colorCost, padding:"8px 12px", borderRadius:20, fontSize:12}}>EST COST ${cost.toFixed(2)}</span>
       </div>
-      {cost>2 && <div style={{marginTop:8, color:"#fbbf24", fontSize:11}}>⚠️ Cost guard: > $2 - will ask confirm</div>}
+      {overBudget && <div style={{marginTop:8, color:"#fbbf24", fontSize:11}}>Cost guard: over $2 - will ask confirm</div>}
       
       <div style={{marginTop:12, display:"flex", gap:8}}>
         <button onClick={()=>setSelected(topics.map(t=>t.id))} style={{background:"#222", color:"white", padding:"6px 12px", borderRadius:10, border:"none", fontSize:12}}>Select All ({topics.length})</button>
@@ -59,13 +62,13 @@ export default function MathBatch(){
         {topics.map(t=><div key={t.id} onClick={()=>toggle(t.id)} style={{padding:10, borderBottom:"1px solid #1a1a1a", background: selected.includes(t.id)? "#2a2a4a":"transparent", cursor:"pointer", display:"flex", justifyContent:"space-between"}}><span>{t.topic}</span><span style={{fontSize:10, color:"#666"}}>{t.status}</span></div>)}
       </div>
 
-      <button onClick={runBatch} disabled={loading || !selected.length} style={{marginTop:16, background: loading?"#444":"#8b7cf8", color:"black", fontWeight:"800", padding:"12px 20px", borderRadius:12, border:"none", width:"100%", cursor:"pointer"}}>
+      <button onClick={runBatch} disabled={loading || selected.length===0} style={{marginTop:16, background: loading?"#444":"#8b7cf8", color:"black", fontWeight:"800", padding:"12px 20px", borderRadius:12, border:"none", width:"100%", cursor:"pointer"}}>
         {loading? "Generating...": `Generate ${selected.length} Topics`}
       </button>
 
       <div style={{marginTop:12, background:"#0f0f14", borderRadius:12, padding:10, fontSize:11, fontFamily:"monospace", maxHeight:150, overflow:"auto"}}>
         {logs.map((l,i)=><div key={i}>{l}</div>)}
-        {!logs.length && <span style={{color:"#555"}}>Logs will appear here...</span>}
+        {logs.length===0 && <span style={{color:"#555"}}>Logs will appear here...</span>}
       </div>
     </div>
   )
