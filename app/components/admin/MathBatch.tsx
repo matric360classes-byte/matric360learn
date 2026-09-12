@@ -7,6 +7,7 @@ export default function MathBatch(){
   const [selTop, setSelTop] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [activeSubj, setActiveSubj] = useState<string>("All");
 
   const load = ()=>{
     fetch("/api/batch/scan").then(r=>r.json()).then(d=>{
@@ -16,6 +17,10 @@ export default function MathBatch(){
   };
 
   useEffect(()=>{load()},[]);
+
+  const subjects = ["All",...Array.from(new Set(topics.map((t:any)=>t.subject).filter(Boolean)))];
+
+  const filteredTopics = activeSubj==="All"? topics : topics.filter((t:any)=>t.subject===activeSubj);
 
   const handleUpload = async(e:any)=>{
     const file = e.target.files[0]; if(!file) return;
@@ -43,15 +48,20 @@ export default function MathBatch(){
   };
 
   const toggleAll = ()=>{
-    if(selTop.size===topics.length) setSelTop(new Set());
-    else setSelTop(new Set(topics.map((t:any)=>t.caps_code)));
+    const ids = filteredTopics.map((t:any)=>t.caps_code);
+    const allSelected = ids.every((id:string)=>selTop.has(id));
+    if(allSelected){
+      const n=new Set(selTop); ids.forEach((id:string)=>n.delete(id)); setSelTop(n);
+    } else {
+      const n=new Set(selTop); ids.forEach((id:string)=>n.add(id)); setSelTop(n);
+    }
   };
 
   return (
     <div className="p-6 pb-32">
-      <h1 className="text-3xl font-bold"<h1>Batch - All Subjects + Bulk PDFs</h1>
+      <h1 className="text-3xl font-bold">Batch - All Subjects + Bulk PDFs</h1>
 
-      <div className="mt-4 flex gap-3 items-center">
+      <div className="mt-4 flex gap-3 items-center flex-wrap">
         <label className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer">
           {uploading?"Uploading...":"Upload PDF"}
           <input type="file" accept=".pdf" className="hidden" onChange={handleUpload}/>
@@ -64,23 +74,28 @@ export default function MathBatch(){
         {pdfs.map((p:any)=><div key={p.name} className="border p-2 rounded bg-white text-sm">{p.name}</div>)}
       </div>
 
-      <h2 className="mt-6 font-semibold flex gap-3 items-center">
-        Step 2: Maths Topics Only ({topics.length} found)
+      <h2 className="mt-6 font-semibold flex gap-3 items-center flex-wrap">
+        Step 2: All Subjects Topics ({filteredTopics.length} / {topics.length} found)
         <button onClick={toggleAll} className="text-sm bg-black text-white px-3 py-1 rounded">
-          {selTop.size===topics.length? "Uncheck All":`Check All ${topics.length}`}
+          Toggle All {activeSubj}
         </button>
       </h2>
 
+      <div className="flex gap-2 mt-3 flex-wrap">
+        {subjects.map((s:any)=>(
+          <button key={s} onClick={()=>setActiveSubj(s)} className={`px-3 py-1 rounded border text-sm ${activeSubj===s?"bg-black text-white":"bg-white"}`}>{s}</button>
+        ))}
+      </div>
+
       <div className="space-y-2 mt-3">
-        {topics.map((t:any)=>(
+        {filteredTopics.map((t:any)=>(
           <label key={t.caps_code} className="border p-3 rounded flex gap-3 items-center bg-white cursor-pointer hover:bg-gray-50">
             <input type="checkbox" checked={selTop.has(t.caps_code)} onChange={()=>{
               const n=new Set(selTop); n.has(t.caps_code)?n.delete(t.caps_code):n.add(t.caps_code); setSelTop(n);
             }} className="w-5 h-5"/>
-            <span className="text-sm">{t.topic_name} - Grade {t.grade} | {t.caps_code} | {t.status}</span>
+            <span className="text-sm"><b>{t.subject}</b> | {t.topic_name} - Grade {t.grade} | {t.caps_code} | {t.status}</span>
           </label>
         ))}
-        {topics.length===0 && <p className="text-sm text-gray-500 mt-2">All topics already queued → Go to Factory. If you want to re-queue, change /api/batch/scan to show all status.</p>}
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-black p-4 flex justify-center gap-3 z-50">
