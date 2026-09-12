@@ -1,45 +1,47 @@
 "use client";
 import { useEffect, useState } from "react";
+export default function Factory(){
+  const [stats, setStats] = useState<any>({queued:0, ready:0});
+  const [logs, setLogs] = useState<string>("");
+  const [busy, setBusy] = useState(false);
 
-export default function FactoryPage(){
-  const [queued, setQueued] = useState<any[]>([]);
-  const [processing, setProcessing] = useState(false);
-  const [result, setResult] = useState("");
+  const loadStats = async()=>{
+    const r = await fetch("/api/factory/stats");
+    const j = await r.json();
+    setStats(j);
+  };
+  useEffect(()=>{ loadStats(); },[]);
 
-  async function load(){
-    const res = await fetch("/api/factory/generate");
-    const j = await res.json();
-    setQueued(j.queued||[]);
-  }
-  useEffect(()=>{load()},[]);
+  const processAll = async()=>{
+    setBusy(true);
+    setLogs("Starting batch processing for all queued...\n");
+    let total=0;
+    while(true){
+      const r = await fetch("/api/factory/process-all", {method:"POST"});
+      const j = await r.json();
+      if(j.error){ setLogs(l=>l+`\nERROR: ${j.error} ${j.lastError||""}`); break; }
+      total+=j.processed||0;
+      setLogs(l=>l+`\nBatch: processed ${j.processed} | remaining queued: ${j.remaining} | total: ${total}`);
+      await loadStats();
+      if(j.remaining===0 || j.processed===0) break;
+      await new Promise(r=>setTimeout(r,2000));
+    }
+    setLogs(l=>l+`\n\nDONE. Total processed: ${total}`);
+    setBusy(false);
+  };
 
-  async function processAll(){
-    setProcessing(true);
-    setResult("Processing 3 lessons... this takes 60-90 sec, don't close...");
-    const res = await fetch("/api/factory/process-all",{method:"POST"});
-    const j = await res.json();
-    setResult(`✅ Done! Processed ${j.processed} lessons`);
-    setProcessing(false);
-    load();
-  }
-
-  return(
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Matric360 Factory - Lesson Generator</h1>
-      <p className="mb-4">Queued: {queued.length} lessons</p>
-      
-      <button onClick={processAll} disabled={processing} className="bg-green-600 text-white px-6 py-3 rounded-lg font-bold w-full">
-        {processing ? "⚙️ Processing 3 lessons..." : `🚀 Process All Queued (${queued.length})`}
-      </button>
-      {result && <p className="mt-4 p-3 bg-gray-100 rounded">{result}</p>}
-
-      <div className="mt-6">
-        {queued.map((q:any)=>(
-          <div key={q.id} className="border p-3 rounded mb-2">
-            <b>{q.topic_name}</b> - {q.caps_code} - {q.status}
-          </div>
-        ))}
+  return (
+    <div className="p-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold">Matric360 Factory - 419 Scale Ready</h1>
+      <div className="flex gap-4 my-4">
+        <div className="border p-4 rounded">Queued: {stats.queued}</div>
+        <div className="border p-4 rounded">Ready: {stats.ready}</div>
+        <div className="border p-4 rounded">Failed: {stats.failed||0}</div>
       </div>
+      <button disabled={busy} onClick={processAll} className="bg-black text-white px-6 py-3 rounded disabled:opacity-50">
+        {busy? "Processing..." : `Process All Queued (${stats.queued}) - No Limit`}
+      </button>
+      <pre className="mt-4 bg-gray-100 p-4 text-xs whitespace-pre-wrap h-64 overflow-auto">{logs}</pre>
     </div>
-  )
+  );
 }
