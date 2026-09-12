@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 export async function GET(){
-  const { data } = await supabase.from("lesson_previews").select("status");
-  const queued = data?.filter((d:any)=>d.status==="queued").length||0;
-  const ready = data?.filter((d:any)=>d.status==="ready").length||0;
-  const failed = data?.filter((d:any)=>d.status==="failed").length||0;
-  return NextResponse.json({queued, ready, failed});
+  const { data } = await supabase.from("lesson_previews").select("status, caps_code");
+  const dedup = new Map();
+  (data||[]).forEach((r:any)=>{ if(!dedup.has(r.caps_code)) dedup.set(r.caps_code, r); });
+  const vals = Array.from(dedup.values()) as any[];
+  return NextResponse.json({
+    queued: vals.filter(v=>v.status==="queued").length,
+    ready: vals.filter(v=>v.status==="ready").length,
+    failed: vals.filter(v=>v.status==="failed").length
+  });
 }
