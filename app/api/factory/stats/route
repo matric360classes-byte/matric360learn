@@ -4,9 +4,5 @@ export async function GET(){
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   const { data } = await supabase.from("lesson_previews").select("status");
   const all = (data||[]).map((r:any)=>String(r.status).toLowerCase());
-  return NextResponse.json({
-    queued: all.filter(s=>s.includes("queu")).length,
-    ready: all.filter(s=>s.includes("ready")).length,
-    failed: all.filter(s=>s.includes("fail")).length
-  });
+  return NextResponse.json({queued: all.filter(s=>s.includes("queu")).length, ready: all.filter(s=>s.includes("ready")).length, failed: all.filter(s=>s.includes("fail")).length, total_rows: all.length});
 }
