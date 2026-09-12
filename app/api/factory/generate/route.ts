@@ -38,7 +38,7 @@ Return ONLY valid JSON, no markdown, no backticks. Must follow counts:
 IMPORTANT: Each node must have at LEAST 5 items. Node B 5-7 examples, Node C 5-10 Q, Node D 5-10 mistakes, Node E 5-10 tips. Node A 350-450 words.
 `;
 
-    const gemRes = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key="+process.env.GEMINI_API_KEY,{
+    const gemRes = await fetch("https://generativelanguage.../gemini-1.5-flash:generateContent?key="+process.env.GEMINI_API_KEY,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body: JSON.stringify({contents:[{parts:[{text:prompt}]}]})
