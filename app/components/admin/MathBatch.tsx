@@ -1,64 +1,73 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
+"use client";
+import { useState, useEffect } from "react";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-export default function MathBatch() {
-  const [pdfs, setPdfs] = useState<any[]>([])
-  const [topics, setTopics] = useState<any[]>([])
-  const [selPdfs, setSelPdfs] = useState<string[]>([])
-  const [selTopics, setSelTopics] = useState<string[]>([])
-  const [msg, setMsg] = useState('')
+export default function MathBatch(){
+  const [pdfs, setPdfs] = useState<any[]>([]);
+  const [topics, setTopics] = useState<any[]>([]);
+  const [selTop, setSelTop] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
 
   useEffect(()=>{
-    (async()=>{
-      const { data: pdfList } = await supabase.storage.from('source-pdfs').list()
-      setPdfs(pdfList||[])
-      // FIX: no subject filter, so topics show again
-      const { data: topicList } = await supabase.from('topic_knowledge').select('id, caps_code, topic_name, grade').limit(100)
-      setTopics(topicList||[])
-    })()
-  },[])
+    fetch("/api/batch/scan").then(r=>r.json()).then(d=>{
+      setPdfs(d.pdfs||[]); 
+      setTopics(d.topics||[]);
+    });
+  },[]);
 
-  const toggle = (arr:any, setArr:any, val:string) => {
-    setArr(arr.includes(val) ? arr.filter((x:string)=>x!==val) : [...arr, val])
-  }
+  const queueToFactory = async()=>{
+    if(selTop.size===0) return alert("Check at least 1 topic in Step 2");
+    setBusy(true);
+    const selected = topics.filter((t:any)=>selTop.has(t.caps_code));
+    const res = await fetch("/api/factory/queue-bulk",{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({topics: selected})
+    });
+    const j = await res.json();
+    setBusy(false);
+    alert(`Queued ${j.queued} topics to Factory`);
+    window.location.href="/admin/factory";
+  };
 
-  const queue = async () => {
-    setMsg('Queuing...')
-    const res = await fetch('/api/factory/batch', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ topic_ids: selTopics, pdf_files: selPdfs })
-    })
-    const j = await res.json()
-    setMsg(JSON.stringify(j, null, 2))
-  }
+  const toggleAll = ()=>{
+    if(selTop.size===topics.length) setSelTop(new Set());
+    else setSelTop(new Set(topics.map((t:any)=>t.caps_code)));
+  };
 
   return (
-    <div style={{padding:20, background:'#111', color:'#fff', minHeight:'100vh'}}>
-      <h1>Math Batch - Flat + Bulk PDFs</h1>
-      <p>Step 1: Bulk Source PDFs ({pdfs.length} found)</p>
-      {pdfs.map(p=>(
-        <label key={p.name} style={{marginRight:12, display:'inline-block', background:'#222', padding:6, borderRadius:8, marginBottom:6}}>
-          <input type="checkbox" checked={selPdfs.includes(p.name)} onChange={()=>toggle(selPdfs,setSelPdfs,p.name)} /> {p.name}
-        </label>
-      ))}
-      <p style={{marginTop:20}}>Step 2: Maths Topics Only ({topics.length} found)</p>
-      {topics.map((t:any)=>(
-        <label key={t.id} style={{marginRight:12, display:'inline-block', background:'#222', padding:6, borderRadius:8, marginBottom:6}}>
-          <input type="checkbox" checked={selTopics.includes(t.id)} onChange={()=>toggle(selTopics,setSelTopics,t.id)} /> {t.topic_name} - G{t.grade} | {t.caps_code} | {t.id.slice(0,8)}
-        </label>
-      ))}
-      <div style={{marginTop:20, padding:12, background:'#333', borderRadius:10}}>
-        TOPICS {selTopics.length} | PDFs {selPdfs.length} | EST ${(selTopics.length*0.04).toFixed(4)} 
-        <button onClick={queue} style={{marginLeft:12, padding:'8px 16px', borderRadius:20, background:'#fff', color:'#000', fontWeight:'bold'}}>Generate Nodes A-E</button>
+    <div className="p-6 pb-32">
+      <h1 className="text-3xl font-bold">Math Batch - Flat + Bulk PDFs</h1>
+      
+      <h2 className="mt-6 font-semibold">Step 1: Bulk Source PDFs ({pdfs.length} found)</h2>
+      <div className="flex gap-2 flex-wrap mt-2">
+        {pdfs.map((p:any)=><div key={p.name} className="border p-2 rounded bg-white">{p.name}</div>)}
       </div>
-      <pre style={{marginTop:20, background:'#000', padding:12}}>{msg}</pre>
+
+      <h2 className="mt-6 font-semibold flex gap-3 items-center">
+        Step 2: Maths Topics Only ({topics.length} found)
+        <button onClick={toggleAll} className="text-sm bg-black text-white px-3 py-1 rounded">
+          {selTop.size===topics.length? "Uncheck All":"Check All 16"}
+        </button>
+      </h2>
+
+      <div className="space-y-2 mt-3">
+        {topics.map((t:any)=>(
+          <label key={t.caps_code} className="border p-3 rounded flex gap-3 items-center bg-white cursor-pointer hover:bg-gray-50">
+            <input type="checkbox" checked={selTop.has(t.caps_code)} onChange={()=>{
+              const n=new Set(selTop); n.has(t.caps_code)?n.delete(t.caps_code):n.add(t.caps_code); setSelTop(n);
+            }} className="w-5 h-5"/>
+            <span>{t.topic_name} - Grade {t.grade} | {t.caps_code} | {t.id?.slice(0,8)}</span>
+          </label>
+        ))}
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-black p-4 flex justify-center gap-3 z-50">
+        <button onClick={queueToFactory} disabled={busy} className="bg-white text-black px-8 py-3 rounded font-bold text-lg">
+          {busy? "Queuing...":`Queue ${selTop.size} Selected → Factory`}
+        </button>
+        <button onClick={()=>location.href='/admin/factory'} className="bg-green-600 text-white px-8 py-3 rounded font-bold">
+          Go to Factory
+        </button>
+      </div>
     </div>
-  )
+  );
 }
