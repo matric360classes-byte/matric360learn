@@ -28,13 +28,13 @@ Return ONLY valid JSON, no markdown, no backticks. Must follow counts:
 }
 IMPORTANT: Each node must have at LEAST 5 items. Node B 5-7 examples, Node C 5-10 Q, Node D 5-10 mistakes, Node E 5-10 tips. Node A 350-450 words.
 `;    try{
-      const gemRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+      const gemRes = await fetch(`https://generativelanguage.../gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
       const gemJson = await gemRes.json();
       const text = gemJson.candidates?.[0]?.content?.parts?.[0]?.text||"";
       let parsed:any; try{ parsed=JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}")+1)); }catch{ parsed={node_a:text, node_b:"", node_c:"", node_d:"", node_e:"", quality_score:75}; }
       await supabase.from("lesson_previews").update({content:parsed, quality_score:parsed.quality_score||80, status:"ready_for_publish", cost_usd:0.0475}).eq("id", p.id);
       processed++;
-    }catch(e){ await supabase.from("lesson_previews").update({status:"queued"}).eq("id", p.id); }
+    }catch(e){ await supabase.from("lesson_previews").update({status:"failed"}).eq("id", p.id); }
     await new Promise(r=>setTimeout(r,10000));
   }
   return NextResponse.json({success:true, processed, message:`Processed ${processed} lessons`});
