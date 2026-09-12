@@ -1,0 +1,9 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+export async function GET(){
+  const q = await supabase.from("lesson_previews").select("*",{count:"exact", head:true}).eq("status","queued");
+  const r = await supabase.from("lesson_previews").select("*",{count:"exact", head:true}).eq("status","ready_for_publish");
+  const f = await supabase.from("lesson_previews").select("*",{count:"exact", head:true}).eq("status","failed");
+  return NextResponse.json({queued:q.count||0, ready:r.count||0, failed:f.count||0});
+}
