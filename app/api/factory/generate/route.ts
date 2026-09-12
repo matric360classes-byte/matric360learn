@@ -23,24 +23,19 @@ export async function POST(req: NextRequest){
     await supabase.from("lesson_previews").update({status:"processing"}).eq("id", id);
 
     const prompt = `
-You are CAPS Grade ${preview.grade || p.grade} ${preview.subject || p.subject} expert. Topic: ${preview.topic_name || p.topic_name} (${preview.caps_code || p.caps_code}).
+You are CAPS Grade ${preview.grade} ${preview.subject} expert. Topic: ${preview.topic_name} (${preview.caps_code}).
 
 Return ONLY valid JSON, no markdown, no backticks. Must follow counts:
 
 {
-  "node_a": "Concept explanation 350-450 words, CAPS aligned, definitions, formulas, why it matters. Must be 350-450 words.",
-  "node_b": "5 to 7 worked examples. Format: Example 1: Q + Full steps + Answer. Example 2: Q + steps... up to Example 6. Minimum 5 examples.",
-  "node_c": "8 practice questions. Format: Q1... Q2... up to Q8, then MEMO: A1... A8 with full solutions. Minimum 5 questions, target 8.",
-  "node_d": "6 common mistakes. Format: Mistake 1: what learners do wrong + correct way. Up to Mistake 6. Minimum 5.",
-  "node_e": "6 exam tips. Format: Tip 1... Tip 2... up to Tip 6. Include time management, marks allocation, keywords examiners look for. Minimum 5, max 10.",
+  "node_a": "Concept explanation 350-450 words, CAPS aligned, definitions, formulas, why it matters. 350-450 words for ${preview.topic_name}",
+  "node_b": "5 to 7 worked examples. Format Example 1: Q + Full steps + Answer up to Example 6. Minimum 5 examples for ${preview.topic_name}",
+  "node_c": "8 practice questions. Q1 to Q8, then MEMO A1 to A8 with full solutions. Minimum 5, max 10",
+  "node_d": "6 common mistakes. Mistake 1: what learners do wrong + correct way up to Mistake 6. Minimum 5",
+  "node_e": "6 exam tips. Tip 1 to Tip 6 with time management, marks, keywords examiners look for. Minimum 5 max 10",
   "quality_score": 88
 }
-
-Topic: ${preview.topic_name || p.topic_name} - ${preview.caps_code || p.caps_code}
-Grade: ${preview.grade || p.grade}
-Subject: ${preview.subject || p.subject}
-
-IMPORTANT: Each node must have at LEAST 5 items. Node B = 5-7 examples, Node C = 5-10 questions, Node D = 5-10 mistakes, Node E = 5-10 tips. Node A = 350-450 words.
+IMPORTANT: Each node must have at LEAST 5 items. Node B 5-7 examples, Node C 5-10 Q, Node D 5-10 mistakes, Node E 5-10 tips. Node A 350-450 words.
 `;
 
     const gemRes = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key="+process.env.GEMINI_API_KEY,{
