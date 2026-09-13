@@ -1,34 +1,49 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { NextResponse } from 'next/server'
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
-export async function GET(req: Request){
-  const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-  const key = process.env.GEMINI_API_KEY!
-  const { searchParams } = new URL(req.url)
-  const limit = parseInt(searchParams.get('limit') || '5')
+export async function POST(req: NextRequest) {
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  
+  // Get all uploaded PDFs (handles 400+ at once)
+  const { data: pdfs, error } = await supabase.from('source_pdfs').select('*').eq('status','uploaded').limit(500)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (!pdfs || pdfs.length===0) return NextResponse.json({ message: 'No uploaded PDFs found. All already processed.' })
 
-  const { data: lessons } = await supa.from('lesson_previews').select('*').eq('status','queued').limit(limit)
-  if(!lessons || lessons.length===0){
-    const r = NextResponse.json({ message: 'All done', processed: 0, queued: 0, ready: 12 })
-    r.headers.set('Cache-Control','no-store')
-    return r
+  let created = 0
+  for (const pdf of pdfs) {
+    const name = pdf.file_name.toLowerCase()
+    let subject = 'General'
+    if (name.includes('math')) subject = 'Mathematics'
+    else if (name.includes('phys')) subject = 'Physical Sciences'
+    else if (name.includes('chem') || name.includes('chemistry')) subject = 'Physical Sciences'
+    else if (name.includes('life')) subject = 'Life Sciences'
+    else if (name.includes('geog')) subject = 'Geography'
+    else if (name.includes('history')) subject = 'History'
+
+    let grade = 12
+    if (name.includes('gr11') || name.includes('grade 11') || name.includes('gr 11') || name.includes('_11_')) grade = 11
+    if (name.includes('gr10') || name.includes('grade 10')) grade = 10
+
+    const lesson = {
+      title: pdf.file_name.replace('.pdf','').replace(/_/g,' ').replace(/-/g,' ').slice(0,120),
+      subject,
+      grade,
+      source_pdf_id: pdf.id,
+      content: {
+        summary: `Complete guide from ${pdf.file_name}`,
+        source_path: pdf.storage_path,
+        file_name: pdf.file_name,
+        has_pdf: true
+      },
+      status: 'published'
+    }
+
+    const { error: insErr } = await supabase.from('lessons').insert(lesson)
+    if (!insErr) {
+      await supabase.from('source_pdfs').update({ status: 'processed' }).eq('id', pdf.id)
+      created++
+    }
   }
 
-  for(const l of lessons){
-    try{
-      const prompt = `Grade 12 CAPS ${l.subject} ${l.topic_name}. Return JSON {title, nodes:[{type,title,content}]}`
-      const g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,{
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ contents:[{ parts:[{ text: prompt }]}] })
-      })
-      const j = await g.json()
-      const text = j.candidates?.[0]?.content?.parts?.[0]?.text || '{"nodes":[]}'
-      await supa.from('lesson_previews').update({ status:'ready', content:text, quality_score:85 }).eq('id', l.id)
-    }catch(e){ await supa.from('lesson_previews').update({ status:'failed' }).eq('id', l.id) }
-  }
-  const r = NextResponse.json({ processed: lessons.length })
-  r.headers.set('Cache-Control','no-store')
-  return r
+  return NextResponse.json({ ok: true, processed: created, total: pdfs.length, message: `Created ${created} lessons from ${pdfs.length} PDFs` })
 }
