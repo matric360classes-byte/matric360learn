@@ -1,13 +1,19 @@
-export const dynamic='force-dynamic';
-import { createClient } from '@supabase/supabase-js';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { NextResponse } from 'next/server';
-export async function GET(){
-  const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-  const { data, error, count } = await supa.from('lesson_previews').select('id,status', { count: 'exact' });
-  if(error) return NextResponse.json({ error: error.message, queued:0, ready:0, total:0 });
-  const queued = data.filter((r:any)=>r.status==='queued').length;
-  const ready = data.filter((r:any)=>r.status==='ready').length;
-  const res = NextResponse.json({ queued, ready, total: count, error: null });
-  res.headers.set('Cache-Control', 'no-store, max-age=0');
-  return res;
+import { createClient } from '@supabase/supabase-js';
+
+export async function GET() {
+  const supa = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const { data } = await supa.from('lesson_previews').select('status');
+  const queued = data?.filter(r=>r.status==='queued').length || 0;
+  const ready = data?.filter(r=>r.status==='ready').length || 0;
+  const failed = data?.filter(r=>r.status==='failed').length || 0;
+  return NextResponse.json(
+    { queued, ready, failed, total: data?.length || 0 },
+    { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+  );
 }
