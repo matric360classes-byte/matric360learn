@@ -8,5 +8,6 @@ export async function GET(){
   const queued = data.filter((r:any)=>r.status==='queued').length;
   const ready = data.filter((r:any)=>r.status==='ready').length;
   const res = NextResponse.json({ queued, ready, total: count, error: null });
-res.headers.set('Cache-Control', 'no-store, max-age=0');
-return res;
+  res.headers.set('Cache-Control', 'no-store, max-age=0');
+  return res;
+}
