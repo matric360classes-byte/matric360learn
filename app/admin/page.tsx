@@ -19,6 +19,7 @@ export default function AdminPage(){
   const toggle=(k:string)=>setSections((s:any)=>({...s,[k]:!s[k]}));
   const [stats,setStats]=useState<any>({total:0,published:0,inReview:0,drafts:0,needsChanges:0,missingCaps:0,missingNodes:0,lessThan3Q:0,missingPaper:0,bySubject:[]});
   const [activeView,setActiveView]=useState("factory");
+  const [factoryStats,setFactoryStats]=useState<any>({queued:0,ready:0,total:0,failed:0});
 
   useEffect(()=>{(async()=>{
     const {data:all} = await supabase.from("topic_knowledge").select("*");
@@ -27,6 +28,11 @@ export default function AdminPage(){
     let qCounts:any={},lessThan3Q=total,missingNodes=total;
     try{const {data:qs}=await supabase.from("questions").select("topic_id"); if(qs){qs.forEach((q:any)=>{qCounts[q.topic_id]=(qCounts[q.topic_id]||0)+1}); lessThan3Q=topics.filter((t:any)=>(qCounts[t.id]||0)<3).length;}}catch{}
     try{const {data:ns}=await supabase.from("lesson_previews").select("topic_id"); if(ns){const s=new Set(ns.map((n:any)=>n.topic_id)); missingNodes=topics.filter((t:any)=>!s.has(t.id)).length;}}catch{}
+    try{
+      const r = await fetch(`/api/factory/stats?t=${Date.now()}`, { cache: 'no-store' });
+      const j = await r.json();
+      setFactoryStats(j);
+    }catch{}
     const bySub:any={}; topics.forEach((t:any)=>{const key=t.subject?.toLowerCase().includes("physical")?"Physical Sciences":"Mathematics"; if(!bySub[key])bySub[key]={subject:key,topics:0,scaffolded:0,ge3:0,review:0}; bySub[key].topics++; if(t.is_scaffolded)bySub[key].scaffolded++; if((qCounts[t.id]||0)>=3)bySub[key].ge3++; if(t.status==="in_review")bySub[key].review++;});
     setStats({total,published:topics.filter((t:any)=>t.status==="published"||t.is_published).length,inReview:topics.filter((t:any)=>t.status==="in_review").length,drafts:topics.filter((t:any)=>t.status==="draft").length,needsChanges:topics.filter((t:any)=>t.status==="needs_changes").length,missingCaps:topics.filter((t:any)=>!t.caps_code&&!t.caps_topic).length,missingNodes,lessThan3Q,missingPaper:topics.filter((t:any)=>!t.paper&&!t.section).length,bySubject:Object.values(bySub)});
   })()},[]);
@@ -65,6 +71,14 @@ export default function AdminPage(){
         <>
           {!menuOpen && <div style={{background:"#162216", border:"1px solid #2a3a2a", padding:14, borderRadius:16, marginBottom:16, display:"flex", justifyContent:"space-between"}}><div style={{fontSize:13}}><span style={{color:"#22c55e", fontWeight:"bold"}}>Content Admin mode</span><span style={{color:"#9ca3af"}}> — Pure Maths & Physical Sciences only</span></div><button onClick={()=>setMenuOpen(true)} style={{background:"#1e1e28", border:"none", color:"white", borderRadius:10, padding:"4px 10px"}}>☰</button></div>}
           <div style={{display:"flex", justifyContent:"space-between"}}><div><h1 style={{fontSize:24, fontWeight:"800", margin:0}}>CAPS Content Factory</h1><p style={{color:"#9ca3af", fontSize:12}}>Pure Maths & Physical Sciences - launch subjects</p></div><button onClick={()=>router.push("/admin/studio")} style={{background:"#8b7cf8", color:"black", fontWeight:"800", padding:"10px 16px", borderRadius:14, border:"none"}}>Open<br/>Content<br/>Studio</button></div>
+
+          {activeView==="factory" && (
+            <div style={{background:"#1c1c24", border:"1px solid #2a2a3a", padding:14, borderRadius:16, marginTop:12, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+              <div><div style={{color:"#9ca3af", fontSize:11}}>FACTORY STATUS (live from /api/factory/stats)</div><div style={{fontWeight:"800"}}>Ready: {factoryStats.ready} | Queued: {factoryStats.queued} | Total: {factoryStats.total}</div></div>
+              <button onClick={()=>router.push("/factory")} style={{background:"white", color:"black", padding:"8px 14px", borderRadius:10, fontWeight:"bold", border:"none"}}>Open Factory</button>
+            </div>
+          )}
+
           <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginTop:16}}>
             <div style={{background:"#1c1c24", padding:16, borderRadius:20}}><div>📖</div><div style={{color:"#9ca3af", fontSize:12}}>Total topics</div><div style={{fontSize:26, fontWeight:"800"}}>{stats.total}</div></div>
             <div style={{background:"#1c1c24", padding:16, borderRadius:20}}><div>✅</div><div style={{color:"#9ca3af", fontSize:12}}>Published</div><div style={{fontSize:26, fontWeight:"800"}}>{stats.published}</div></div>
