@@ -1,22 +1,38 @@
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-import { createClient } from '@supabase/supabase-js';
+const [uploading, setUploading] = useState(false)
+const [progress, setProgress] = useState<string>('')
 
-export default async function FactoryPage(){
-  const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-  const { data, count } = await supa.from('lesson_previews').select('id,status', { count: 'exact' });
-  const queued = data?.filter((r:any)=>r.status==='queued').length || 0;
-  const ready = data?.filter((r:any)=>r.status==='ready').length || 0;
-  
-  return (
-    <div style={{ padding: 20, background: 'black', color: 'white', minHeight: '100vh' }}>
-      <h1>Factory - {ready} Ready</h1>
-      <p>Queued: {queued}</p>
-      <p>Ready: {ready}</p>
-      <p>Total: {count}</p>
-      <p>DB: {process.env.NEXT_PUBLIC_SUPABASE_URL?.slice(0,30)}...</p>
-      <a href="/api/factory/process-all?limit=5"><button>Process All Queued ({queued})</button></a>
-      <p style={{ marginTop: 20, fontSize: 10 }}>Updated: {new Date().toISOString()}</p>
-    </div>
-  )
+const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const files = e.target.files
+  if (!files) return
+  setUploading(true)
+
+  const fileList = Array.from(files)
+  for (let i = 0; i < fileList.length; i++) {
+    const file = fileList[i]
+    setProgress(`Uploading ${i+1}/${fileList.length}: ${file.name}`)
+
+    // 1. get signed url
+    const r1 = await fetch('/api/factory/signed-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName: file.name })
+    })
+    const { path, token } = await r1.json()
+
+    // 2. upload DIRECT to Supabase (not through Vercel)
+    const { createClient } = await import('@supabase/supabase-js')
+    const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const { error: upErr } = await supa.storage.from('source-pdfs').uploadToSignedUrl(path, token, file)
+    if (upErr) { console.error(upErr); continue }
+
+    // 3. confirm in DB
+    await fetch('/api/factory/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path, fileName: file.name, fileSize: file.size })
+    })
+  }
+  setUploading(false)
+  setProgress('Done!')
+  window.location.reload()
 }
