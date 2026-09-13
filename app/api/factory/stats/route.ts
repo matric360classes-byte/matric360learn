@@ -7,5 +7,6 @@ export async function GET(){
   if(error) return NextResponse.json({ error: error.message, queued:0, ready:0, total:0 });
   const queued = data.filter((r:any)=>r.status==='queued').length;
   const ready = data.filter((r:any)=>r.status==='ready').length;
-  return NextResponse.json({ queued, ready, total: count, error: null });
-}
+  const res = NextResponse.json({ queued, ready, total: count, error: null });
+res.headers.set('Cache-Control', 'no-store, max-age=0');
+return res;
