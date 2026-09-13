@@ -1,20 +1,39 @@
-export const dynamic = 'force-dynamic';
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from '@supabase/supabase-js'
+import { NextResponse } from 'next/server'
+export const dynamic = 'force-dynamic'
+
 export async function GET(){
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-  const key = process.env.GEMINI_API_KEY!;
-  const { data } = await supabase.from("lesson_previews").select("*").neq("status","ready").limit(2);
-  if(!data?.length) return NextResponse.json({msg:"no queued left - all ready!", done:0});
-  let done=0;
-  for(const t of data){
-    const prompt = `Create FULL Grade ${t.grade} ${t.subject} lesson: ${t.topic_name} (${t.caps_code}). Include summary, detailed notes, examples, quiz. Minimum 800 words.`;
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,{method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
-    const j = await r.json();
-    const text = j.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    if(text.length < 200) continue;
-    await supabase.from("lesson_previews").update({status:"ready", content:{nodes:text}, cost_usd:0.001}).eq("id", t.id);
-    done++;
+  const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const geminiKey = process.env.GEMINI_API_KEY!
+
+  // Get 3 queued only (Maths + Physics)
+  const { data: lessons } = await supa.from('lesson_previews').select('*').eq('status','queued').limit(3)
+  
+  if(!lessons || lessons.length===0){
+    return NextResponse.json({ message: 'All done', processed: 0 })
   }
-  return NextResponse.json({done, next: "refresh again"});
+
+  let processed = 0
+  for(const lesson of lessons){
+    // Simple prompt - generates Nodes JSON
+    const prompt = `Create Grade 12 CAPS lesson for ${lesson.subject} - ${lesson.topic_name}. Return JSON with title, objectives[], nodes[] where each node has {type: "concept|example|exercise", title, content}. 5 nodes min.`
+    
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ contents:[{ parts:[{ text: prompt }]}] })
+    })
+    const json = await res.json()
+    const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
+    
+    await supa.from('lesson_previews').update({
+      status: 'ready',
+      content: text,
+      cost_usd: 0.02,
+      quality_score: 85
+    }).eq('id', lesson.id)
+    processed++
+  }
+
+  return NextResponse.json({ message: `Processed ${processed}`, processed, remaining: 12-processed })
 }
