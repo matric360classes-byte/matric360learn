@@ -1,37 +1,34 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
-export async function GET(){
-  try{
-    const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-    
-    // Get 5 queued only - Maths+Physics
-    const { data, error } = await supa.from('lesson_previews').select('id').eq('status','queued').limit(5)
-    if(error) return NextResponse.json({ error: error.message })
-    if(!data || data.length===0) return NextResponse.json({ message: 'All 12 done', processed: 0, queued: 0, ready: 12 })
+export async function GET(req: Request){
+  const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const key = process.env.GEMINI_API_KEY!
+  const { searchParams } = new URL(req.url)
+  const limit = parseInt(searchParams.get('limit') || '5')
 
-    const ids = data.map((r:any)=>r.id)
-    
-    // Mark as ready with dummy Nodes JSON (so factory page works)
-    const { error: upErr } = await supa.from('lesson_previews').update({
-      status: 'ready',
-      content: JSON.stringify({ nodes: [{ type: 'concept', title: 'Test Lesson', content: 'CAPS Content Generated' }] }),
-      quality_score: 85,
-      cost_usd: 0
-    }).in('id', ids)
-
-    if(upErr) return NextResponse.json({ error: upErr.message })
-
-    const { data: remaining } = await supa.from('lesson_previews').select('id', { count: 'exact' }).eq('status','queued')
-    
-    return NextResponse.json({ 
-      message: `Processed ${ids.length}`, 
-      processed: ids.length, 
-      queued: remaining?.length || 0,
-      ready: 12 - (remaining?.length || 0)
-    })
-  }catch(e:any){
-    return NextResponse.json({ error: e.message })
+  const { data: lessons } = await supa.from('lesson_previews').select('*').eq('status','queued').limit(limit)
+  if(!lessons || lessons.length===0){
+    const r = NextResponse.json({ message: 'All done', processed: 0, queued: 0, ready: 12 })
+    r.headers.set('Cache-Control','no-store')
+    return r
   }
+
+  for(const l of lessons){
+    try{
+      const prompt = `Grade 12 CAPS ${l.subject} ${l.topic_name}. Return JSON {title, nodes:[{type,title,content}]}`
+      const g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contents:[{ parts:[{ text: prompt }]}] })
+      })
+      const j = await g.json()
+      const text = j.candidates?.[0]?.content?.parts?.[0]?.text || '{"nodes":[]}'
+      await supa.from('lesson_previews').update({ status:'ready', content:text, quality_score:85 }).eq('id', l.id)
+    }catch(e){ await supa.from('lesson_previews').update({ status:'failed' }).eq('id', l.id) }
+  }
+  const r = NextResponse.json({ processed: lessons.length })
+  r.headers.set('Cache-Control','no-store')
+  return r
 }
