@@ -7,32 +7,46 @@ const supabase = createClient(
 );
 
 export async function GET(){
-  const { count: t } = await supabase.from("lesson_nodes").select("*", { count: "exact", head: true });
-  const { count: n } = await supabase.from("lesson_parts").select("*", { count: "exact", head: true });
-  return NextResponse.json({ topics_135: t, nodes_675: n });
+  const { data } = await supabase.from("lesson_parts").select("content_json").limit(1000);
+  const filled = data?.filter(d => JSON.stringify(d.content_json||{}).length > 100).length || 0;
+  return NextResponse.json({ filled, remaining: 675 - filled, total: 675 });
 }
 
 export async function POST(req: NextRequest){
-  const { data: parts } = await supabase.from("lesson_parts").select("*, lesson_nodes!inner(title, subject)").eq("content_json", "{}").limit(10);
-  if(!parts?.length) return NextResponse.json({ message: "All 675 done!", done: true });
+  // FIX: Get all and filter for empty in JS (Supabase OR query fails on {} )
+  const { data: all } = await supabase.from("lesson_parts").select("*, lesson_nodes!inner(title, subject)").limit(1000);
+  const empty = all?.filter((p:any) =>!p.content_json || JSON.stringify(p.content_json).length < 100).slice(0,5) || [];
 
-  const SYSTEM = `You are Matric360 examiner. Mind the Gap for Node B, Past Papers for A/C/E, Chief Marker's for D. 400+ words, 5 formulas KaTeX $...$ $$...$$, 5 examples/traps, Node E must have | Related Topic | How Used | Example | table with 5 related topics. Output JSON only: {"body_markdown":"...","formulas":[...],"traps":[...]}`;
-
-  for(const part of parts){
-    const prompt = `${SYSTEM} Topic:${(part as any).lesson_nodes.title} Subject:${(part as any).lesson_nodes.subject} Node:${(part as any).node_key} - ${part.title}`;
-
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 8000 } })
-    });
-    const data = await res.json();
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    text = text.replace(/```json|```/g, "").trim();
-    try {
-      const json = JSON.parse(text);
-      await supabase.from("lesson_parts").update({ content_json: json }).eq("id", part.id);
-    } catch(e){ console.log("parse fail", text.slice(0,200)) }
+  if(!empty.length){
+    return NextResponse.json({ done: true, generated: 0, remaining: 0, message: "ALL 675 DONE!" });
   }
-  return NextResponse.json({ generated: parts.length });
+
+  const SYSTEM = `Matric360 examiner. Mind the Gap for B, Past Papers for A/C/E, Chief Marker for D. 400+ words, 5 KaTeX $x=\\frac{-b}{2a}$ $$E=mc^2$$, 5 examples. Node E table | Related Topic | How Used | Example | with 5 rows. JSON ONLY: {"body_markdown":"...400+ words...","formulas":["$...$"],"traps":["..."]}`;
+
+  let gen = 0;
+  for(const p of empty){
+    const t = (p as any).lesson_nodes.title;
+    const s = (p as any).lesson_nodes.subject;
+    const k = (p as any).node_key;
+    const prompt = `${SYSTEM} Topic:${t} Subject:${s} Node:${k}-${p.title}`;
+
+    try{
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 8000 } })
+      });
+      const data = await res.json();
+      let txt = data.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/```json|```/g,"").trim() || "";
+      if(!txt || txt.length < 100) continue;
+      const json = JSON.parse(txt);
+      await supabase.from("lesson_parts").update({ content_json: json }).eq("id", p.id);
+      gen++;
+    }catch(e){ console.log("fail", e) }
+  }
+
+  const { data: check } = await supabase.from("lesson_parts").select("content_json").limit(1000);
+  const remaining = check?.filter((d:any)=>!d.content_json || JSON.stringify(d.content_json).length < 100).length || 0;
+
+  return NextResponse.json({ done: remaining===0, generated: gen, remaining: remaining });
 }
