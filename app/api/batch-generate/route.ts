@@ -1,51 +1,38 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
-const supabase = createClient(
-  "https://civwluydzbwqlnipmcll.supabase.co",
-  "sb_publishable_9oINVwf0HWzC80NsBBP-WA_D5IyEng_"
-);
+export async function GET(){
+  const { data } = await supabase.from("lesson_nodes").select("content").limit(1000);
+  const filled = data?.filter((d:any)=>d.content && JSON.stringify(d.content).length>100).length||0;
+  return NextResponse.json({ filled, remaining: (data?.length||0)-filled, total: data?.length||0, route: "batch-generate" });
+}
 
-export async function POST(req: NextRequest){
-  try{
-    const body = await req.json();
-    const topicIds = body.topicIds as string[];
-    if(!topicIds?.length) return NextResponse.json({error:"No topics"}, {status:400});
+export async function POST(req: Request){
+  const { searchParams } = new URL(req.url);
+  const limit = parseInt(searchParams.get("limit")||"2");
 
-    let generated = 0;
-    const details: string[] = [];
+  const { data: all } = await supabase.from("lesson_nodes").select("*").limit(1000);
+  const empty = all?.filter((p:any)=>!p.content || JSON.stringify(p.content).length<100).slice(0,limit) || [];
+  if(!empty.length) return NextResponse.json({ done:true, generated:0, remaining:0 });
 
-    for(const id of topicIds){
-      const {data: topic} = await supabase.from("topic_knowledge").select("*").eq("id", id).single();
-      if(!topic) continue;
-      
-      const topicName = (topic as any).topic_name || (topic as any).title || "Topic";
-      const caps = (topic as any).caps_code;
-      const subj = (topic as any).subject || "Mathematics";
-      const grade = (topic as any).grade || "10";
-      
-      await supabase.from("topic_knowledge").update({ status: "in_review" }).eq("id", id);
-
-      const lessonContent = `# ${topicName} - Grade ${grade}\n\n**Node A: Concept** - DBE CAPS explanation of ${topicName}\n\n**Node B: Example** - Worked example\n\n**Node C: Practice** - 3 questions\n\n**Node D: Exam** - Past paper style\n\n**Node E: Summary**`;
-
-      const { error } = await supabase.from("lesson_previews").insert({
-        caps_code: caps,
-        subject: subj,
-        topic_name: topicName,
-        content: { markdown: lessonContent, grade: grade, nodes: ["A","B","C","D","E"] },
-        status: "pending",
-        cost_usd: 0.04
+  let gen=0; let lastError="none";
+  for(const p of empty){
+    const prompt = `SA CAPS Matric360. Node ${p.node_label} Title ${p.title}. 400+ words, 5 KaTeX formulas like $x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$ and $$E=mc^2$$, 5 worked examples. For Node E table: | Related Topic | How Used | Example | 5 rows. Return JSON ONLY: {"body_markdown":"...","formulas":["$...$"]}`;
+    try{
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature:0.4, maxOutputTokens:8000 } })
       });
-
-      if(error){
-        details.push(`${topicName} FAILED: ${error.message}`);
-      } else {
-        generated++;
-        details.push(`${topicName} -> pending + $${0.04}`);
-      }
-    }
-    return NextResponse.json({ generated, cost: generated*0.04, details });
-  }catch(e:any){
-    return NextResponse.json({error: e.message}, {status:500});
+      const j = await res.json();
+      if(!j.candidates){ lastError = JSON.stringify(j).slice(0,300); continue; }
+      let txt = j.candidates[0].content.parts[0].text.replace(/```json|```/g,"").trim();
+      const parsed = JSON.parse(txt);
+      await supabase.from("lesson_nodes").update({ content: parsed, status: "generated" }).eq("id", p.id);
+      gen++;
+    }catch(e:any){ lastError = e.message?.slice(0,300) || "parse error"; }
   }
+  const { data: check } = await supabase.from("lesson_nodes").select("content").limit(1000);
+  const remaining = check?.filter((d:any)=>!d.content || JSON.stringify(d.content).length<100).length||0;
+  return NextResponse.json({ done:remaining===0, generated:gen, remaining, lastError, model:"flash" });
 }
