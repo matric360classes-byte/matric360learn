@@ -17,12 +17,14 @@ export default function Page({ params }: any){
   const unitId = p?.unitId || params?.unitId;
   const topicId = p?.topicId || params?.topicId;
   const [rows,setRows]=useState<any[]>([]);
+  const [parts,setParts]=useState<any[]>([]);
   const [active,setActive]=useState("A");
   const [showVideo,setShowVideo]=useState(false);
 
   useEffect(()=>{(async()=>{
     const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    // OLD table
     let all:any[]=[]; let from=0;
     while(true){
       const r=await fetch(`${url}/rest/v1/topic_knowledge?select=*`,{
@@ -32,7 +34,19 @@ export default function Page({ params }: any){
       all=all.concat(chunk); if(chunk.length<1000) break; from+=1000; if(from>6000) break;
     }
     setRows(all);
-  })()},[]);
+    // NEW tables lesson_nodes + lesson_parts
+    try{
+      const rn = await fetch(`${url}/rest/v1/lesson_nodes?select=*`,{ headers:{apikey:key, Authorization:`Bearer ${key}`} });
+      const nodes = await rn.json();
+      const cleanId = decodeURIComponent(topicId||"").toLowerCase();
+      const parent = nodes.find((n:any)=> (n.node_label||"").toLowerCase()===cleanId || (n.title||"").toLowerCase().trim()===decodeURIComponent(topicId||"").replace(/-/g," ").toLowerCase().trim());
+      if(parent?.id){
+        const rp = await fetch(`${url}/rest/v1/lesson_parts?parent_node_id=eq.${parent.id}&select=*&order=sort_order.asc`,{ headers:{apikey:key, Authorization:`Bearer ${key}`} });
+        const pRows = await rp.json();
+        if(Array.isArray(pRows)) setParts(pRows);
+      }
+    }catch{}
+  })()},[topicId]);
 
   const clean = decodeURIComponent(topicId||"").replace(/-/g," ").trim();
   const topicRow = rows.find((r:any)=> (r.title||"").toLowerCase().trim()===clean.toLowerCase()) || rows.find((r:any)=> (r.slug||"").toLowerCase()===topicId.toLowerCase());
@@ -42,6 +56,7 @@ export default function Page({ params }: any){
     return f||{node_label:k, node_title:META[k].label, content:"", title:clean, youtube_url:"", real_content:f?.real_content||f?.lesson_content};
   });
   const activeNode = displayNodes.find((n:any)=>n.node_label===active);
+  const activePart = parts.find((pr:any)=>pr.node_key===active);
   const meta = META[active];
 
   return(
@@ -49,7 +64,7 @@ export default function Page({ params }: any){
       <div style={{padding:"16px"}}>
         <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280", textDecoration:"none", fontSize:13}}>← Back</Link>
         <h1 style={{fontSize:28, fontWeight:900, margin:"8px 0 4px", textTransform:"capitalize"}}>{clean}</h1>
-        <div style={{fontSize:12, color:"#6b7280"}}>5 nodes • {subjectId} / {unitId} • Tap to learn</div>
+        <div style={{fontSize:12, color:"#6b7280"}}>{parts.length===5? "5 real nodes" : "5 nodes"} • {subjectId} / {unitId} • Tap to learn</div>
       </div>
 
       <div style={{display:"flex", gap:8, overflowX:"auto", padding:"0 12px 16px", scrollbarWidth:"none"}}>
@@ -64,7 +79,6 @@ export default function Page({ params }: any){
           <div><div style={{fontWeight:800, fontSize:16}}>Node {active} • {activeNode?.node_title||meta.label}</div><div style={{fontSize:12, color:"#6b7280"}}>{meta.desc}</div></div>
         </div>
 
-        {/* VIDEO - HIDDEN IF NO URL, SHOWS IF YOU ADD YOUTUBE_URL IN SUPABASE */}
         {activeNode?.youtube_url && activeNode.youtube_url.length>5? (
           <div style={{aspectRatio:"16/9", background:"#000"}}>
             <iframe src={activeNode.youtube_url.includes("youtube")? activeNode.youtube_url.replace("watch?v=","embed/") : activeNode.youtube_url} style={{width:"100%", height:"100%", border:0}} allowFullScreen />
@@ -76,17 +90,59 @@ export default function Page({ params }: any){
         )}
 
         <div style={{padding:20, lineHeight:1.7, fontSize:14, color:"#e5e7eb", minHeight:120}}>
-          {activeNode?.content &&!activeNode.content.startsWith('{"nodes"') && activeNode.content.length>10? activeNode.content : (
+          {activePart ? (
             <div>
-              <div style={{background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.3)", borderRadius:12, padding:12, marginBottom:16, fontSize:12, color:"#fbbf24"}}>⚠️ Placeholder - Replace with real CAPS content for {clean} Node {active}</div>
-              <div style={{opacity:0.6}}><b>Example structure for {meta.label}:</b><br/><br/>
-              {active==="A"&& "🔥 Hook: Did you know electroplating is used for... (Exam loves to ask why we electroplate steel with zinc)... 2 marks in 2023 paper!"}
-              {active==="B"&& "📚 Concept: Electroplating = using electrolysis to coat one metal with another...\nDefinition:...\nProcess: 1. Object = cathode 2. Metal to coat = anode 3. Electrolyte contains ions of coating metal"}
-              {active==="C"&& "📝 Example: Calculate mass of copper deposited... Step 1: Q = It... Step 2: n(e-) = Q/F... Step 3:..."}
-              {active==="D"&& "⚠️ Traps: 1. Learners swap anode/cathode 2. Forget to write half-reaction 3. Use Q=It incorrectly... Examiner report 2022: 60% lost marks here!"}
-              {active==="E"&& "🏆 Challenge: A spoon is electroplated with silver... (a) What is electrolyte? (b) Write half-reaction at cathode... Try, then click Show Answer"}
-              </div>
+              {(() => {
+                const j = activePart.content_json || {};
+                return (
+                  <>
+                    {j.type==="exam_hook" && (
+                      <>
+                        <div style={{display:"flex", flexWrap:"wrap", gap:6, marginBottom:12}}>{(j.key_terms||[]).map((t:any,i:number)=><span key={i} style={{background:"#2a2d4a", padding:"4px 10px", borderRadius:20, fontSize:11}}>{t}</span>)}</div>
+                        <div style={{marginBottom:12}}>{j.core_concepts}</div>
+                        <div style={{fontSize:11, color:"#fbbf24", background:"rgba(251,191,36,0.1)", padding:8, borderRadius:8}}>{j.dbe_context}</div>
+                      </>
+                    )}
+                    {(j.type==="learn_concept" || j.type==="worked_example") && (
+                      <>
+                        <div style={{fontWeight:800, marginBottom:12, color:"#fff"}}>Q: {j.question}</div>
+                        {(j.steps||[]).map((s:any,i:number)=><div key={i} style={{marginBottom:8, background:"#0e0f1a", padding:"10px 12px", borderRadius:10, borderLeft:`3px solid ${meta.color}`}}><b>Step {i+1}:</b> {typeof s==="string"? s : s.text}</div>)}
+                        {j.examiner_note && <div style={{marginTop:10, fontSize:12, color:"#fbbf24"}}>💡 {j.examiner_note}</div>}
+                        <div style={{marginTop:14, padding:12, background:"#065f46", borderRadius:10, fontWeight:700}}>FINAL ANSWER: {j.final_answer}</div>
+                      </>
+                    )}
+                    {j.type==="exam_traps" && (
+                      <>
+                        <div style={{background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.4)", padding:12, borderRadius:10, marginBottom:12}}>❌ COMMON ERROR: {j.common_error}</div>
+                        {(j.examiner_tips||[]).map((t:any,i:number)=><div key={i} style={{marginBottom:8, fontSize:13}}>• {typeof t==="string"? t : t.title? `${t.title}: ${t.attack}` : t}</div>)}
+                        {(j.interpretation||[]).length>0 && <div style={{marginTop:10}}><b>Interpretation:</b><br/>{j.interpretation.map((x:any,i:number)=><div key={i}>- {x}</div>)}</div>}
+                        {j.time && <div style={{marginTop:10, fontSize:12, color:"#9ca3af"}}>⏱ {j.time}</div>}
+                      </>
+                    )}
+                    {j.type==="exam_challenge" && (
+                      <>
+                        {(j.formulas||[]).map((f:any,i:number)=><div key={i} style={{background:"#0e0f1a", padding:"10px 12px", borderRadius:10, marginBottom:8, border:"1px solid #252a44"}}><div style={{fontFamily:"monospace", fontWeight:700, color:"#fbbf24"}}>{f.formula||f.f}</div><div style={{fontSize:11, color:"#9ca3af"}}>{f.when||f.w}</div></div>)}
+                        {j.key_facts && <div style={{marginTop:12}}><b>Key Facts:</b>{j.key_facts.map((k:any,i:number)=><div key={i} style={{fontSize:12}}>• {k}</div>)}</div>}
+                        {j.quick_notes && <div style={{marginTop:12, padding:10, background:"#1f2937", borderRadius:10, fontStyle:"italic", fontSize:12}}>{j.quick_notes}</div>}
+                      </>
+                    )}
+                  </>
+                )
+              })()}
             </div>
+          ) : (
+            activeNode?.content &&!activeNode.content.startsWith('{"nodes"') && activeNode.content.length>10? activeNode.content : (
+              <div>
+                <div style={{background:"rgba(245,158,11,0.1)", border:"1px solid rgba(245,158,11,0.3)", borderRadius:12, padding:12, marginBottom:16, fontSize:12, color:"#fbbf24"}}>⚠️ Placeholder - Replace with real CAPS content for {clean} Node {active} {parts.length===0? "(No lesson_parts found - add in Supabase)":""}</div>
+                <div style={{opacity:0.6}}><b>Example structure for {meta.label}:</b><br/><br/>
+                {active==="A"&& "🔥 Hook: Did you know..."}
+                {active==="B"&& "📚 Concept:..."}
+                {active==="C"&& "📝 Example:..."}
+                {active==="D"&& "⚠️ Traps:..."}
+                {active==="E"&& "🏆 Challenge:..."}
+                </div>
+              </div>
+            )
           )}
         </div>
 
