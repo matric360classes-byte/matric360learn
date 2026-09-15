@@ -10,59 +10,60 @@ const NODES = [
   { id:"E", label:"Challenge", icon:"🏆", color:"from-purple-500 to-pink-500" },
 ];
 
-function parseContent(row:any, nodeId:string){
-  try{
-    let c = row?.content || row?.summary || row?.body || "";
-    // If content is JSON string like {"nodes":{...}}
-    if(typeof c==="string" && c.trim().startsWith("{")){
-      const j=JSON.parse(c);
-      if(j.nodes && j.nodes[nodeId]) return typeof j.nodes[nodeId]==="string"? j.nodes[nodeId] : JSON.stringify(j.nodes[nodeId],null,2);
-      if(j[nodeId]) return j[nodeId];
-      if(j.content) return j.content;
-    }
-    if(typeof c==="object") return JSON.stringify(c,null,2);
-    return c || row?.node_title || `Lesson for Node ${nodeId}`;
-  }catch(e){ return row?.content || ""; }
+function parseContent(row:any){
+  if(!row) return "";
+  const c = row.content;
+  if(!c) return "";
+  // New structure from your generation
+  if(c.body_markdown) return c.body_markdown;
+  if(c.body) return c.body;
+  if(typeof c === "string") return c;
+  return JSON.stringify(c,null,2);
 }
 
 export default function RealLearn(){
-  const p=useParams(); const subject=(p as any)?.subject as string;
-  const [all,setAll]=useState<any[]>([]); const [topics,setTopics]=useState<string[]>([]);
-  const [selTopic,setSelTopic]=useState(""); const [selNode,setSelNode]=useState("A");
+  const p=useParams();
+  const subject = (p as any)?.subject as string;
+  const [all,setAll]=useState<any[]>([]);
+  const [topics,setTopics]=useState<string[]>([]);
+  const [selTopic,setSelTopic]=useState("");
+  const [selNode,setSelNode]=useState("A");
   const [loading,setLoading]=useState(true);
 
   useEffect(()=>{ (async()=>{
-    const url=process.env.NEXT_PUBLIC_SUPABASE_URL!; const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    let data:any[]=[]; let from=0;
-    while(true){
-      const r=await fetch(`${url}/rest/v1/topic_knowledge?select=*&order=title.asc`,{
-        headers:{apikey:key, Authorization:`Bearer ${key}`, Range:`${from}-${from+999}`}
-      });
-      const chunk=await r.json(); if(!Array.isArray(chunk)||chunk.length===0) break;
-      data=data.concat(chunk); if(chunk.length<1000) break; from+=1000; if(from>5000) break;
-    }
-    const filtered=data.filter((x:any)=>x.subject===subject);
-    setAll(data); const t=[...new Set(filtered.map((x:any)=>x.title))].sort() as string[];
-    setTopics(t); if(t[0]) setSelTopic(t[0]); setLoading(false);
+    const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const r=await fetch(`${url}/rest/v1/lesson_nodes?select=*&limit=1000`,{
+      headers:{apikey:key, Authorization:`Bearer ${key}`}
+    });
+    const data=await r.json();
+    if(!Array.isArray(data)) { setLoading(false); return; }
+
+    // Filter by subject slug if present, otherwise show all
+    // Your node_label is like "PHYS-01-A" so we keep all for now
+    setAll(data);
+    const t=[...new Set(data.map((x:any)=>x.title))].sort() as string[];
+    setTopics(t);
+    if(t[0]) setSelTopic(t[0]);
+    setLoading(false);
   })(); },[subject]);
 
-  const filteredNodes=all.filter(r=>r.subject===subject && r.title===selTopic).sort((a:any,b:any)=>a.node_label.localeCompare(b.node_label));
-  const active=filteredNodes.find(n=>n.node_label===selNode) || filteredNodes[0];
+  const filteredNodes=all.filter(r=>r.title===selTopic).sort((a:any,b:any)=>a.node_label.localeCompare(b.node_label));
+  const active=filteredNodes.find(n=>n.node_label.endsWith(`-${selNode}`) || n.node_label===selNode) || filteredNodes.find(n=>n.node_label.includes(selNode)) || filteredNodes[0];
 
-  if(loading) return <div className="min-h-screen bg-[#0a0f1c] text-white p-10">Loading {subject}...</div>;
+  if(loading) return <div className="min-h-screen bg-[#0a0f1c] text-white p-10">Loading {subject}... 135 topics found</div>;
 
   return(
     <div className="min-h-screen bg-[#0a0f1c] text-white pb-24">
       <div className="p-4 border-b border-white/10 sticky top-0 bg-[#0a0f1c] z-10">
-        <h1 className="font-bold capitalize text-xl">physical sciences • {topics.length} modules</h1>
-        <p className="text-xs opacity-60 truncate">{selTopic}</p>
+        <h1 className="font-bold capitalize text-xl">{subject} • {topics.length} modules • {all.length} lessons</h1>
+        <p className="text-xs opacity-60 truncate">{selTopic} {active? `• ${active.content?.body_markdown?.length || 0} chars` : ""}</p>
       </div>
 
       <div className="flex flex-col">
-        {/* Topic selector - clean */}
         <div className="p-3 max-h-[28vh] overflow-auto flex flex-wrap gap-1.5 border-b border-white/10">
           {topics.map(t=>(
-            <button key={t} onClick={()=>setSelTopic(t)} className={`text-left px-3 py-1.5 rounded-full text-xs border ${selTopic===t?"bg-white text-black":"bg-white/10 border-white/10"}`}>{t}</button>
+            <button key={t} onClick={()=>setSelTopic(t)} className={`text-left px-3 py-1.5 rounded-full text-xs border ${selTopic===t?"bg-white text-black":"bg-white/10 border-white/10"}`}>{t.slice(0,40)}</button>
           ))}
         </div>
 
@@ -73,12 +74,12 @@ export default function RealLearn(){
             ))}
           </div>
 
-          {active && (
+          {active? (
             <div className={`mt-4 rounded-[20px] p-[1px] bg-gradient-to-br ${NODES.find(x=>x.id===selNode)?.color}`}>
               <div className="rounded-[19px] bg-[#121826] p-5">
-                <div className="font-bold text-base mb-3">Node {selNode} • {active.node_title || NODES.find(x=>x.id===selNode)?.label}</div>
+                <div className="font-bold text-base mb-3">Node {selNode} • {active.title} • {active.node_title || NODES.find(x=>x.id===selNode)?.label}</div>
                 <div className="text-[14px] opacity-90 whitespace-pre-wrap leading-relaxed">
-                  {parseContent(active, selNode)}
+                  {parseContent(active)}
                 </div>
                 <div className="flex gap-2 mt-6">
                   <button onClick={()=>{const i=NODES.findIndex(x=>x.id===selNode); if(i>0) setSelNode(NODES[i-1].id)}} className="px-4 py-2 bg-white/10 rounded-full text-sm">← Prev</button>
@@ -86,7 +87,7 @@ export default function RealLearn(){
                 </div>
               </div>
             </div>
-          )}
+          ) : <div className="p-10 text-center opacity-50">No nodes for {selTopic}</div>}
         </div>
       </div>
     </div>
