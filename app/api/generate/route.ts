@@ -41,4 +41,4 @@ export async function POST(){
   const { data: chk } = await supabase.from("lesson_nodes").select("content").limit(1000);
   const rem = chk?.filter((d:any)=>!d.content || JSON.stringify(d.content).length<100).length||0;
   return NextResponse.json({ generated:gen, remaining:rem, lastError });
-}.
+}
