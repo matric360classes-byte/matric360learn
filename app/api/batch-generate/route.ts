@@ -4,33 +4,28 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env
 
 export async function POST(){
   const { data: all } = await supabase.from("lesson_nodes").select("*").limit(1000);
-  // Only regenerate if content is empty/short
-  const empty = all?.filter((p:any)=>{
-    const txt = p.content?.body_markdown || "";
-    return!txt || txt.length < 200;
-  }).slice(0,2) || [];
+  // FORCE - take first 2 regardless of content
+  const empty = all?.slice(0,2) || [];
 
-  if(!empty.length) return NextResponse.json({ generated:0, remaining:0, lastError:"ALL REAL CONTENT DONE" });
+  if(!empty.length) return NextResponse.json({ generated:0, remaining:0, lastError:"DONE" });
 
   let gen=0; let lastError="";
   const model = "v1beta/models/gemini-3.6-flash";
 
   for(const p of empty){
     try{
-      const prompt = `Write SA CAPS Matric lesson for ${p.title} - ${p.node_label}. 600 words, headings, examples. Return plain markdown only, NO JSON.`;
+      const prompt = `Write detailed 700-word SA CAPS Matric lesson for: ${p.title} - ${p.node_label}. Include definitions, examples, exam tips. Plain markdown only. No JSON.`;
       const r = await fetch(`https://generativelanguage.googleapis.com/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,{
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:8000} })
       });
       const j:any = await r.json();
       const text = j.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      if(text.length < 100){ lastError = `Short: ${text.slice(0,200)}`; continue; }
-      // SAVE DIRECTLY AS MARKDOWN, no JSON parse
+      if(text.length < 200){ lastError = `Too short ${text.length}: ${text.slice(0,300)}`; continue; }
       await supabase.from("lesson_nodes").update({ content: { body_markdown: text }, status:"generated" }).eq("id", p.id);
-      gen++; lastError = `SAVED ${text.length} chars with ${model}`;
+      gen++; lastError = `SAVED ${text.length} chars - ${p.title}`;
     }catch(e:any){ lastError = e.message; }
   }
-  const { data: chk } = await supabase.from("lesson_nodes").select("content").limit(1000);
-  const rem = chk?.filter((d:any)=>!(d.content?.body_markdown?.length>200)).length||0;
-  return NextResponse.json({ generated:gen, remaining:rem, lastError });
+  const { data: chk } = await supabase.from("lesson_nodes").select("id").limit(1000);
+  return NextResponse.json({ generated:gen, remaining: chk? chk.length - gen : 0, lastError });
 }
