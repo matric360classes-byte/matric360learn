@@ -2,34 +2,49 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import "katex/dist/katex.min.css";
-import katex from "katex";
+
+function cleanFormula(latex:string){
+  return latex
+   .replace(/\\text\{net\}/g,"net")
+   .replace(/\\Delta/g,"Δ")
+   .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g,"($1)/($2)")
+   .replace(/_\{([^}]+)\}/g,"_$1")
+   .replace(/[\{\}]/g,"")
+   .replace(/\$/g,"")
+   .replace(/\\ /g," ")
+   .trim();
+}
 
 function FormulaCard({ latex, desc }: {latex:string, desc:string}){
-  let html = "";
-  try{ html = katex.renderToString(latex, {throwOnError:false, displayMode:true}) }catch{ html = latex }
+  const clean = cleanFormula(latex);
   return (
-    <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-6 my-4">
-      <div className="text-center text-2xl" dangerouslySetInnerHTML={{__html: html}} />
-      <div className="text-center text-[13px] text-gray-400 mt-3">{desc}</div>
+    <div className="bg-[#1e293b] border border-white/10 rounded-2xl p-6 my-4 shadow-lg">
+      <div className="text-center text-2xl font-serif font-bold tracking-wide text-white">
+        {clean}
+      </div>
+      {desc && <div className="text-center text-[13px] text-gray-400 mt-3">{desc}</div>}
     </div>
   )
 }
 
 function ContentRenderer({ content }: {content:any}){
   const md = content?.body_markdown || "";
-  const formulas = content?.formulas || content?.formulas_list || [];
+  const formulas = content?.formulas || [];
 
-  // Extract $...$ from markdown if formulas array empty
-  const autoFormulas = formulas.length===0
-   ? [...md.matchAll(/\$([^$]+)\$/g)].slice(0,6).map((m:any)=>({ latex: m[1], desc: "" }))
-    : formulas;
+  // Auto-extract $...$ if no formulas array
+  let list = formulas;
+  if(list.length===0){
+    const matches = [...md.matchAll(/\$([^$]+)\$/g)];
+    list = matches.slice(0,8).map((m:any)=>({ latex: m[1], description: "" }));
+  }
 
   return (
     <div>
-      {autoFormulas.map((f:any,i:number)=> <FormulaCard key={i} latex={f.latex||f.formula||f} desc={f.description||f.explanation||f.when_to_use||""} />)}
-      <div className="whitespace-pre-wrap leading-7 text-[15px] mt-4">
-        {md.replace(/\$[^$]+\$/g, "").replace(/\*\*/g,"")}
+      {list.map((f:any,i:number)=> (
+        <FormulaCard key={i} latex={f.latex||f.formula||f} desc={f.description||f.explanation||""} />
+      ))}
+      <div className="whitespace-pre-wrap leading-7 text-[15px] mt-6 opacity-90">
+        {md.replace(/\$[^$]+\$/g,"").replace(/\*\*/g,"").slice(0,4000)}
       </div>
     </div>
   )
@@ -64,7 +79,7 @@ export default function LessonReader(){
   return(
     <div className="min-h-screen bg-[#0a0f1c] text-white pb-24">
       <div className="p-4 border-b border-white/10 sticky top-0 bg-[#0a0f1c] z-10">
-        <Link href="/learn" className="text-xs text-gray-400">← Back</Link>
+        <Link href="/learn" className="text-xs text-gray-400">← Back to 135 topics</Link>
         <h1 className="font-bold text-xl">{activeNode.title}</h1>
         <p className="text-xs opacity-60">{all.length} Nodes • {activeNode.node_label}</p>
       </div>
