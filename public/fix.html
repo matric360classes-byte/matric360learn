@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html><body style="background:black;color:white;padding:20px;font-family:sans-serif">
+<h2>Fixing algebraic-expressions Node B...</h2>
+<div id="out">Loading...</div>
+<script>
+async function fix(){
+  document.getElementById('out').innerText = 'Calling /api/generate... wait 10 sec';
+  try {
+    const res = await fetch('/api/generate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({caps_code:'algebraic-expressions', node_type:'B'})
+    });
+    const txt = await res.text();
+    document.getElementById('out').innerText = txt;
+  } catch(e){
+    document.getElementById('out').innerText = 'Error: ' + e;
+  }
+}
+fix();
+</script>
+</body></html>
