@@ -1,68 +1,98 @@
-// lib/pdfExtractor.ts - GREEN FIX - No external lib needed
+// lib/pdfExtractor.ts - WORKS FOR MIXED 102 PDFs
 import { cleanFormula } from './formulaCleaner'
 
-const TOPIC_MAP: Record<string, string[]> = {
-  'arithmetic-series': ['arithmetic series', 'sum of arithmetic'],
-  'geometric-series': ['geometric series', 'geometric sequence'],
-  'momentum': ['momentum', 'impulse'],
-  'newton-second-law': ['newton second', 'net force'],
-  'work-energy': ['work', 'kinetic energy'],
-}
+type Chunk = { text: string, source: string, subject: string }
 
-export async function extractPDF(fileBlob: Blob | null, pdfMeta: any) {
-  // Use text already in your table if you have it, else read blob as text fallback
-  let text = ''
-  if (pdfMeta.caps_data?.text) text = pdfMeta.caps_data.text
-  else if (pdfMeta.rawText) text = pdfMeta.rawText
-  else if (fileBlob) {
-    try { text = await fileBlob.text() } catch { text = pdfMeta.title || '' }
-  } else {
-    text = pdfMeta.title || ''
+// 1. CHUNK all PDFs once - call this when you upload
+export async function ingestMixedPDFs(supabase: any) {
+  const { data: pdfs } = await supabase.from('source_pdfs').select('*')
+  const allChunks: Chunk[] = []
+
+  for (const pdf of pdfs || []) {
+    const text = pdf.caps_data?.text || pdf.rawText || pdf.content || ''
+    if (!text) continue
+
+    // Split into 800 char chunks
+    const chunks = text.match(/.{1,800}/g) || []
+    const subject = detectSubject(pdf.title + ' ' + text)
+
+    chunks.forEach((chunkText, i) => {
+      allChunks.push({
+        text: chunkText,
+        source: pdf.id,
+        subject,
+      })
+    })
   }
 
-  // Find dirty formulas in PDF text (S_n, p = m * v, v^2) - then we clean them
-  const patterns = [
-    /S_n\s*=\s*[^\n]{2,60}/gi,
-    /T_n\s*=\s*[^\n]{2,60}/gi,
-    /a_n\s*=\s*[^\n]{2,60}/gi,
-    /p\s*=\s*m\s*\*\s*v/gi,
-    /F\s*=\s*m\s*\*\s*a/gi,
-  ]
+  // Save to knowledge table for RAG
+  await supabase.from('knowledge_chunks').upsert(
+    allChunks.map((c, i) => ({
+      id: `chunk-${i}-${Date.now()}`,
+      content: c.text,
+      source_pdf_id: c.source,
+      subject: c.subject,
+      // embedding will be added later if you use pgvector, for now keyword search
+    })),
+    { onConflict: 'id' }
+  )
+  return allChunks.length
+}
 
+function detectSubject(text: string) {
+  const lower = text.toLowerCase()
+  if (lower.includes('physics') || lower.includes('momentum') || lower.includes('newton') || lower.includes('force')) return 'physics'
+  return 'maths'
+}
+
+// 2. EXTRACT relevant info for SPECIFIC node - searches across ALL chunks
+export async function extractForTopic(supabase: any, topicSlug: string, topicTitle: string) {
+  // Build search keywords from topic slug
+  const keywords = topicSlug.split('-').concat(topicTitle.toLowerCase().split(' '))
+
+  // Keyword search across knowledge_chunks (upgrade to vector later)
+  let query = supabase.from('knowledge_chunks').select('*')
+  // search for any keyword
+  const orFilter = keywords.map(k => `content.ilike.%${k}%`).join(',')
+  if (orFilter) query = query.or(orFilter)
+
+  const { data: chunks } = await query.limit(20)
+
+  if (!chunks || chunks.length === 0) {
+    // Fallback: get any chunks from source_pdfs matching title
+    const { data: pdfs } = await supabase.from('source_pdfs').select('*').ilike('title', `%${topicTitle.split(' ')[0]}%`).limit(5)
+    const fallbackText = pdfs?.map((p: any) => p.caps_data?.text || '').join(' ').slice(0, 8000) || ''
+    return buildTopicFromText(fallbackText, topicSlug, topicTitle, pdfs?.[0]?.id || 'mixed')
+  }
+
+  const combinedText = chunks.map((c: any) => c.content).join('\n---\n')
+  const sourceId = chunks[0]?.source_pdf_id || 'mixed'
+
+  return buildTopicFromText(combinedText, topicSlug, topicTitle, sourceId)
+}
+
+function buildTopicFromText(text: string, slug: string, title: string, sourceId: string) {
+  const formulaPatterns = [/S_n[^\n]{0,60}/gi, /T_n[^\n]{0,60}/gi, /p\s*=\s*m\s*\*\s*v/gi, /F\s*=\s*m\s*\*\s*a/gi, /v\^2/gi]
   let raw: string[] = []
-  patterns.forEach(rx => {
+  formulaPatterns.forEach(rx => {
     const m = text.match(rx)
     if (m) raw.push(...m)
   })
-  // Also use formulas already saved in your table
-  if (pdfMeta.formulas) raw.push(...pdfMeta.formulas.map((f:any) => f.latex || f))
+  raw = Array.from(new Set(raw)).slice(0, 15)
 
-  raw = Array.from(new Set(raw)).slice(0, 20)
-
-  const cleaned = raw.map(latex => ({
-    latex: cleanFormula(typeof latex === 'string' ? latex : latex.latex || ''),
-    original: latex,
-    description: `From PDF: ${pdfMeta.title || pdfMeta.id}`,
-  })).filter(f => f.latex.length > 2)
-
-  const lower = (text + ' ' + (pdfMeta.title || '')).toLowerCase()
-  let detectedSlug = pdfMeta.topic_slug || pdfMeta.slug || ''
-  if (!detectedSlug) {
-    for (const [slug, keywords] of Object.entries(TOPIC_MAP)) {
-      if (keywords.some(k => lower.includes(k))) { detectedSlug = slug; break }
-    }
-  }
-  if (!detectedSlug) detectedSlug = (pdfMeta.title || pdfMeta.id || 'topic').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)
-
-  const topicTitle = pdfMeta.title || detectedSlug.replace(/-/g, ' ')
+  const cleaned = raw.map(f => ({ latex: cleanFormula(f), description: `From mixed PDFs for ${title}`, source_pdf_id: sourceId }))
 
   return {
-    topics: [{
-      slug: detectedSlug,
-      title: topicTitle,
-      formulas: cleaned,
-      rawText: text.slice(0, 10000),
-    }],
-    totalFormulas: cleaned.length,
+    slug,
+    title,
+    formulas: cleaned,
+    rawText: text.slice(0, 10000),
+    sources: Array.from(new Set(raw.map(() => sourceId))),
+    sourceId,
   }
+}
+
+// Keep old name for compatibility
+export const extractPDF = async (blob: any, meta: any) => {
+  return { topics: [await buildTopicFromText(meta.caps_data?.text || meta.title || '', meta.topic_slug || 'mixed-topic', meta.title || 'Mixed', meta.id)] }
 }
