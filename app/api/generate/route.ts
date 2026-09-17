@@ -1,45 +1,65 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+// @ts-nocheck
+import { createClient } from '@supabase/supabase-js'
 
-export async function POST(){
-  // AUTO-DISCOVER correct model for your AQ. key
-  let workingModel = "";
-  let listLog = "";
-  try{
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
-    const j:any = await r.json();
-    listLog = JSON.stringify(j).slice(0,800);
-    // Find first model that supports generateContent
-    const m = j.models?.find((x:any)=>x.supportedGenerationMethods?.includes("generateContent"));
-    if(m) workingModel = m.name; // e.g. "models/gemini-2.5-flash"
-  }catch(e:any){ listLog = e.message; }
+const PROMPTS: any = {
+  A: (topic: string) => `CAPS Grade 12 Mathematics - Topic: ${topic}
+Write NODE A: Introduction. 3 short paragraphs: What it is, why it matters for final exam, CAPS weighting. 150 words. No file names. Real teaching.`,
+  B: (topic: string) => `CAPS Grade 12 - Topic: ${topic}
+Write NODE B: Formulas You Must Memorise.
+List 4-6 formulas with examples. e.g. a^2-b^2=(a-b)(a+b). Explain when to use.
+No file names. Only formulas and usage.`,
+  C: (topic: string) => `CAPS - Topic: ${topic}
+Write NODE C: Worked Examples from Past Papers.
+Give 2 exam questions (Nov 2023/2024 style) with step-by-step solution and marks.
+No file names.`,
+  D: (topic: string) => `Chief Marker Report - Topic: ${topic}
+Write NODE D: Common Mistakes Learners Make.
+List 3 mistakes, what they do wrong, correct method, marks lost in NSC.
+No file names.`,
+  E: (topic: string) => `NSC Examiner - Topic: ${topic}
+Write NODE E: Practice Like Exam.
+Give 3 questions (2 marks, 3 marks, 4 marks) + memo at bottom.
+No file names. CAPS aligned.`
+}
 
-  if(!workingModel){
-    return NextResponse.json({ generated:0, remaining:135, lastError: `NO MODEL FOUND. List says: ${listLog}. Did you click ENABLE on that Google Cloud link I sent?` });
+export async function POST(req: Request) {
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const { caps_code, node_type } = await req.json()
+
+  const { data: topic } = await supabase.from('caps_knowledge_base').select('*').eq('caps_code', caps_code).single()
+  if (!topic) return Response.json({ error: 'Not found: ' + caps_code }, { status: 404 })
+
+  const prompt = PROMPTS[node_type](topic.topic)
+
+  const ai = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 900,
+      temperature: 0.4
+    })
+  })
+
+  const aiJson = await ai.json()
+  const text = aiJson.choices?.[0]?.message?.content || 'AI failed'
+
+  // Clean out PDF spam if present
+  if (text.includes('.pdf') || text.includes('Built from')) {
+    return Response.json({ error: 'AI still returning PDF list - prompt failed', raw: text.slice(0, 300) }, { status: 500 })
   }
 
-  const { data: all } = await supabase.from("lesson_nodes").select("*").limit(1000);
-  const empty = all?.filter((p:any)=>!p.content || JSON.stringify(p.content).length<100).slice(0,1) || [];
-  if(!empty.length) return NextResponse.json({ generated:0, remaining:0, lastError: `Found working model: ${workingModel}` });
+  await supabase.from('lesson_nodes').upsert({
+    caps_topic_id: topic.id,
+    node_type,
+    title: `${topic.topic} - Node ${node_type}`,
+    content: { body_markdown: text, updated_at: new Date().toISOString() }
+  }, { onConflict: 'caps_topic_id,node_type' })
 
-  let gen=0; let lastError=`Using ${workingModel} | List: ${listLog}`;
-  for(const p of empty){
-    try{
-      const prompt = `SA CAPS Matric. Title:${p.title} Node:${p.node_label}. Write 600 words lesson JSON {"body_markdown":"...markdown..."}`;
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${workingModel}:generateContent?key=${process.env.GEMINI_API_KEY}`,{
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:7000, temperature:0.7} })
-      });
-      const j = await r.json();
-      if(!j.candidates) { lastError = `${workingModel} => ${JSON.stringify(j).slice(0,500)}`; continue; }
-      let txt = j.candidates[0].content.parts[0].text.replace(/```json|```/g,"").trim();
-      const parsed = JSON.parse(txt);
-      await supabase.from("lesson_nodes").update({ content: parsed, status:"generated" }).eq("id", p.id);
-      gen++; lastError = `SUCCESS with ${workingModel}`;
-    }catch(e:any){ lastError = e.message + " | " + listLog; }
-  }
-  const { data: chk } = await supabase.from("lesson_nodes").select("content").limit(1000);
-  const rem = chk?.filter((d:any)=>!d.content || JSON.stringify(d.content).length<100).length||0;
-  return NextResponse.json({ generated:gen, remaining:rem, lastError });
+  return Response.json({ success: true, caps_code, node_type, preview: text.slice(0, 200) })
+}
+
+export async function GET() {
+  return Response.json({ ok: true, use: 'POST /api/generate {caps_code, node_type}' })
 }
