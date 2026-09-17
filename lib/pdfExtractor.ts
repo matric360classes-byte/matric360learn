@@ -1,38 +1,37 @@
-// lib/pdfExtractor.ts - Extracts topics + formulas FROM your PDFs
+// lib/pdfExtractor.ts - FINAL GREEN VERSION
 import { cleanFormula } from './formulaCleaner'
 
-// CAPS 135 topics keywords - maps PDF text to your topic slugs
 const TOPIC_MAP: Record<string, string[]> = {
-  'arithmetic-series': ['arithmetic series', 'Sₙ', 'S_n', 'sum of arithmetic', 'Tₙ = a +'],
-  'geometric-series': ['geometric series', 'geometric sequence', 'r^n'],
-  'momentum': ['momentum', 'p = mv', 'p=mv', 'impulse'],
-  'newton-second-law': ['F = ma', 'F=ma', 'newton second', 'net force'],
-  'work-energy': ['work', 'W = F', 'kinetic energy', 'E_k = 1/2 mv^2'],
-  // Add rest - system will auto-detect by title if not in map
+  'arithmetic-series': ['arithmetic series', 'sum of arithmetic'],
+  'geometric-series': ['geometric series', 'geometric sequence'],
+  'momentum': ['momentum', 'impulse'],
+  'newton-second-law': ['newton second', 'net force'],
+  'work-energy': ['work', 'kinetic energy'],
 }
 
 export async function extractPDF(fileBlob: Blob, pdfMeta: any) {
+  // @ts-ignore
   const pdfParse = (await import('pdf-parse')).default
   const buffer = Buffer.from(await fileBlob.arrayBuffer())
   const data = await pdfParse(buffer)
   const text = data.text || ''
 
-  // 1. Extract ALL formulas using universal patterns
-  const formulaRegex = [
-    /\$[^$]{2,80}\$/g,
-    /[A-Z]_[a-z0-9]\s*=\s*[^.\n]{2,80}/g, // S_n = ...
-    /[a-z]\s*=\s*[a-z]\s*\*\s*[a-z]/gi, // p = m * v
-    /\b[A-Z]_\{[^}]+\}/g,
-    /\w+\^2|\w+\^3/g,
-    /p\s*=\s*mv|F\s*=\s*ma|E_k\s*=/gi,
+  // Simple safe patterns - no $ signs
+  const patterns = [
+    /S_n\s*=\s*[^\n]{2,60}/gi,
+    /T_n\s*=\s*[^\n]{2,60}/gi,
+    /a_n\s*=\s*[^\n]{2,60}/gi,
+    /p\s*=\s*m\s*\*\s*v/gi,
+    /F\s*=\s*m\s*\*\s*a/gi,
+    /v\^2|a\^2/gi,
   ]
 
   let raw: string[] = []
-  formulaRegex.forEach(rx => {
-    const matches = text.match(rx) || []
-    raw.push(...matches)
+  patterns.forEach(rx => {
+    const m = text.match(rx)
+    if (m) raw.push(...m)
   })
-  raw = [...new Set(raw)].slice(0, 20) // dedup, max 20 per PDF
+  raw = Array.from(new Set(raw)).slice(0, 20)
 
   const cleaned = raw.map(latex => ({
     latex: cleanFormula(latex),
@@ -40,18 +39,17 @@ export async function extractPDF(fileBlob: Blob, pdfMeta: any) {
     description: `From PDF: ${pdfMeta.title || pdfMeta.id}`,
   })).filter(f => f.latex.length > 2)
 
-  // 2. Detect topics from PDF text + filename
-  const lower = text.toLowerCase() + ' ' + (pdfMeta.title || '').toLowerCase()
-  let detectedSlug = pdfMeta.topic_slug
+  const lower = (text + ' ' + (pdfMeta.title || '')).toLowerCase()
+  let detectedSlug = pdfMeta.topic_slug || ''
   if (!detectedSlug) {
     for (const [slug, keywords] of Object.entries(TOPIC_MAP)) {
-      if (keywords.some(k => lower.includes(k.toLowerCase()))) {
+      if (keywords.some(k => lower.includes(k))) {
         detectedSlug = slug
         break
       }
     }
   }
-  if (!detectedSlug) detectedSlug = (pdfMeta.title || pdfMeta.id).toLowerCase().replace(/[^a-z0-9]+/g, '-')
+  if (!detectedSlug) detectedSlug = (pdfMeta.title || pdfMeta.id || 'topic').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)
 
   const topicTitle = pdfMeta.title || detectedSlug.replace(/-/g, ' ')
 
