@@ -18,13 +18,8 @@ export default function LearnList(){
       data.forEach((row:any)=>{
         const id = row.caps_topic_id;
         if(id &&!unique.has(id)){
-          const niceName = (row.topic_slug||'').replace(/-/g,' ').replace(/\b\w/g,(c:string)=>c.toUpperCase()) || `Topic ${unique.size+1}`;
-          unique.set(id, {
-            id: id,
-            slug: row.topic_slug || id,
-            title: niceName,
-            subject: row.node_label || 'General'
-          });
+          const niceName = (row.topic_slug||'').replace(/-/g,' ').replace(/\b\w/g,(c:string)=>c.toUpperCase()) || `Topic`;
+          unique.set(id, { id: id, slug: row.topic_slug || id, title: niceName });
         }
       });
       setTopics(Array.from(unique.values()).sort((a:any,b:any)=> a.title.localeCompare(b.title)));
@@ -32,17 +27,17 @@ export default function LearnList(){
     })();
   },[]);
 
-  if(loading) return <div className="min-h-screen bg-[#0f0f12] text-white p-6">Loading 135 topics...</div>;
+  if(loading) return <div className="min-h-screen bg-[#0f0f12] text-white p-6">Loading 135 topics from 675 lessons...</div>;
 
   return(
     <div className="min-h-screen bg-[#0f0f12] text-white p-4 pb-24">
-      <h1 className="text-2xl font-bold mb-2">Matric360 Learn - {topics.length} topics</h1>
-      <p className="text-sm text-gray-400 mb-4">✅ 675 lessons safe</p>
+      <h1 className="text-2xl font-bold mb-1">Matric360 Learn - {topics.length} topics</h1>
+      <p className="text-sm text-green-400 mb-4">✅ 675 lessons safe</p>
       <div className="flex flex-col gap-2">
         {topics.map((t:any)=>(
           <Link key={t.id} href={`/learn/${t.id}`} className="bg-white/5 p-3 rounded-lg border border-white/10 hover:bg-white/10">
             <div className="font-bold">{t.title}</div>
-            <div className="text-xs text-gray-400">{t.slug}</div>
+            <div className="text-xs text-gray-500">{t.slug}</div>
           </Link>
         ))}
       </div>
