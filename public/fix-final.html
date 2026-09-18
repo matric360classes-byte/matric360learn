@@ -1,91 +1,54 @@
+<!DOCTYPE html>
+<html><body style="background:#000;color:#0f0;padding:20px;font-family:monospace">
+<h2>Fixing Node B...</h2><div id="log"></div>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const url = 'https://mtyiabqbefbzopaqrdvo.supabase.co'
-const serviceKey = '<script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+const SUPABASE_URL = 'https://mtyiabqbefbzopaqrdvo.supabase.co'
+// PASTE YOUR SERVICE ROLE KEY HERE:
+const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpdndsdXlkemJ3cWxuaXBtY2xsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4ODc0MDI3MSwiZXhwIjoyMTA0MzE2MjcxfQ.hnpz9G1onIfTgiJTceL4nRwI5YcsVS0HK_2wniVFpeA'
 
-const url = 'https://mtyiabqbefbzopaqrdvo.supabase.co'
-const serviceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpdndsdXlkemJ3cWxuaXBtY2xsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4ODc0MDI3MSwiZXhwIjoyMTA0MzE2MjcxfQ.hnpz9G1onIfTgiJTceL4nRwI5YcsVS0HK_2wniVFpeA'
+const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
+const log = (m)=>document.getElementById('log').innerHTML+=m+'<br>'
 
-const supabase = createClient(url, serviceKey)
+async function run(){
+ log('Getting topic id...')
+ const {data:topic,error:e1} = await supabase.from('caps_knowledge_base').select('id,topic,caps_code').eq('caps_code','algebraic-expressions').single()
+ if(e1){ log('ERROR topic: '+e1.message); return; }
+ log('Found topic id: '+topic.id+' - '+topic.topic)
 
-async function fix() {
-  // 1. Get topic id for algebraic-expressions
-  const { data: topic } = await supabase.from('caps_knowledge_base').select('*').eq('caps_code','algebraic-expressions').single()
-  console.log('Topic:', topic)
-  
-  const cleanFormula = `### NODE B: Formulas You Must Memorise
+ const clean = `### NODE B: Formulas You Must Memorise - Algebraic Expressions
 
-**CAPS Topic:** Algebraic Expressions and Factorisation
+**1. Difference of Squares**
+Formula: a² - b² = (a-b)(a+b)
+Example: x² - 9 = (x-3)(x+3)
 
-1. **Difference of Squares**
-**Formula:** a² - b² = (a - b)(a + b)
-**Example:** x² - 9 = (x-3)(x+3)
+**2. Perfect Square Trinomial**
+Formula: (a+b)² = a² + 2ab + b²
+Formula: (a-b)² = a² - 2ab + b²
+Example: (x+2)² = x² +4x+4
 
-2. **Perfect Square**
-**Formula:** (a + b)² = a² + 2ab + b²
-**Formula:** (a - b)² = a² - 2ab + b²
+**3. Sum and Difference of Cubes**
+Formula: a³ - b³ = (a-b)(a²+ab+b²)
+Formula: a³ + b³ = (a+b)(a²-ab+b²)
 
-3. **Cube Sum/Difference**
-**Formula:** a³ - b³ = (a-b)(a²+ab+b²)
-**Formula:** a³ + b³ = (a+b)(a²-ab+b²)
-
-4. **Factor by grouping**
-ax + ay + bx + by = a(x+y) + b(x+y) = (a+b)(x+y)
+**4. Common Factor & Grouping**
+Formula: ab+ac = a(b+c)
+Example: 2x+4 = 2(x+2)
 `
 
-  // 2. Update lesson_nodes
-  const { data, error } = await supabase.from('lesson_nodes').upsert({
-    caps_topic_id: topic.id,
-    node_type: 'B',
-    title: 'Algebraic Expressions and Factorisation - Node B',
-    content: { body_markdown: cleanFormula }
-  }, { onConflict: 'caps_topic_id,node_type' }).select()
+ log('Updating lesson_nodes...')
+ const {data,error} = await supabase.from('lesson_nodes').upsert({
+   caps_topic_id: topic.id,
+   node_type: 'B',
+   title: 'Formulas You Must Memorise',
+   content: { body_markdown: clean }
+ },{onConflict:'caps_topic_id,node_type'}).select()
 
-  if(error) document.body.innerHTML = 'ERROR:' + error.message
-  else document.body.innerHTML = 'SUCCESS! Updated lesson_nodes!<br><pre>'+JSON.stringify(data,null,2)+'</pre><br><a href="/learn/algebraic-expressions?v='+Date.now()+'">Click to see Learn page</a>'
+ if(error){ log('UPDATE ERROR: '+error.message); return; }
+ log('✅ SUCCESS! Node B fixed!')
+ log('<br><a style="color:yellow" href="/learn/algebraic-expressions?v='+Date.now()+'">CLICK HERE to see Learn page - should show formulas now</a>')
 }
-fix()
-</script>'
-
-const supabase = createClient(url, serviceKey)
-
-async function fix() {
-  // 1. Get topic id for algebraic-expressions
-  const { data: topic } = await supabase.from('caps_knowledge_base').select('*').eq('caps_code','algebraic-expressions').single()
-  console.log('Topic:', topic)
-  
-  const cleanFormula = `### NODE B: Formulas You Must Memorise
-
-**CAPS Topic:** Algebraic Expressions and Factorisation
-
-1. **Difference of Squares**
-**Formula:** a² - b² = (a - b)(a + b)
-**Example:** x² - 9 = (x-3)(x+3)
-
-2. **Perfect Square**
-**Formula:** (a + b)² = a² + 2ab + b²
-**Formula:** (a - b)² = a² - 2ab + b²
-
-3. **Cube Sum/Difference**
-**Formula:** a³ - b³ = (a-b)(a²+ab+b²)
-**Formula:** a³ + b³ = (a+b)(a²-ab+b²)
-
-4. **Factor by grouping**
-ax + ay + bx + by = a(x+y) + b(x+y) = (a+b)(x+y)
-`
-
-  // 2. Update lesson_nodes
-  const { data, error } = await supabase.from('lesson_nodes').upsert({
-    caps_topic_id: topic.id,
-    node_type: 'B',
-    title: 'Algebraic Expressions and Factorisation - Node B',
-    content: { body_markdown: cleanFormula }
-  }, { onConflict: 'caps_topic_id,node_type' }).select()
-
-  if(error) document.body.innerHTML = 'ERROR:' + error.message
-  else document.body.innerHTML = 'SUCCESS! Updated lesson_nodes!<br><pre>'+JSON.stringify(data,null,2)+'</pre><br><a href="/learn/algebraic-expressions?v='+Date.now()+'">Click to see Learn page</a>'
-}
-fix()
+run()
 </script>
+</body></html>
