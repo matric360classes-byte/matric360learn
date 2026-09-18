@@ -10,13 +10,13 @@ export default function LearnList(){
     (async()=>{
       const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-      // FIXED: fetch from learning_nodes with caps_code
-      const r=await fetch(`${url}/rest/v1/learning_nodes?select=caps_code,topic_title,subject&limit=1000`,{
+      // FIXED: lesson_nodes is your real table (not learning_nodes)
+      const r=await fetch(`${url}/rest/v1/lesson_nodes?select=caps_code,topic_title,title,subject&limit=1000`,{
         headers:{apikey:key, Authorization:`Bearer ${key}`}
       });
       const data=await r.json();
       
-      // FIXED: Group 675 nodes -> 135 unique topics
+      // Group 675 nodes -> 135 unique topics
       const unique = new Map();
       if(Array.isArray(data)){
         data.forEach((row:any)=>{
@@ -26,7 +26,7 @@ export default function LearnList(){
         });
       }
       
-      setTopics(Array.from(unique.values()).sort((a:any,b:any)=> a.subject.localeCompare(b.subject)));
+      setTopics(Array.from(unique.values()).sort((a:any,b:any)=> (a.subject||'').localeCompare(b.subject||'')));
       setLoading(false);
     })();
   },[]);
@@ -40,7 +40,7 @@ export default function LearnList(){
       <div className="flex flex-col gap-2">
         {topics.map(t=>(
           <Link key={t.caps_code} href={`/learn/${t.caps_code}`} className="bg-white/5 p-3 rounded-lg border border-white/10 hover:bg-white/10">
-            <div className="font-bold">{t.topic_title}</div>
+            <div className="font-bold">{t.topic_title || t.title || t.caps_code}</div>
             <div className="text-xs text-gray-400">{t.caps_code} • {t.subject}</div>
           </Link>
         ))}
