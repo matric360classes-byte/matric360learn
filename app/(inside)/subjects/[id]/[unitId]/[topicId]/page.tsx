@@ -40,64 +40,43 @@ export default function Page(){
   useEffect(()=>{(async()=>{
     const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const cleanId = decodeURIComponent(topicId||"").toLowerCase().trim();
-    const cleanNoDash = cleanId.replace(/-/g," ").trim();
-    const subjectClean = decodeURIComponent(subjectId||"").toLowerCase().trim();
+    const cleanTopic = decodeURIComponent(topicId||"").toLowerCase().trim(); // regression, equations-motion, etc
+    const cleanSubject = decodeURIComponent(subjectId||"").toLowerCase().trim(); // mathematics, physical-sciences
 
-    // --- SAME AS YOUR WORKING FILE - TRY 1 ---
-    // Get caps_knowledge_base id first
-    try{
-      // FIX 1: Fetch all 135 for this subject first, don't use ilike in SQL that was blocking
-      const resAll = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,slug&limit=200`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-      let all:any = await resAll.json();
-      if(Array.isArray(all)){
-        // Filter by subject IN MEMORY - fixes Physics under Maths
-        const isMaths = subjectClean.includes("math");
-        const isPhysics = subjectClean.includes("physical");
-        let filtered = all;
-        if(isMaths) filtered = all.filter((k:any)=> (k.subject||"").toLowerCase().includes("math"));
-        if(isPhysics) filtered = all.filter((k:any)=> (k.subject||"").toLowerCase().includes("physical"));
+    // 1. EXACT MATCH BY CAPS_CODE + SUBJECT - from your CSV - 135 topics
+    let resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&subject=eq.${cleanSubject}&caps_code=eq.${cleanTopic}&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+    let kbArr:any = await resKb.json();
 
-        // FIX 2: Fuzzy match for Regression -> Linear Regression
-        const words = cleanNoDash.split(" ").filter((w:string)=>w.length>2);
-        let kb = filtered.find((k:any)=>{
-          const t=(k.topic||"").toLowerCase();
-          return words.every((w:string)=> t.includes(w));
-        }) || filtered.find((k:any)=> (k.topic||"").toLowerCase().includes(cleanNoDash))
-          || filtered.find((k:any)=> (k.slug||"").toLowerCase()===cleanId);
-
-        if(kb?.id){
-          const res = await fetch(`${url}/rest/v1/lesson_nodes?select=*&caps_topic_id=eq.${kb.id}&order=node_type.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-          let nodes:any = await res.json();
-          if(Array.isArray(nodes) && nodes.length>0){
-            console.log("GREEN VIA KB",nodes.length,kb.topic);
-            const seen=new Set();
-            nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
-            setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
-            return;
-          }
-        }
-      }
-    }catch(e){ console.log("KB failed",e) }
-
-    // --- SAME EMERGENCY FALLBACK AS BEFORE ---
-    const res2 = await fetch(`${url}/rest/v1/lesson_nodes?select=*&limit=1000`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-    let allNodes:any = await res2.json();
-    if(!Array.isArray(allNodes)){ console.log("NODES BLOCKED",allNodes); return; }
-
-    const matching = allNodes.filter((n:any)=>{
-      const c = JSON.stringify(n.content||"").toLowerCase() + (n.body_markdown||"").toLowerCase();
-      return c.includes(cleanNoDash);
-    });
-
-    if(matching.length>0){
-      const topId = matching[0].caps_topic_id;
-      const finalNodes = allNodes.filter((n:any)=> n.caps_topic_id===topId);
-      console.log("GREEN VIA DIRECT",finalNodes.length,topId);
-      const seen=new Set();
-      const uniq = finalNodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
-      setRows(uniq.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
+    // Fallback: if subject param is maths vs mathematics
+    if(!Array.isArray(kbArr) || kbArr.length===0){
+      const subjQ = cleanSubject.includes('math')? 'mathematics' : cleanSubject.includes('physical')? 'physical-sciences' : cleanSubject;
+      resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&subject=eq.${subjQ}&caps_code=eq.${cleanTopic}&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      kbArr = await resKb.json();
     }
+
+    // Last fallback: just caps_code exact (regression is unique anyway)
+    if(!Array.isArray(kbArr) || kbArr.length===0){
+      resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&caps_code=eq.${cleanTopic}&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      kbArr = await resKb.json();
+    }
+
+    if(!Array.isArray(kbArr) || kbArr.length===0){
+      console.log("0 KB for",cleanTopic,cleanSubject,kbArr);
+      return;
+    }
+
+    const kb = kbArr[0];
+    console.log("FOUND KB",kb.topic,kb.subject,kb.caps_code,kb.id);
+
+    // 2. 675 ALLOCATION - 5 nodes per caps_topic_id
+    const res = await fetch(`${url}/rest/v1/lesson_nodes?select=*&caps_topic_id=eq.${kb.id}&order=node_type.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+    let nodes:any = await res.json();
+    if(!Array.isArray(nodes)){ console.log("NODES BLOCKED",nodes); return; }
+
+    console.log("FOUND NODES",nodes.length,"for",kb.caps_code);
+    const seen=new Set();
+    nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
+    setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
   })()},[topicId, subjectId]);
 
   const clean = decodeURIComponent(topicId||"").replace(/-/g," ");
@@ -110,7 +89,7 @@ export default function Page(){
       <div style={{padding:16}}>
         <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:14,textDecoration:"none"}}>← Back</Link>
         <h1 style={{fontSize:26,fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
-        <div style={{fontSize:12,color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES • {rows[0]?.caps_topic_id?.slice(0,8)||clean} • {rows.length? "675 Allocated":"Blocked by RLS"}</div>
+        <div style={{fontSize:12,color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES • {rows[0]?.caps_topic_id?.slice(0,8)||clean} • {rows.length? "675 Allocated":"0 NODES"}</div>
       </div>
       <div style={{display:"flex",gap:8,overflowX:"auto",padding:"0 12px 16px"}}>
         {Object.keys(META).map(k=><button key={k} onClick={()=>setActive(k)} style={{flexShrink:0,padding:"10px 18px",borderRadius:24,border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
@@ -121,7 +100,7 @@ export default function Page(){
           <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:11,color:"#6b7280"}}>{activeNode?.node_type} • {activeNode?.caps_topic_id?.slice(0,8)}</div></div>
         </div>
         <div style={{padding:20,minHeight:250}}>
-          {activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean}... If stays 0, run RLS SQL</div>}
+          {activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean}...</div>}
         </div>
       </div>
     </div>
