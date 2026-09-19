@@ -40,31 +40,32 @@ export default function Page(){
   useEffect(()=>{(async()=>{
     const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const cleanId = decodeURIComponent(topicId||"").trim();
+    const cleanId = decodeURIComponent(topicId||"").toLowerCase().trim();
+    const cleanNoDash = cleanId.replace(/-/g," ");
 
-    // 1. Get REAL id from caps_knowledge_base (135 topics) - this is the allocation key
-    const resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,slug,caps_code&or=(slug.eq.${cleanId},caps_code.eq.${cleanId})&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-    let kbArr:any = await resKb.json();
-    let kb = kbArr[0];
+    // 1. READ ALL 135 TOPICS AND FILTER IN MEMORY - GUARANTEED TO FIND algebraic expressions
+    const resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,slug,caps_code,subject&limit=200`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+    let allKb:any = await resKb.json();
+    if(!Array.isArray(allKb)){ console.log("KB BLOCKED - enable RLS for anon", allKb); return; }
 
-    // Fallback if slug not yet created: try search by topic name
-    if(!kb){
-      const cleanNoDash = cleanId.replace(/-/g," ");
-      const resKb2 = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,slug,caps_code&topic=ilike.%${cleanNoDash}%&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-      const kbArr2 = await resKb2.json();
-      kb = kbArr2[0];
-    }
+    let kb = allKb.find((k:any)=>{
+      const t=(k.topic||"").toLowerCase();
+      const s=(k.slug||"").toLowerCase();
+      const c=(k.caps_code||"").toLowerCase();
+      const cleanTopic = t.replace(/unit \d+ \| /g,'').trim();
+      return s===cleanId || c===cleanId || cleanTopic===cleanNoDash || cleanTopic.includes(cleanNoDash) || cleanNoDash.includes(cleanTopic);
+    });
 
-    if(!kb){ console.log("Topic not found in 135 for", cleanId); return; }
+    if(!kb){ console.log("Topic not found in 135 for", cleanId, "Available:", allKb.slice(0,3).map((k:any)=>k.topic)); return; }
 
-    // 2. Get its OWN 5 nodes via caps_topic_id - proper allocation, not same everywhere
+    // 2. Get its OWN 5 nodes via caps_topic_id - proper allocation
     const res = await fetch(`${url}/rest/v1/lesson_nodes?select=*&caps_topic_id=eq.${kb.id}&order=node_type.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
     let nodes:any = await res.json();
-    if(!Array.isArray(nodes)){ console.log("BLOCKED",nodes); return; }
-    console.log("FOUND",nodes.length,"for",kb.topic,"->",kb.id);
+    if(!Array.isArray(nodes)){ console.log("NODES BLOCKED",nodes); return; }
+    console.log("FOUND",nodes.length,"for",kb.topic,kb.id);
 
     const seen=new Set();
-    nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_label||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
+    nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
     setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
   })()},[topicId]);
 
