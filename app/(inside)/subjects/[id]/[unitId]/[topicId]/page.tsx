@@ -40,23 +40,32 @@ export default function Page(){
   useEffect(()=>{(async()=>{
     const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const cleanId = decodeURIComponent(topicId||"").toLowerCase().trim();
-    const cleanNoDash = cleanId.replace(/-/g," ");
-    // READ ONLY - fetch 1000 and filter in memory - GUARANTEED to find your 675
-    const res = await fetch(`${url}/rest/v1/lesson_nodes?select=*&limit=1000`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-    let all:any = await res.json();
-    if(!Array.isArray(all)){ console.log("BLOCKED",all); return; }
-    let nodes = all.filter((n:any)=>{
-      const slug=(n.topic_slug||"").toLowerCase();
-      const title=(n.title||"").toLowerCase();
-      return slug===cleanId || slug.includes(cleanId) || cleanId.includes(slug) || slug.includes(cleanNoDash) || title.includes(cleanNoDash);
-    });
-    console.log("FOUND",nodes.length,"for",cleanId);
-    const order=["EXAM_HOOK","CONCEPT","LEARN_THE_CONCEPT","WORKED_EXAMPLE","EXAMINER_TRAPS","TRAPS","EXAM_CHALLENGE"];
-    nodes = nodes.sort((a:any,b:any)=>order.indexOf(a.node_type)-order.indexOf(b.node_type));
+    const cleanId = decodeURIComponent(topicId||"").trim();
+
+    // 1. Get REAL id from caps_knowledge_base (135 topics) - this is the allocation key
+    const resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,slug,caps_code&or=(slug.eq.${cleanId},caps_code.eq.${cleanId})&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+    let kbArr:any = await resKb.json();
+    let kb = kbArr[0];
+
+    // Fallback if slug not yet created: try search by topic name
+    if(!kb){
+      const cleanNoDash = cleanId.replace(/-/g," ");
+      const resKb2 = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,slug,caps_code&topic=ilike.%${cleanNoDash}%&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      const kbArr2 = await resKb2.json();
+      kb = kbArr2[0];
+    }
+
+    if(!kb){ console.log("Topic not found in 135 for", cleanId); return; }
+
+    // 2. Get its OWN 5 nodes via caps_topic_id - proper allocation, not same everywhere
+    const res = await fetch(`${url}/rest/v1/lesson_nodes?select=*&caps_topic_id=eq.${kb.id}&order=node_type.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+    let nodes:any = await res.json();
+    if(!Array.isArray(nodes)){ console.log("BLOCKED",nodes); return; }
+    console.log("FOUND",nodes.length,"for",kb.topic,"->",kb.id);
+
     const seen=new Set();
-    nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_label; if(seen.has(l)) return false; seen.add(l); return true;});
-    setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_label})));
+    nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_label||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
+    setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
   })()},[topicId]);
 
   const clean = decodeURIComponent(topicId||"").replace(/-/g," ");
@@ -69,7 +78,7 @@ export default function Page(){
       <div style={{padding:16}}>
         <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:14,textDecoration:"none"}}>← Back</Link>
         <h1 style={{fontSize:26,fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
-        <div style={{fontSize:12,color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} LOCKED • {rows[0]?.topic_slug||clean} • {rows.length? "Perfect formulas locked":"Searching 675..."}</div>
+        <div style={{fontSize:12,color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES • {rows[0]?.caps_topic_id?.slice(0,8)||clean} • {rows.length? "Allocated correctly":"Searching 135 topics..."}</div>
       </div>
       <div style={{display:"flex",gap:8,overflowX:"auto",padding:"0 12px 16px"}}>
         {Object.keys(META).map(k=><button key={k} onClick={()=>setActive(k)} style={{flexShrink:0,padding:"10px 18px",borderRadius:24,border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
@@ -77,10 +86,10 @@ export default function Page(){
       <div style={{margin:"0 12px",background:"#1a1c2e",borderRadius:24,border:"1px solid #252a44"}}>
         <div style={{padding:16,borderBottom:"1px solid #252a44",display:"flex",gap:12,alignItems:"center"}}>
           <div style={{width:44,height:44,borderRadius:12,background:meta?.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{meta?.icon}</div>
-          <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:11,color:"#6b7280"}}>{activeNode?.node_type} • {activeNode?.topic_slug}</div></div>
+          <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:11,color:"#6b7280"}}>{activeNode?.node_type} • {activeNode?.caps_topic_id?.slice(0,8)}</div></div>
         </div>
         <div style={{padding:20,minHeight:250}}>
-          {activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean} from 675 locked nodes...</div>}
+          {activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean} from 135 topics...</div>}
         </div>
       </div>
     </div>
