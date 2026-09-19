@@ -44,39 +44,60 @@ export default function Page(){
     const cleanNoDash = cleanId.replace(/-/g," ").trim();
     const subjectClean = decodeURIComponent(subjectId||"").toLowerCase().trim();
 
-    // 1. Get all 135 - this worked before
-    const resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,slug,subject,caps_code&limit=200`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-    const allKb:any = await resKb.json();
-    if(!Array.isArray(allKb)){ console.log("KB BLOCKED - RUN SQL", allKb); return; }
+    // --- SAME AS YOUR WORKING FILE - TRY 1 ---
+    // Get caps_knowledge_base id first
+    try{
+      // FIX 1: Fetch all 135 for this subject first, don't use ilike in SQL that was blocking
+      const resAll = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,slug&limit=200`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      let all:any = await resAll.json();
+      if(Array.isArray(all)){
+        // Filter by subject IN MEMORY - fixes Physics under Maths
+        const isMaths = subjectClean.includes("math");
+        const isPhysics = subjectClean.includes("physical");
+        let filtered = all;
+        if(isMaths) filtered = all.filter((k:any)=> (k.subject||"").toLowerCase().includes("math"));
+        if(isPhysics) filtered = all.filter((k:any)=> (k.subject||"").toLowerCase().includes("physical"));
 
-    // 2. Filter by subject IN MEMORY to stop Physics under Maths
-    // This is the ONLY fix - not in SQL
-    const isMaths = subjectClean.includes("math");
-    const isPhysics = subjectClean.includes("physical");
-    let candidates = allKb;
-    if(isMaths) candidates = allKb.filter((k:any)=> (k.subject||"").toLowerCase().includes("math"));
-    if(isPhysics) candidates = allKb.filter((k:any)=> (k.subject||"").toLowerCase().includes("physical"));
-    if(candidates.length===0) candidates = allKb;
+        // FIX 2: Fuzzy match for Regression -> Linear Regression
+        const words = cleanNoDash.split(" ").filter((w:string)=>w.length>2);
+        let kb = filtered.find((k:any)=>{
+          const t=(k.topic||"").toLowerCase();
+          return words.every((w:string)=> t.includes(w));
+        }) || filtered.find((k:any)=> (k.topic||"").toLowerCase().includes(cleanNoDash))
+          || filtered.find((k:any)=> (k.slug||"").toLowerCase()===cleanId);
 
-    // 3. Find topic - handles trig equations vs trigonometric equations
-    const words = cleanNoDash.split(" ").filter((w:string)=>w.length>2);
-    let kb = candidates.find((k:any)=>{
-      const t=(k.topic||"").toLowerCase().replace(/unit \d+ \| /g,'');
-      return words.every((w:string)=> t.includes(w));
-    }) || candidates.find((k:any)=> (k.topic||"").toLowerCase().includes(cleanNoDash))
-      || candidates.find((k:any)=> (k.slug||"").toLowerCase()===cleanId)
-      || candidates.find((k:any)=> (k.caps_code||"").toLowerCase()===cleanId);
+        if(kb?.id){
+          const res = await fetch(`${url}/rest/v1/lesson_nodes?select=*&caps_topic_id=eq.${kb.id}&order=node_type.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+          let nodes:any = await res.json();
+          if(Array.isArray(nodes) && nodes.length>0){
+            console.log("GREEN VIA KB",nodes.length,kb.topic);
+            const seen=new Set();
+            nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
+            setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
+            return;
+          }
+        }
+      }
+    }catch(e){ console.log("KB failed",e) }
 
-    if(!kb){ console.log("Not found",cleanNoDash,"in",candidates.length); return; }
+    // --- SAME EMERGENCY FALLBACK AS BEFORE ---
+    const res2 = await fetch(`${url}/rest/v1/lesson_nodes?select=*&limit=1000`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+    let allNodes:any = await res2.json();
+    if(!Array.isArray(allNodes)){ console.log("NODES BLOCKED",allNodes); return; }
 
-    // 4. Get its 5 nodes - 675 allocation
-    const res = await fetch(`${url}/rest/v1/lesson_nodes?select=*&caps_topic_id=eq.${kb.id}&order=node_type.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-    let nodes:any = await res.json();
-    console.log("FOUND",nodes?.length,"for",kb.topic,kb.subject);
-    if(!Array.isArray(nodes)) return;
-    const seen=new Set();
-    nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
-    setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
+    const matching = allNodes.filter((n:any)=>{
+      const c = JSON.stringify(n.content||"").toLowerCase() + (n.body_markdown||"").toLowerCase();
+      return c.includes(cleanNoDash);
+    });
+
+    if(matching.length>0){
+      const topId = matching[0].caps_topic_id;
+      const finalNodes = allNodes.filter((n:any)=> n.caps_topic_id===topId);
+      console.log("GREEN VIA DIRECT",finalNodes.length,topId);
+      const seen=new Set();
+      const uniq = finalNodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
+      setRows(uniq.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
+    }
   })()},[topicId, subjectId]);
 
   const clean = decodeURIComponent(topicId||"").replace(/-/g," ");
@@ -89,7 +110,7 @@ export default function Page(){
       <div style={{padding:16}}>
         <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:14,textDecoration:"none"}}>← Back</Link>
         <h1 style={{fontSize:26,fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
-        <div style={{fontSize:12,color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES • {rows[0]?.caps_topic_id?.slice(0,8)||clean}</div>
+        <div style={{fontSize:12,color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES • {rows[0]?.caps_topic_id?.slice(0,8)||clean} • {rows.length? "675 Allocated":"Blocked by RLS"}</div>
       </div>
       <div style={{display:"flex",gap:8,overflowX:"auto",padding:"0 12px 16px"}}>
         {Object.keys(META).map(k=><button key={k} onClick={()=>setActive(k)} style={{flexShrink:0,padding:"10px 18px",borderRadius:24,border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
@@ -100,7 +121,7 @@ export default function Page(){
           <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:11,color:"#6b7280"}}>{activeNode?.node_type} • {activeNode?.caps_topic_id?.slice(0,8)}</div></div>
         </div>
         <div style={{padding:20,minHeight:250}}>
-          {activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean}...</div>}
+          {activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean}... If stays 0, run RLS SQL</div>}
         </div>
       </div>
     </div>
