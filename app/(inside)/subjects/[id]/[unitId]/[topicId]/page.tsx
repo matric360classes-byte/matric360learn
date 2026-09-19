@@ -40,33 +40,70 @@ export default function Page(){
   useEffect(()=>{(async()=>{
     const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const cleanTopic = decodeURIComponent(topicId||"").toLowerCase().trim(); // regression, equations-motion, etc
-    const cleanSubject = decodeURIComponent(subjectId||"").toLowerCase().trim(); // mathematics, physical-sciences
+    const cleanTopicRaw = decodeURIComponent(topicId||"").toLowerCase().trim();
+    const cleanSubjectRaw = decodeURIComponent(subjectId||"").toLowerCase().trim();
+    const subjNorm = cleanSubjectRaw.includes('math')? 'mathematics' : cleanSubjectRaw.includes('physical')? 'physical-sciences' : cleanSubjectRaw;
 
-    // 1. EXACT MATCH BY CAPS_CODE + SUBJECT - from your CSV - 135 topics
-    let resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&subject=eq.${cleanSubject}&caps_code=eq.${cleanTopic}&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+    // FIX: Alias map for list page that builds wrong slugs (graphs instead of graphs-motion etc)
+    const ALIAS:any = {
+      "equations": subjNorm==='physical-sciences'? "equations-motion" : "equations",
+      "equation": subjNorm==='physical-sciences'? "equations-motion" : "equations",
+      "equations-of-motion": "equations-motion",
+      "graphs": "graphs-motion",
+      "graphs-of-motion": "graphs-motion",
+      "graph": "graphs-motion",
+      "projectile-calculations": "projectile-calculations",
+      "projectile-calculation": "projectile-calculations",
+      "projectile": "projectile-calculations",
+      "free-fall": "free-fall",
+      "free": "free-fall",
+      "bouncing": "bouncing",
+      // Doppler - your CSV currently only has red-blue, so map definition/equation there until you add rows
+      "doppler-effect-definition": "doppler-definition",
+      "doppler-effect---definition": "doppler-definition",
+      "doppler-definition": "doppler-definition",
+      "doppler-equation": "doppler-equation",
+      "doppler-effect": "red-blue",
+      "doppler": "red-blue",
+      "red-and-blue-shift": "red-blue",
+      "red-blue-shift": "red-blue",
+      "regression": "regression",
+      "regression-and-least-squares": "regression"
+    };
+    const cleanTopic = ALIAS[cleanTopicRaw] || cleanTopicRaw;
+
+    // 1. EXACT MATCH BY CAPS_CODE + SUBJECT
+    let resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&subject=eq.${subjNorm}&caps_code=eq.${cleanTopic}&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
     let kbArr:any = await resKb.json();
 
-    // Fallback: if subject param is maths vs mathematics
-    if(!Array.isArray(kbArr) || kbArr.length===0){
-      const subjQ = cleanSubject.includes('math')? 'mathematics' : cleanSubject.includes('physical')? 'physical-sciences' : cleanSubject;
-      resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&subject=eq.${subjQ}&caps_code=eq.${cleanTopic}&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-      kbArr = await resKb.json();
-    }
-
-    // Last fallback: just caps_code exact (regression is unique anyway)
+    // 2. Fallback: caps_code exact only (for regression etc)
     if(!Array.isArray(kbArr) || kbArr.length===0){
       resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&caps_code=eq.${cleanTopic}&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       kbArr = await resKb.json();
     }
 
+    // 3. Fuzzy fallback for 0 NODES: search by topic contains keyword for that subject
     if(!Array.isArray(kbArr) || kbArr.length===0){
-      console.log("0 KB for",cleanTopic,cleanSubject,kbArr);
+      const keyword = cleanTopicRaw.includes('doppler')? 'doppler' : cleanTopicRaw.includes('projectile')? 'projectile' : cleanTopicRaw.includes('graph')? 'graphs' : cleanTopicRaw.split('-')[0];
+      resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&subject=eq.${subjNorm}&topic=ilike.%${keyword}%&limit=5`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      const fuzzy:any = await resKb.json();
+      if(Array.isArray(fuzzy) && fuzzy.length>0){
+        let pick = fuzzy[0];
+        if(cleanTopicRaw.includes('definition')) pick = fuzzy.find((k:any)=> k.topic.toLowerCase().includes('definition') || k.caps_code.includes('definition')) || fuzzy[0];
+        if(cleanTopicRaw.includes('equation')) pick = fuzzy.find((k:any)=> k.topic.toLowerCase().includes('equation') || k.caps_code.includes('equation')) || fuzzy[0];
+        if(cleanTopicRaw.includes('graphs')) pick = fuzzy.find((k:any)=> k.caps_code.includes('graphs')) || fuzzy[0];
+        if(cleanTopicRaw.includes('projectile')) pick = fuzzy.find((k:any)=> k.caps_code.includes('projectile')) || fuzzy[0];
+        kbArr = [pick];
+      }
+    }
+
+    if(!Array.isArray(kbArr) || kbArr.length===0){
+      console.log("0 KB for",cleanTopicRaw,"->",cleanTopic,subjNorm,kbArr);
       return;
     }
 
     const kb = kbArr[0];
-    console.log("FOUND KB",kb.topic,kb.subject,kb.caps_code,kb.id);
+    console.log("FOUND KB",kb.topic,kb.subject,kb.caps_code,kb.id, "from URL", cleanTopicRaw);
 
     // 2. 675 ALLOCATION - 5 nodes per caps_topic_id
     const res = await fetch(`${url}/rest/v1/lesson_nodes?select=*&caps_topic_id=eq.${kb.id}&order=node_type.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
