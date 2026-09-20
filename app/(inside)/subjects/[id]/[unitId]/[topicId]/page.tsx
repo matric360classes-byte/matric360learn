@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
@@ -33,7 +33,6 @@ function MathRenderer({ text }: { text: string }) {
 
 export default function Page(){
   const p = useParams() as any;
-  const searchParams = useSearchParams();
   const subjectId=p?.id, unitId=p?.unitId, topicId=p?.topicId;
   const [rows,setRows]=useState<any[]>([]);
   const [active,setActive]=useState("A");
@@ -42,12 +41,14 @@ export default function Page(){
   const [editText,setEditText]=useState("");
   const [saving,setSaving]=useState(false);
 
-  // Admin check - only you
   useEffect(()=>{
-    if(searchParams.get('admin')==='1' || (typeof window!=='undefined' && localStorage.getItem('isContentAdmin')==='true')){
-      setIsAdmin(true);
+    if(typeof window!=='undefined'){
+      const qs = new URLSearchParams(window.location.search);
+      if(qs.get('admin')==='1' || localStorage.getItem('isContentAdmin')==='true'){
+        setIsAdmin(true);
+      }
     }
-  },[searchParams]);
+  },[]);
 
   useEffect(()=>{(async()=>{
     const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -56,7 +57,6 @@ export default function Page(){
     const cleanSubjectRaw = decodeURIComponent(subjectId||"").toLowerCase().trim();
     const subjNorm = cleanSubjectRaw.includes('math')? 'mathematics' : cleanSubjectRaw.includes('physical')? 'physical-sciences' : cleanSubjectRaw;
 
-    // FIX: Alias map for list page that builds wrong slugs (graphs instead of graphs-motion etc)
     const ALIAS:any = {
       "equations": subjNorm==='physical-sciences'? "equations-motion" : "equations",
       "equation": subjNorm==='physical-sciences'? "equations-motion" : "equations",
@@ -83,17 +83,12 @@ export default function Page(){
     };
     const cleanTopic = ALIAS[cleanTopicRaw] || cleanTopicRaw;
 
-    // 1. EXACT MATCH BY CAPS_CODE + SUBJECT
     let resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&subject=eq.${subjNorm}&caps_code=eq.${cleanTopic}&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
     let kbArr:any = await resKb.json();
-
-    // 2. Fallback: caps_code exact only (for regression etc)
     if(!Array.isArray(kbArr) || kbArr.length===0){
       resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&caps_code=eq.${cleanTopic}&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       kbArr = await resKb.json();
     }
-
-    // 3. Fuzzy fallback for 0 NODES: search by topic contains keyword for that subject
     if(!Array.isArray(kbArr) || kbArr.length===0){
       const keyword = cleanTopicRaw.includes('doppler')? 'doppler' : cleanTopicRaw.includes('projectile')? 'projectile' : cleanTopicRaw.includes('graph')? 'graphs' : cleanTopicRaw.split('-')[0];
       resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&subject=eq.${subjNorm}&topic=ilike.%${keyword}%&limit=5`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
@@ -107,21 +102,11 @@ export default function Page(){
         kbArr = [pick];
       }
     }
-
-    if(!Array.isArray(kbArr) || kbArr.length===0){
-      console.log("0 KB for",cleanTopicRaw,"->",cleanTopic,subjNorm,kbArr);
-      return;
-    }
-
+    if(!Array.isArray(kbArr) || kbArr.length===0) return;
     const kb = kbArr[0];
-    console.log("FOUND KB",kb.topic,kb.subject,kb.caps_code,kb.id, "from URL", cleanTopicRaw);
-
-    // 2. 675 ALLOCATION - 5 nodes per caps_topic_id
     const res = await fetch(`${url}/rest/v1/lesson_nodes?select=*&caps_topic_id=eq.${kb.id}&order=node_type.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
     let nodes:any = await res.json();
-    if(!Array.isArray(nodes)){ console.log("NODES BLOCKED",nodes); return; }
-
-    console.log("FOUND NODES",nodes.length,"for",kb.caps_code);
+    if(!Array.isArray(nodes)) return;
     const seen=new Set();
     nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
     setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
@@ -145,24 +130,16 @@ export default function Page(){
     try{
       const res = await fetch(`${url}/rest/v1/lesson_nodes?id=eq.${activeNode.id}`,{
         method:"PATCH",
-        headers:{
-          apikey:key,
-          Authorization:`Bearer ${key}`,
-          "Content-Type":"application/json",
-          Prefer:"return=representation"
-        },
-        body: JSON.stringify({ 
-          content: { ...(typeof activeNode.content==='object'? activeNode.content:{}), body_markdown: editText },
-          body_markdown: editText
-        })
+        headers:{ apikey:key, Authorization:`Bearer ${key}`, "Content-Type":"application/json", Prefer:"return=representation" },
+        body: JSON.stringify({ content: {...(typeof activeNode.content==='object'? activeNode.content:{}), body_markdown: editText }, body_markdown: editText })
       });
       const data = await res.json();
       if(Array.isArray(data) && data.length>0){
-        setRows(prev=> prev.map(r=> r.id===activeNode.id ? {...r, content:{...r.content, body_markdown: editText}, body_markdown: editText} : r));
+        setRows(prev=> prev.map(r=> r.id===activeNode.id? {...r, content:{...r.content, body_markdown: editText}, body_markdown: editText} : r));
         setEditing(false);
-        alert("✅ Saved! Live for learners.");
+        alert("Saved! Live for learners.");
       }else{
-        alert("Save failed - check RLS policy for anon: "+JSON.stringify(data));
+        alert("Save blocked by RLS - run the SQL policy I gave you: "+JSON.stringify(data));
       }
     }catch(e:any){ alert("Error: "+e.message); }
     setSaving(false);
@@ -172,40 +149,38 @@ export default function Page(){
     <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:100}}>
       <div style={{padding:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:14,textDecoration:"none"}}>← Back</Link>
-          {isAdmin ? <span style={{fontSize:10,background:"#00ff88",color:"#000",padding:"4px 8px",borderRadius:8,fontWeight:800}}>ADMIN • Quick Edit ON</span> : <button onClick={()=>{const pw=prompt("Admin key?"); if(pw==="admin123"){localStorage.setItem('isContentAdmin','true'); setIsAdmin(true);}}} style={{fontSize:10,color:"#222",background:"transparent",border:"none"}}>•</button>}
+          <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:"14px",textDecoration:"none"}}>← Back</Link>
+          {isAdmin? <span style={{fontSize:"10px",background:"#00ff88",color:"#000",padding:"4px 8px",borderRadius:"8px",fontWeight:800}}>ADMIN • Quick Edit ON</span> : <button onClick={()=>{const pw=prompt("Admin key?"); if(pw==="admin123"){localStorage.setItem('isContentAdmin','true'); setIsAdmin(true);}}} style={{fontSize:"10px",color:"#222",background:"transparent",border:"none"}}>•</button>}
         </div>
-        <h1 style={{fontSize:26,fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
-        <div style={{fontSize:12,color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES • {rows[0]?.caps_topic_id?.slice(0,8)||clean} • {rows.length? "675 Allocated":"0 NODES"}</div>
+        <h1 style={{fontSize:"26px",fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
+        <div style={{fontSize:"12px",color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES • {rows[0]?.caps_topic_id?.slice(0,8)||clean} • {rows.length? "675 Allocated":"0 NODES"}</div>
       </div>
-      <div style={{display:"flex",gap:8,overflowX:"auto",padding:"0 12px 16px"}}>
-        {Object.keys(META).map(k=><button key={k} onClick={()=>{setActive(k); setEditing(false);}} style={{flexShrink:0,padding:"10px 18px",borderRadius:24,border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
+      <div style={{display:"flex",gap:"8px",overflowX:"auto",padding:"0 12px 16px"}}>
+        {Object.keys(META).map(k=><button key={k} onClick={()=>{setActive(k); setEditing(false);}} style={{flexShrink:0,padding:"10px 18px",borderRadius:"24px",border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
       </div>
-      <div style={{margin:"0 12px",background:"#1a1c2e",borderRadius:24,border:"1px solid #252a44"}}>
-        <div style={{padding:16,borderBottom:"1px solid #252a44",display:"flex",gap:12,alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{display:"flex",gap:12,alignItems:"center"}}>
-            <div style={{width:44,height:44,borderRadius:12,background:meta?.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{meta?.icon}</div>
-            <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:11,color:"#6b7280"}}>{activeNode?.node_type} • {activeNode?.caps_topic_id?.slice(0,8)}</div></div>
+      <div style={{margin:"0 12px",background:"#1a1c2e",borderRadius:"24px",border:"1px solid #252a44"}}>
+        <div style={{padding:"16px",borderBottom:"1px solid #252a44",display:"flex",gap:"12px",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",gap:"12px",alignItems:"center"}}>
+            <div style={{width:"44px",height:"44px",borderRadius:"12px",background:meta?.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{meta?.icon}</div>
+            <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:"11px",color:"#6b7280"}}>{activeNode?.node_type} • {activeNode?.caps_topic_id?.slice(0,8)}</div></div>
           </div>
-          {isAdmin && !editing && <button onClick={startEdit} style={{background:"#ff6b35",color:"#fff",border:"none",padding:"8px 14px",borderRadius:12,fontWeight:700,fontSize:12}}>✏️ Quick Edit</button>}
+          {isAdmin &&!editing && <button onClick={startEdit} style={{background:"#ff6b35",color:"#fff",border:"none",padding:"8px 14px",borderRadius:"12px",fontWeight:700,fontSize:"12px"}}>Quick Edit</button>}
         </div>
-        <div style={{padding:20,minHeight:250}}>
-          {!editing ? (
+        <div style={{padding:"20px",minHeight:"250px"}}>
+          {!editing? (
             activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean}...</div>
           ) : (
             <div>
-              <div style={{fontSize:12,color:"#ff6b35",marginBottom:8,fontWeight:700}}>EDITING Node {active} • {activeNode?.id?.slice(0,8)}</div>
-              <textarea value={editText} onChange={e=>setEditText(e.target.value)} style={{width:"100%",minHeight:320,background:"#0e0f1a",color:"#e5e7eb",border:"1px solid #ff6b35",borderRadius:12,padding:12,fontSize:14,fontFamily:"monospace"}} />
-              <div style={{display:"flex",gap:8,marginTop:12}}>
-                <button onClick={saveEdit} disabled={saving} style={{flex:1,background:saving?"#555":"#00ff88",color:"#000",border:"none",padding:"12px",borderRadius:12,fontWeight:800}}>{saving? "Saving...":"💾 Save to Supabase"}</button>
-                <button onClick={()=>setEditing(false)} style={{flex:1,background:"#252a44",color:"#fff",border:"none",padding:"12px",borderRadius:12}}>Cancel</button>
+              <div style={{fontSize:"12px",color:"#ff6b35",marginBottom:"8px",fontWeight:700}}>EDITING Node {active} • {activeNode?.id?.slice(0,8)}</div>
+              <textarea value={editText} onChange={e=>setEditText(e.target.value)} style={{width:"100%",minHeight:"320px",background:"#0e0f1a",color:"#e5e7eb",border:"1px solid #ff6b35",borderRadius:"12px",padding:"12px",fontSize:"14px",fontFamily:"monospace"}} />
+              <div style={{display:"flex",gap:"8px",marginTop:"12px"}}>
+                <button onClick={saveEdit} disabled={saving} style={{flex:1,background:saving?"#555":"#00ff88",color:"#000",border:"none",padding:"12px",borderRadius:"12px",fontWeight:800}}>{saving? "Saving...":"Save to Supabase"}</button>
+                <button onClick={()=>setEditing(false)} style={{flex:1,background:"#252a44",color:"#fff",border:"none",padding:"12px",borderRadius:"12px"}}>Cancel</button>
               </div>
-              <div style={{fontSize:10,color:"#6b7280",marginTop:8}}>Supports **bold** and LaTeX $x^2$ $$\\frac{{a}}{{b}}$$. Saves live.</div>
             </div>
           )}
         </div>
       </div>
-      {isAdmin && <div style={{margin:"20px 12px",padding:12,background:"#1a1c2e",borderRadius:12,border:"1px dashed #00ff88",fontSize:11,color:"#6b7280"}}>Admin: add ?admin=1 to stay in edit mode. All 675 nodes editable. Make sure lesson_nodes has RLS policy allowing anon UPDATE or use service_role key for saving.</div>}
     </div>
   )
 }
