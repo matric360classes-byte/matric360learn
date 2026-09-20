@@ -33,12 +33,39 @@ export default async function LearnPage({ params }: any) {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   const supabase = createClient(url, key)
   const slug = params.caps_code
+  
+  // YOUR EXISTING 675 NODES QUERY - UNTOUCHED
   const { data: nodes } = await supabase.from('lesson_nodes').select('*').eq('caps_topic_id', slug).order('node_type', { ascending: true })
+
+  // ADDED: FETCH VIDEO FROM ADMIN (caps_knowledge_base)
+  // We try by caps_code = slug, and also by id = slug to be safe
+  let capsVideo = null
+  const { data: byCode } = await supabase.from('caps_knowledge_base').select('topic,youtube_id,is_premium,thumbnail_url').eq('caps_code', slug).maybeSingle()
+  if (byCode?.youtube_id) {
+    capsVideo = byCode
+  } else {
+    const { data: byId } = await supabase.from('caps_knowledge_base').select('topic,youtube_id,is_premium,thumbnail_url').eq('id', slug).maybeSingle()
+    if (byId?.youtube_id) capsVideo = byId
+  }
+  
   if (!nodes || nodes.length===0) return <div style={{padding:20,background:'black',color:'white',minHeight:'100vh'}}>No nodes for {slug}</div>
+
   return (
     <div style={{ background: '#0a0a0a', minHeight: '100vh', color: '#d1d5db', padding: '16px', paddingBottom: '100px' }}>
       <h1 style={{fontSize:'22px',fontWeight:'bold',color:'white',textTransform:'capitalize'}}>{nodes[0].topic_slug?.replace(/-/g,' ')}</h1>
       <p style={{color:'#00ff88',marginBottom:'16px',fontSize:'13px'}}>{nodes.length} nodes • PDF formula rendering ON</p>
+
+      {/* ADDED: YOUTUBE PLAYER - WILL AUTO POP WHEN ADMIN SAVES - NOTHING ELSE CHANGED */}
+      {capsVideo?.youtube_id && capsVideo.youtube_id.length >= 10 && (
+        <div style={{background:"#000",borderRadius:20,overflow:"hidden",border:"1px solid #252a44",marginBottom:20}}>
+          <iframe width="100%" height="220" src={`https://www.youtube.com/embed/${capsVideo.youtube_id}`} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+          <div style={{padding:"10px 14px",background:"#12131f",fontSize:13,display:"flex",justifyContent:"space-between"}}>
+            <span style={{fontWeight:700}}>{capsVideo.topic}</span>
+            <span style={{color: capsVideo.is_premium ? "#ff8c00" : "#00ff88",fontWeight:800}}>{capsVideo.is_premium ? "PREMIUM" : "FREE"}</span>
+          </div>
+        </div>
+      )}
+
       {nodes.map((n:any)=>{
         const body = typeof n.content === 'string'? n.content : n.content?.body_markdown || n.content?.body || JSON.stringify(n.content)
         return (
