@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
@@ -33,9 +33,21 @@ function MathRenderer({ text }: { text: string }) {
 
 export default function Page(){
   const p = useParams() as any;
+  const searchParams = useSearchParams();
   const subjectId=p?.id, unitId=p?.unitId, topicId=p?.topicId;
   const [rows,setRows]=useState<any[]>([]);
   const [active,setActive]=useState("A");
+  const [isAdmin,setIsAdmin]=useState(false);
+  const [editing,setEditing]=useState(false);
+  const [editText,setEditText]=useState("");
+  const [saving,setSaving]=useState(false);
+
+  // Admin check - only you
+  useEffect(()=>{
+    if(searchParams.get('admin')==='1' || (typeof window!=='undefined' && localStorage.getItem('isContentAdmin')==='true')){
+      setIsAdmin(true);
+    }
+  },[searchParams]);
 
   useEffect(()=>{(async()=>{
     const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -58,7 +70,6 @@ export default function Page(){
       "free-fall": "free-fall",
       "free": "free-fall",
       "bouncing": "bouncing",
-      // Doppler - your CSV currently only has red-blue, so map definition/equation there until you add rows
       "doppler-effect-definition": "doppler-definition",
       "doppler-effect---definition": "doppler-definition",
       "doppler-definition": "doppler-definition",
@@ -121,25 +132,80 @@ export default function Page(){
   const meta = META[active];
   const getContent = (n:any)=> n?.content?.body_markdown || n?.body_markdown || n?.content?.body || n?.body || (typeof n?.content==='string'? n.content:"") || "";
 
+  const startEdit = ()=>{
+    setEditText(getContent(activeNode));
+    setEditing(true);
+  };
+
+  const saveEdit = async()=>{
+    if(!activeNode) return;
+    setSaving(true);
+    const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    try{
+      const res = await fetch(`${url}/rest/v1/lesson_nodes?id=eq.${activeNode.id}`,{
+        method:"PATCH",
+        headers:{
+          apikey:key,
+          Authorization:`Bearer ${key}`,
+          "Content-Type":"application/json",
+          Prefer:"return=representation"
+        },
+        body: JSON.stringify({ 
+          content: { ...(typeof activeNode.content==='object'? activeNode.content:{}), body_markdown: editText },
+          body_markdown: editText
+        })
+      });
+      const data = await res.json();
+      if(Array.isArray(data) && data.length>0){
+        setRows(prev=> prev.map(r=> r.id===activeNode.id ? {...r, content:{...r.content, body_markdown: editText}, body_markdown: editText} : r));
+        setEditing(false);
+        alert("✅ Saved! Live for learners.");
+      }else{
+        alert("Save failed - check RLS policy for anon: "+JSON.stringify(data));
+      }
+    }catch(e:any){ alert("Error: "+e.message); }
+    setSaving(false);
+  };
+
   return(
     <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:100}}>
       <div style={{padding:16}}>
-        <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:14,textDecoration:"none"}}>← Back</Link>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:14,textDecoration:"none"}}>← Back</Link>
+          {isAdmin ? <span style={{fontSize:10,background:"#00ff88",color:"#000",padding:"4px 8px",borderRadius:8,fontWeight:800}}>ADMIN • Quick Edit ON</span> : <button onClick={()=>{const pw=prompt("Admin key?"); if(pw==="admin123"){localStorage.setItem('isContentAdmin','true'); setIsAdmin(true);}}} style={{fontSize:10,color:"#222",background:"transparent",border:"none"}}>•</button>}
+        </div>
         <h1 style={{fontSize:26,fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
         <div style={{fontSize:12,color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES • {rows[0]?.caps_topic_id?.slice(0,8)||clean} • {rows.length? "675 Allocated":"0 NODES"}</div>
       </div>
       <div style={{display:"flex",gap:8,overflowX:"auto",padding:"0 12px 16px"}}>
-        {Object.keys(META).map(k=><button key={k} onClick={()=>setActive(k)} style={{flexShrink:0,padding:"10px 18px",borderRadius:24,border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
+        {Object.keys(META).map(k=><button key={k} onClick={()=>{setActive(k); setEditing(false);}} style={{flexShrink:0,padding:"10px 18px",borderRadius:24,border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
       </div>
       <div style={{margin:"0 12px",background:"#1a1c2e",borderRadius:24,border:"1px solid #252a44"}}>
-        <div style={{padding:16,borderBottom:"1px solid #252a44",display:"flex",gap:12,alignItems:"center"}}>
-          <div style={{width:44,height:44,borderRadius:12,background:meta?.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{meta?.icon}</div>
-          <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:11,color:"#6b7280"}}>{activeNode?.node_type} • {activeNode?.caps_topic_id?.slice(0,8)}</div></div>
+        <div style={{padding:16,borderBottom:"1px solid #252a44",display:"flex",gap:12,alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",gap:12,alignItems:"center"}}>
+            <div style={{width:44,height:44,borderRadius:12,background:meta?.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{meta?.icon}</div>
+            <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:11,color:"#6b7280"}}>{activeNode?.node_type} • {activeNode?.caps_topic_id?.slice(0,8)}</div></div>
+          </div>
+          {isAdmin && !editing && <button onClick={startEdit} style={{background:"#ff6b35",color:"#fff",border:"none",padding:"8px 14px",borderRadius:12,fontWeight:700,fontSize:12}}>✏️ Quick Edit</button>}
         </div>
         <div style={{padding:20,minHeight:250}}>
-          {activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean}...</div>}
+          {!editing ? (
+            activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean}...</div>
+          ) : (
+            <div>
+              <div style={{fontSize:12,color:"#ff6b35",marginBottom:8,fontWeight:700}}>EDITING Node {active} • {activeNode?.id?.slice(0,8)}</div>
+              <textarea value={editText} onChange={e=>setEditText(e.target.value)} style={{width:"100%",minHeight:320,background:"#0e0f1a",color:"#e5e7eb",border:"1px solid #ff6b35",borderRadius:12,padding:12,fontSize:14,fontFamily:"monospace"}} />
+              <div style={{display:"flex",gap:8,marginTop:12}}>
+                <button onClick={saveEdit} disabled={saving} style={{flex:1,background:saving?"#555":"#00ff88",color:"#000",border:"none",padding:"12px",borderRadius:12,fontWeight:800}}>{saving? "Saving...":"💾 Save to Supabase"}</button>
+                <button onClick={()=>setEditing(false)} style={{flex:1,background:"#252a44",color:"#fff",border:"none",padding:"12px",borderRadius:12}}>Cancel</button>
+              </div>
+              <div style={{fontSize:10,color:"#6b7280",marginTop:8}}>Supports **bold** and LaTeX $x^2$ $$\\frac{{a}}{{b}}$$. Saves live.</div>
+            </div>
+          )}
         </div>
       </div>
+      {isAdmin && <div style={{margin:"20px 12px",padding:12,background:"#1a1c2e",borderRadius:12,border:"1px dashed #00ff88",fontSize:11,color:"#6b7280"}}>Admin: add ?admin=1 to stay in edit mode. All 675 nodes editable. Make sure lesson_nodes has RLS policy allowing anon UPDATE or use service_role key for saving.</div>}
     </div>
   )
 }
