@@ -21,39 +21,38 @@ export default function NewVideoPage(){
   const units = form.subject? ["",...Array.from(new Set(kb.filter(k=>k.subject.toLowerCase().includes(form.subject.slice(0,4))).map(k=>(k.caps_code||"").split("-")[0])))] : [""];
   const topics = form.subject && form.unit? kb.filter(k=>k.subject.toLowerCase().includes(form.subject.slice(0,4)) && (k.caps_code||"").startsWith(form.unit)) : [];
 
-  // --- ONLY THIS SAVE FUNCTION IS FIXED ---
   const save=async()=>{
     if(!form.url) return alert("Paste YouTube URL");
     if(!form.topic) return alert("Choose Subject > Unit > Topic");
     setSaving(true);
-    const yid=getId(form.url);
-    const kbPick=kb.find(k=>k.caps_code===form.topic) || topics[0];
+    try{
+      const yid=getId(form.url);
+      const kbPick=kb.find(k=>k.caps_code===form.topic) || topics[0];
 
-    // Minimal payload that WILL save + WILL show under Nodes
-    const payload:any={
-      youtube_id: yid,
-      youtube_url: form.url,
-      subject: form.subject,
-      topic: kbPick?.topic || form.topic,
-      caps_code: form.topic,
-      caps_topic_id: kbPick?.id || null,
-      title: form.title || kbPick?.topic || yid,
-      description: form.description,
-      thumbnail_url: form.thumb || `https://img.youtube.com/vi/${yid}/hqdefault.jpg`,
-    };
+      const res = await fetch("/api/admin/videos",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          youtube_id: yid,
+          youtube_url: form.url,
+          subject: form.subject,
+          topic: kbPick?.topic || form.topic,
+          caps_code: form.topic,
+          caps_topic_id: kbPick?.id || null,
+          title: form.title || kbPick?.topic || yid,
+          thumbnail_url: form.thumb || `https://img.youtube.com/vi/${yid}/hqdefault.jpg`,
+        })
+      });
+      const j = await res.json();
+      if(!res.ok) throw new Error(j.error || "Save failed");
 
-    const {error} = await supabase.from("videos").insert([payload]);
-
-    // THIS is what makes it show under Nodes A-E
-    if(!error && kbPick){
-      await supabase.from("caps_knowledge_base").update({ youtube_id: yid } as any).eq("id", kbPick.id);
-      // also update topics table if you have it
-      await supabase.from("topics").update({ youtube_id: yid } as any).eq("caps_code", form.topic);
+      alert("✅ Video saved and linked to Nodes!");
+      router.push("/admin/videos");
+    }catch(e:any){
+      alert("SAVE ERROR: "+e.message);
+    }finally{
+      setSaving(false);
     }
-
-    setSaving(false);
-    if(error) alert("SAVE ERROR: "+error.message);
-    else { alert("✅ Video saved and linked to Nodes!"); router.push("/admin/videos"); }
   };
 
   return(
