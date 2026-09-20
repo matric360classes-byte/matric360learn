@@ -72,7 +72,12 @@ export default function AdminPage(){
           {exp.kb && <div style={{marginLeft:12,borderLeft:"1px solid #252a44",paddingLeft:12}}>
             <Item label="Knowledge Base" href="/admin/kb" /><Item label="CAPS KB" href="/admin/caps-kb" /><Item label="Source PDFs" href="/admin/pdfs" /><Item label="KB Coverage" href="/admin/kb-coverage" />
           </div>}
-          <div style={{padding:"12px 8px",fontWeight:700}}>🎥 Videos</div>
+
+          {/* FIXED - NOW CLICKABLE AND WIRED */}
+          <Link href="/admin/videos" style={{display:"block",padding:"12px 8px",fontWeight:700,color:"#fff",textDecoration:"none",background:path==="/admin/videos"?"#6c6cff":"transparent",borderRadius:14,margin:"2px 0"}}>
+            🎥 Videos
+          </Link>
+
           <div onClick={()=>setExp({...exp,exam:!exp.exam})} style={{display:"flex",justifyContent:"space-between",padding:"12px 8px",fontWeight:700,cursor:"pointer"}}><span>📋 Exam Hub</span><span>{exp.exam?"⌄":"›"}</span></div>
           {exp.exam && <div style={{marginLeft:12,borderLeft:"1px solid #252a44",paddingLeft:12}}>
             <Item label="Questions" href="/admin/questions" /><Item label="Question Bank Audit" href="/admin/bank-audit" /><Item label="Question Coverage" href="/admin/q-coverage" />
