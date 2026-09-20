@@ -6,75 +6,66 @@ import katex from 'katex'
 
 function MathRenderer({ text }: { text: string }) {
   if (!text) return null
-  let content = text.replace(/\*\*NODE.*?\*\*/g, '').replace(/###\s?/g, '\n')
   const regex = /(\\\[.*?\\\]|\\\(.*?\\\)|\$\$.*?\$\$|\$[^$]+?\$)/gs
-  const parts = content.split(regex)
-  const htmlParts = parts.map(part => {
-    if (!part) return ''
-    const isBlock = (part.startsWith('\\[') && part.endsWith('\\]')) || (part.startsWith('$$') && part.endsWith('$$'))
-    const isInline = (part.startsWith('\\(') && part.endsWith('\\)')) || (part.startsWith('$') && part.endsWith('$') && part.length > 2)
-    if (isBlock || isInline) {
-      let math = part
-      if (part.startsWith('\\[')) math = part.slice(2, -2)
-      else if (part.startsWith('\\(')) math = part.slice(2, -2)
-      else if (part.startsWith('$$')) math = part.slice(2, -2)
-      else if (part.startsWith('$')) math = part.slice(1, -1)
-      try {
-        return katex.renderToString(math, { displayMode: isBlock, throwOnError: false })
-      } catch { return part }
+  const parts = text.split(regex)
+  return <div dangerouslySetInnerHTML={{ __html: parts.map(p=>{
+    if(!p) return ''
+    const isBlock=(p.startsWith('\\[')&&p.endsWith('\\]'))||(p.startsWith('$$')&&p.endsWith('$$'))
+    const isInline=(p.startsWith('\\(')&&p.endsWith('\\)'))||(p.startsWith('$')&&p.endsWith('$'))
+    if(isBlock||isInline){
+      let m=p; if(p.startsWith('\\[')) m=p.slice(2,-2); else if(p.startsWith('\\(')) m=p.slice(2,-2); else if(p.startsWith('$$')) m=p.slice(2,-2); else if(p.startsWith('$')) m=p.slice(1,-1)
+      try{ return katex.renderToString(m,{displayMode:isBlock,throwOnError:false}) }catch{ return p }
     }
-    return part.replace(/\*\*(.*?)\*\*/g, '<b style="color:#fff">$1</b>').replace(/\n/g, '<br/>')
-  })
-  return <div dangerouslySetInnerHTML={{ __html: htmlParts.join('') }} style={{ lineHeight: '1.9', fontSize: '15px' }} />
+    return p.replace(/\n/g,'<br/>')
+  }).join('')}} />
 }
 
 export default async function LearnPage({ params }: any) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  const supabase = createClient(url, key)
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
   const slug = params.caps_code
-  
-  // YOUR EXISTING 675 NODES QUERY - UNTOUCHED
-  const { data: nodes } = await supabase.from('lesson_nodes').select('*').eq('caps_topic_id', slug).order('node_type', { ascending: true })
 
-  // ADDED: FETCH VIDEO FROM ADMIN (caps_knowledge_base)
-  // We try by caps_code = slug, and also by id = slug to be safe
-  let capsVideo = null
-  const { data: byCode } = await supabase.from('caps_knowledge_base').select('topic,youtube_id,is_premium,thumbnail_url').eq('caps_code', slug).maybeSingle()
-  if (byCode?.youtube_id) {
-    capsVideo = byCode
-  } else {
-    const { data: byId } = await supabase.from('caps_knowledge_base').select('topic,youtube_id,is_premium,thumbnail_url').eq('id', slug).maybeSingle()
-    if (byId?.youtube_id) capsVideo = byId
+  // 1. Get real CAPS id from code
+  const { data: capsByCode } = await supabase.from('caps_knowledge_base').select('*').eq('caps_code', slug).maybeSingle()
+  const { data: capsById } =!capsByCode? await supabase.from('caps_knowledge_base').select('*').eq('id', slug).maybeSingle() : { data: null }
+  const caps = capsByCode || capsById
+  const capsId = caps?.id
+
+  // 2. Get Nodes - try slug, then real id
+  let nodes = null
+  const { data: n1 } = await supabase.from('lesson_nodes').select('*').eq('caps_topic_id', slug).order('node_type')
+  if (n1?.length) nodes = n1
+  else if (capsId) {
+    const { data: n2 } = await supabase.from('lesson_nodes').select('*').eq('caps_topic_id', capsId).order('node_type')
+    if (n2?.length) nodes = n2
   }
-  
-  if (!nodes || nodes.length===0) return <div style={{padding:20,background:'black',color:'white',minHeight:'100vh'}}>No nodes for {slug}</div>
+  // fallback: try topic_slug
+  if (!nodes) {
+    const { data: n3 } = await supabase.from('lesson_nodes').select('*').eq('topic_slug', slug).order('node_type')
+    if (n3?.length) nodes = n3
+  }
+
+  const videoId = caps?.youtube_id
+  if (!nodes?.length) return <div style={{padding:20,background:'black',color:'white'}}>No nodes for {slug} - capsId: {capsId||'not found'} - video: {videoId||'none'}</div>
 
   return (
-    <div style={{ background: '#0a0a0a', minHeight: '100vh', color: '#d1d5db', padding: '16px', paddingBottom: '100px' }}>
-      <h1 style={{fontSize:'22px',fontWeight:'bold',color:'white',textTransform:'capitalize'}}>{nodes[0].topic_slug?.replace(/-/g,' ')}</h1>
-      <p style={{color:'#00ff88',marginBottom:'16px',fontSize:'13px'}}>{nodes.length} nodes • PDF formula rendering ON</p>
+    <div style={{background:'#0a0a0a',minHeight:'100vh',color:'#d1d5db',padding:16}}>
+      <h1 style={{color:'white',fontSize:20}}>{nodes[0].topic_slug} - {nodes.length} nodes</h1>
+      <p style={{color:'#00ff88',fontSize:13}}>{videoId? `Video READY: ${videoId}`: 'No video in caps_knowledge_base'}</p>
 
-      {/* ADDED: YOUTUBE PLAYER - WILL AUTO POP WHEN ADMIN SAVES - NOTHING ELSE CHANGED */}
-      {capsVideo?.youtube_id && capsVideo.youtube_id.length >= 10 && (
-        <div style={{background:"#000",borderRadius:20,overflow:"hidden",border:"1px solid #252a44",marginBottom:20}}>
-          <iframe width="100%" height="220" src={`https://www.youtube.com/embed/${capsVideo.youtube_id}`} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-          <div style={{padding:"10px 14px",background:"#12131f",fontSize:13,display:"flex",justifyContent:"space-between"}}>
-            <span style={{fontWeight:700}}>{capsVideo.topic}</span>
-            <span style={{color: capsVideo.is_premium ? "#ff8c00" : "#00ff88",fontWeight:800}}>{capsVideo.is_premium ? "PREMIUM" : "FREE"}</span>
+      {videoId && (
+        <div style={{background:"#000",borderRadius:16,overflow:"hidden",border:"1px solid #00ff88",marginBottom:20}}>
+          <div style={{position:'relative',paddingBottom:'56.25%'}}>
+            <iframe style={{position:'absolute',inset:0,width:'100%',height:'100%'}} src={`https://www.youtube.com/embed/${videoId}`} allowFullScreen />
           </div>
         </div>
       )}
 
-      {nodes.map((n:any)=>{
-        const body = typeof n.content === 'string'? n.content : n.content?.body_markdown || n.content?.body || JSON.stringify(n.content)
-        return (
-          <div key={n.id} style={{border:'1px solid #222',margin:'16px 0',padding:'18px',borderRadius:'16px',background:'#141414'}}>
-            <div style={{color:'#00ff88',fontWeight:'bold',marginBottom:'12px',fontSize:'16px'}}>{n.node_type}: {n.title}</div>
-            <MathRenderer text={body} />
-          </div>
-        )
-      })}
+      {nodes.map((n:any)=>(
+        <div key={n.id} style={{border:'1px solid #222',margin:'16px 0',padding:18,borderRadius:16,background:'#141414'}}>
+          <div style={{color:'#00ff88',fontWeight:'bold'}}>{n.node_type}: {n.title}</div>
+          <MathRenderer text={typeof n.content==='string'? n.content : n.content?.body_markdown || n.content?.body || ''} />
+        </div>
+      ))}
     </div>
   )
 }
