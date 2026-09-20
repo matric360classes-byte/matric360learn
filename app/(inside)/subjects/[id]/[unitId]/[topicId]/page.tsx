@@ -31,10 +31,13 @@ function MathRenderer({ text }: { text: string }) {
   return <div dangerouslySetInnerHTML={{__html:html}} style={{lineHeight:'1.9',fontSize:'15px',color:'#e5e7eb'}} />
 }
 
+function getYoutubeId(url:string){ if(!url) return ""; const m=url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([^&?\/]+)/); return m?m[1]:url; }
+
 export default function Page(){
   const p = useParams() as any;
   const subjectId=p?.id, unitId=p?.unitId, topicId=p?.topicId;
   const [rows,setRows]=useState<any[]>([]);
+  const [videos,setVideos]=useState<any[]>([]);
   const [active,setActive]=useState("A");
   const [isAdmin,setIsAdmin]=useState(false);
   const [editing,setEditing]=useState(false);
@@ -110,12 +113,22 @@ export default function Page(){
     const seen=new Set();
     nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
     setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
+
+    // FETCH VIDEOS for this topic - hidden if none, HD if exists
+    const resVid = await fetch(`${url}/rest/v1/videos?select=*&caps_topic_id=eq.${kb.id}&order=order_num.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+    const vids:any = await resVid.json();
+    if(Array.isArray(vids)) setVideos(vids);
+
   })()},[topicId, subjectId]);
 
   const clean = decodeURIComponent(topicId||"").replace(/-/g," ");
   const activeNode = rows.find((r:any)=>r.node_label===active) || rows[0];
   const meta = META[active];
   const getContent = (n:any)=> n?.content?.body_markdown || n?.body_markdown || n?.content?.body || n?.body || (typeof n?.content==='string'? n.content:"") || "";
+
+  // FIND VIDEO FOR ACTIVE NODE - Node A-E can have own video, or fallback to topic video
+  const videoForActive = videos.find((v:any)=> (v.node_label===active || v.node_type===active) ) || videos.find((v:any)=>!v.node_label) || null;
+  const ytId = videoForActive? (videoForActive.youtube_id || getYoutubeId(videoForActive.youtube_url)) : "";
 
   const startEdit = ()=>{
     setEditText(getContent(activeNode));
@@ -158,6 +171,22 @@ export default function Page(){
       <div style={{display:"flex",gap:"8px",overflowX:"auto",padding:"0 12px 16px"}}>
         {Object.keys(META).map(k=><button key={k} onClick={()=>{setActive(k); setEditing(false);}} style={{flexShrink:0,padding:"10px 18px",borderRadius:"24px",border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
       </div>
+
+      {/* VIDEO - HIDDEN WHEN NO VIDEO, HD WHEN EXISTS */}
+      {ytId && (
+        <div style={{margin:"0 12px 12px",background:"#000",borderRadius:20,overflow:"hidden",aspectRatio:"16/9",border:"1px solid #252a44"}}>
+          <iframe
+            width="100%" height="100%"
+            src={`https://www.youtube-nocookie.com/embed/${ytId}?vq=hd1080&hd=1&modestbranding=1&rel=0&playsinline=1`}
+            title="Lesson Video"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+            style={{width:"100%",height:"100%",border:0}}
+          />
+        </div>
+      )}
+
       <div style={{margin:"0 12px",background:"#1a1c2e",borderRadius:"24px",border:"1px solid #252a44"}}>
         <div style={{padding:"16px",borderBottom:"1px solid #252a44",display:"flex",gap:"12px",alignItems:"center",justifyContent:"space-between"}}>
           <div style={{display:"flex",gap:"12px",alignItems:"center"}}>
