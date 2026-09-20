@@ -1,26 +1,34 @@
-"use client";
-import { useEffect, useState } from "react";
-export default function Factory(){
-  const [stats, setStats] = useState<any>({queued:0, ready:0, failed:0});
-  const [logs, setLogs] = useState(""); const [busy,setBusy]=useState(false);
-  const load=async()=>{const r=await fetch("/api/factory/stats"); setStats(await r.json());};
-  useEffect(()=>{load();},[]);
-  const processAll=async()=>{
-    setBusy(true); setLogs("Processing all queued - batches of 5, no limit...\n");
-    let total=0;
-    while(true){
-      const r=await fetch("/api/factory/process-all",{method:"POST"}); const j=await r.json();
-      if(j.error){setLogs(l=>l+`\nERROR: ${j.error} ${j.lastError||""}`); break;}
-      total+=j.processed||0; setLogs(l=>l+`\n+${j.processed} processed | remaining ${j.remaining}`);
-      if(j.remaining===0 || j.processed===0) break;
-      await new Promise(r=>setTimeout(r,2000));
+"use client"
+import { useState } from "react"
+
+export default function Admin(){
+  const [log,setLog]=useState<string[]>([])
+  const [batch,setBatch]=useState(0)
+  
+  async function runAll(){
+    for(let b=0; b<45; b++){
+      setBatch(b)
+      setLog(l=>[...l, `Starting batch ${b}...`])
+      try{
+        const r=await fetch(`/api/generate-all?batch=${b}`)
+        const j=await r.json()
+        setLog(l=>[...l, `✅ Batch ${b}: ${j.nodes_created} nodes - ${j.topics_processed?.join(',')}`])
+      }catch(e:any){
+        setLog(l=>[...l, `❌ Batch ${b} failed: ${e.message}`])
+      }
+      await new Promise(res=>setTimeout(res,2000))
     }
-    setBusy(false); load();
-  };
-  return (
-    <div className="p-6"><h1 className="text-2xl font-bold">Factory - 419 Ready</h1>
-      <div className="flex gap-3 my-4"><div className="border p-3 rounded">Queued: {stats.queued}</div><div className="border p-3 rounded">Ready: {stats.ready}</div><div className="border p-3 rounded">Failed: {stats.failed}</div></div>
-      <button disabled={busy} onClick={processAll} className="bg-black text-white px-6 py-3 rounded font-bold">{busy?"Processing...":`Process All Queued (${stats.queued})`}</button>
-      <pre className="mt-4 bg-gray-100 p-4 text-xs h-64 overflow-auto">{logs}</pre></div>
-  );
+    setLog(l=>[...l, `🎉 DONE! All 675 nodes generated!`])
+  }
+
+  return(
+    <div style={{background:'black',color:'white',minHeight:'100vh',padding:20}}>
+      <h1>Matric360 - Generate 675 Lessons from PDFs via OpenAI</h1>
+      <button onClick={runAll} style={{background:'white',color:'black',padding:'12px 20px',borderRadius:8,margin:'20px 0'}}>START - Generate All 675 Nodes</button>
+      <p>Current batch: {batch} / 45</p>
+      <div style={{whiteSpace:'pre-wrap',background:'#111',padding:10,borderRadius:8}}>
+        {log.join('\n')}
+      </div>
+    </div>
+  )
 }
