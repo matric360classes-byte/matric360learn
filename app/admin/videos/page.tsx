@@ -1,350 +1,57 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const MATH_UNITS = ["Algebra","Functions & Graphs","Finance & Growth","Trigonometry","Euclidean Geometry","Analytical Geometry","Statistics","Calculus","Probability","Number Patterns"];
+const PHYSICS_UNITS = ["Mechanics","Waves, Sound & Light","Electricity & Magnetism","Matter & Materials","Chemical Change","Chemical Systems"];
 
-const getYtId = (u: string) => {
-  const m = u.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([^&?\/]+)/);
-  return m? m[1] : u.trim();
-};
+export default function VideosPage(){
+  const [topics,setTopics]=useState<any[]>([]);
+  const [videos,setVideos]=useState<any[]>([]);
+  const [subject,setSubject]=useState("Mathematics");
+  const [unit,setUnit]=useState("All units");
+  const [topic,setTopic]=useState("All topics");
+  const [q,setQ]=useState("");
 
-export default function NewVideo() {
-  const router = useRouter();
-  const [topics, setTopics] = useState<any[]>([]);
-  const [f, setF] = useState({
-    url: "",
-    provider: "YouTube",
-    dur: "",
-    subj: "Mathematics",
-    unit: "",
-    topicCode: "",
-    title: "",
-    desc: "",
-    thumb: "",
-    order: "0",
-    status: "Ready",
-  });
-  const [saving, setSaving] = useState(false);
+  useEffect(()=>{ (async()=>{
+    const {data:tData} = await supabase.from("topics").select("id,subject,caps_code,topic,paper_section").limit(2000);
+    if(tData) setTopics(tData);
+    const {data:vData} = await supabase.from("videos").select("*").order("created_at",{ascending:false}).limit(200);
+    if(vData) setVideos(vData);
+  })() },[]);
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-       .from("topics")
-       .select("id,subject,caps_code,topic,paper_section")
-       .limit(1000);
-      if (data) setTopics(data);
-    })();
-  }, []);
+  const forSubj = topics.filter(t=> (t.subject||"").toLowerCase().includes(subject.slice(0,4).toLowerCase()));
 
-  const forSubj = topics.filter((t) =>
-    (t.subject || "").toLowerCase().includes(f.subj.slice(0, 4).toLowerCase())
-  );
-  const unitCounts: any = {};
-  forSubj.forEach((t) => {
-    const u = t.paper_section || (t.caps_code || "").split("-")[0] || "General";
-    unitCounts[u] = 1;
-  });
-  const units = Object.keys(unitCounts).sort();
+  // Build units from DB, if empty use fallback - so NEVER empty
+  let dbUnits: string[] = [];
+  if(forSubj.length>0){
+    const m:any={}; forSubj.forEach(t=>{ const u=t.paper_section||""; if(u) m[u]=1; });
+    dbUnits = Object.keys(m);
+  }
+  const fallback = subject==="Mathematics"? MATH_UNITS : PHYSICS_UNITS;
+  const units = ["All units",...(dbUnits.length>0? dbUnits : fallback)];
 
-  const forUnit = forSubj.filter((t) => {
-    if (!f.unit) return true;
-    const u = t.paper_section || (t.caps_code || "").split("-")[0] || "General";
-    return u === f.unit;
-  });
+  const topicList = ["All topics",...forSubj.map(t=>t.caps_code).filter(Boolean).sort()];
 
-  const save = async () => {
-    if (!f.url) return alert("Paste YouTube URL first");
-    if (!f.topicCode) return alert("Choose Topic");
-    setSaving(true);
-    const yid = getYtId(f.url);
-    const pick = topics.find((t) => t.caps_code === f.topicCode);
-
-    // MINIMAL PAYLOAD - only columns that exist - will save 100%
-    const payload: any = {
-      youtube_id: yid,
-      youtube_url: f.url,
-      title: f.title || pick?.topic || yid,
-      subject: f.subj,
-      caps_code: f.topicCode,
-      caps_topic_id: pick?.id || null,
-      topic: pick?.topic || f.topicCode,
-      thumbnail_url: f.thumb || `https://img.youtube.com/vi/${yid}/hqdefault.jpg`,
-    };
-
-    const { error } = await supabase.from("videos").insert([payload]);
-
-    if (!error && pick) {
-      // Also set topics.youtube_id so learner Node page shows HD instantly
-      await supabase.from("topics").update({ youtube_id: yid }).eq("id", pick.id);
-    }
-
-    setSaving(false);
-    if (error) {
-      alert("SAVE ERROR: " + error.message);
-      console.log(error);
-    } else {
-      alert("✅ Video saved!");
-      router.push("/admin/videos");
-    }
-  };
-
-  return (
-    <div style={{ background: "#0b0c14", minHeight: "100vh", color: "#fff", padding: 12 }}>
-      <div
-        style={{
-          background: "#121a14",
-          border: "1px solid #1e3a2a",
-          borderRadius: 20,
-          padding: 14,
-          marginBottom: 12,
-          fontSize: 12,
-        }}
-      >
-        <span style={{ color: "#00ff88", fontWeight: 800 }}>Content Admin mode</span> — lessons, videos, CAPS
-        and the question bank.
+  return(
+    <div style={{background:"#0b0c14",minHeight:"100vh",color:"#fff",paddingBottom:90}}>
+      <div style={{margin:12,background:"#121a14",border:"1px solid #1e3a2a",borderRadius:20,padding:14}}><span style={{color:"#00ff88",fontWeight:800,fontSize:12}}>Content Admin mode — {forSubj.length} topics loaded — Units: {units.length-1}</span></div>
+      <div style={{padding:"0 16px",display:"flex",justifyContent:"space-between"}}><h1 style={{fontSize:24,fontWeight:900}}>Videos</h1><Link href="/admin/videos/new" style={{background:"#8b8bff",color:"#fff",padding:"12px 18px",borderRadius:999,textDecoration:"none",fontWeight:800}}>+ Add video</Link></div>
+      <div style={{padding:12,display:"grid",gap:10}}>
+        <select value={subject} onChange={e=>{setSubject(e.target.value); setUnit("All units"); setTopic("All topics")}} style={{background:"#151725",border:"1px solid #252a44",borderRadius:14,padding:14,color:"#fff"}}><option>Mathematics</option><option>Physical Sciences</option></select>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <select value={unit} onChange={e=>{setUnit(e.target.value); setTopic("All topics")}} style={{background:"#151725",border:"1px solid #252a44",borderRadius:14,padding:14,color:"#fff"}}>{units.map(u=><option key={u} value={u}>{u}</option>)}</select>
+          <select value={topic} onChange={e=>setTopic(e.target.value)} style={{background:"#151725",border:"1px solid #252a44",borderRadius:14,padding:14,color:"#fff"}}>{topicList.map(t=><option key={t} value={t}>{t}</option>)}</select>
+        </div>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search" style={{background:"#151725",border:"1px solid #252a44",borderRadius:14,padding:14,color:"#fff"}}/>
       </div>
-
-      <div
-        style={{
-          background: "#1c1e2e",
-          border: "1px solid #252a44",
-          borderRadius: 24,
-          padding: 16,
-        }}
-      >
-        <h2 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 12px" }}>Add video</h2>
-
-        <label style={{ fontSize: 12 }}>Video URL (YouTube or Bunny Stream)</label>
-        <input
-          value={f.url}
-          onChange={(e) => setF({...f, url: e.target.value })}
-          placeholder="https://youtu.be/..."
-          style={{
-            width: "100%",
-            background: "#12131f",
-            border: "1px solid #252a44",
-            borderRadius: 12,
-            padding: 14,
-            color: "#fff",
-            margin: "6px 0 12px",
-          }}
-        />
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-          <div>
-            <label style={{ fontSize: 12 }}>Provider</label>
-            <select
-              value={f.provider}
-              onChange={(e) => setF({...f, provider: e.target.value })}
-              style={{
-                width: "100%",
-                background: "#12131f",
-                border: "1px solid #252a44",
-                borderRadius: 12,
-                padding: 14,
-                color: "#fff",
-                marginTop: 6,
-              }}
-            >
-              <option>YouTube</option>
-              <option>Bunny</option>
-            </select>
-          </div>
-          <div>
-            <label style={{ fontSize: 12 }}>Duration (sec)</label>
-            <input
-              value={f.dur}
-              onChange={(e) => setF({...f, dur: e.target.value })}
-              style={{
-                width: "100%",
-                background: "#12131f",
-                border: "1px solid #252a44",
-                borderRadius: 12,
-                padding: 14,
-                color: "#fff",
-                marginTop: 6,
-              }}
-            />
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-          <select
-            value={f.subj}
-            onChange={(e) => setF({...f, subj: e.target.value, unit: "", topicCode: "" })}
-            style={{
-              background: "#12131f",
-              border: "1px solid #252a44",
-              borderRadius: 12,
-              padding: 14,
-              color: "#fff",
-            }}
-          >
-            <option>Mathematics</option>
-            <option>Physical Sciences</option>
-          </select>
-          <select
-            value={f.unit}
-            onChange={(e) => setF({...f, unit: e.target.value, topicCode: "" })}
-            style={{
-              background: "#12131f",
-              border: "1px solid #252a44",
-              borderRadius: 12,
-              padding: 14,
-              color: "#fff",
-            }}
-          >
-            <option value="">Unit...</option>
-            {units.map((u) => (
-              <option key={u} value={u}>
-                {u}
-              </option>
-            ))}
-          </select>
-          <select
-            value={f.topicCode}
-            onChange={(e) => {
-              const c = e.target.value;
-              const p = topics.find((t) => t.caps_code === c);
-              setF({...f, topicCode: c, title: p?.topic || f.title });
-            }}
-            style={{
-              background: "#12131f",
-              border: "1px solid #252a44",
-              borderRadius: 12,
-              padding: 14,
-              color: "#fff",
-            }}
-          >
-            <option value="">Topic...</option>
-            {forUnit.map((t) => (
-              <option key={t.id} value={t.caps_code}>
-                {t.caps_code}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <label style={{ fontSize: 12 }}>Title</label>
-        <input
-          value={f.title}
-          onChange={(e) => setF({...f, title: e.target.value })}
-          style={{
-            width: "100%",
-            background: "#12131f",
-            border: "1px solid #252a44",
-            borderRadius: 12,
-            padding: 14,
-            color: "#fff",
-            margin: "6px 0 12px",
-          }}
-        />
-
-        <label style={{ fontSize: 12 }}>Description</label>
-        <textarea
-          value={f.desc}
-          onChange={(e) => setF({...f, desc: e.target.value })}
-          style={{
-            width: "100%",
-            background: "#12131f",
-            border: "1px solid #252a44",
-            borderRadius: 12,
-            padding: 14,
-            color: "#fff",
-            minHeight: 80,
-            margin: "6px 0 12px",
-          }}
-        />
-
-        <label style={{ fontSize: 12 }}>Thumbnail URL</label>
-        <input
-          value={f.thumb}
-          onChange={(e) => setF({...f, thumb: e.target.value })}
-          style={{
-            width: "100%",
-            background: "#12131f",
-            border: "1px solid #252a44",
-            borderRadius: 12,
-            padding: 14,
-            color: "#fff",
-            margin: "6px 0 12px",
-          }}
-        />
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <div>
-            <label style={{ fontSize: 12 }}>Order</label>
-            <input
-              value={f.order}
-              onChange={(e) => setF({...f, order: e.target.value })}
-              style={{
-                width: "100%",
-                background: "#12131f",
-                border: "1px solid #252a44",
-                borderRadius: 12,
-                padding: 14,
-                color: "#fff",
-                marginTop: 6,
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ fontSize: 12 }}>Status</label>
-            <select
-              value={f.status}
-              onChange={(e) => setF({...f, status: e.target.value })}
-              style={{
-                width: "100%",
-                background: "#12131f",
-                border: "1px solid #252a44",
-                borderRadius: 12,
-                padding: 14,
-                color: "#fff",
-                marginTop: 6,
-              }}
-            >
-              <option>Ready</option>
-              <option>Draft</option>
-            </select>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
-          <Link
-            href="/admin/videos"
-            style={{
-              background: "#252a44",
-              padding: "12px 20px",
-              borderRadius: 999,
-              color: "#fff",
-              textDecoration: "none",
-            }}
-          >
-            Cancel
-          </Link>
-          <button
-            onClick={save}
-            disabled={saving}
-            style={{
-              background: "#8b8bff",
-              padding: "12px 22px",
-              borderRadius: 999,
-              fontWeight: 800,
-              border: "none",
-              color: "#000",
-              cursor: "pointer",
-            }}
-          >
-            {saving? "Saving..." : "Save"}
-          </button>
-        </div>
+      <div style={{margin:12,background:"#151725",border:"1px solid #1e2238",borderRadius:20,padding:12}}>
+        {videos.filter(v=>!q || v.title?.toLowerCase().includes(q.toLowerCase())).map(v=>(
+          <div key={v.id} style={{background:"#0e0f1a",border:"1px solid #1e2238",borderRadius:12,padding:10,display:"flex",gap:10,marginBottom:8}}><img src={v.thumbnail_url||`https://img.youtube.com/vi/${v.youtube_id}/hqdefault.jpg`} style={{width:60,height:40,borderRadius:6}}/><div style={{flex:1}}><div style={{fontSize:12,fontWeight:700}}>{v.title}</div><div style={{fontSize:10,color:"#9aa0b3"}}>{v.caps_code}</div></div><Link href={`/admin/videos/${v.id}/edit`} style={{color:"#8b8bff"}}>Edit</Link></div>
+        ))}
       </div>
     </div>
-  );
+  )
 }
