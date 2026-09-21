@@ -60,12 +60,29 @@ export default async function LearnPage({ params }: any) {
         </div>
       )}
 
-      {nodes.map((n:any)=>(
-        <div key={n.id} style={{border:'1px solid #222',margin:'16px 0',padding:18,borderRadius:16,background:'#141414'}}>
-          <div style={{color:'#00ff88',fontWeight:'bold'}}>{n.node_type}: {n.title}</div>
-          <MathRenderer text={typeof n.content==='string'? n.content : n.content?.body_markdown || n.content?.body || ''} />
-        </div>
-      ))}
+      {nodes.map((n:any)=>{
+        // --- ONLY NEW LINES - VIDEO INSIDE NODE B ---
+        const nodeYoutubeId = n.content?.youtubeId || n.content?.youtube_id || (n.node_type === 'B'? videoId : null)
+        // --- END NEW LINES ---
+
+        return (
+          <div key={n.id} style={{border:'1px solid #222',margin:'16px 0',padding:18,borderRadius:16,background:'#141414'}}>
+            <div style={{color:'#00ff88',fontWeight:'bold'}}>{n.node_type}: {n.title}</div>
+
+            {/* --- ONLY NEW BLOCK - SHOWS VIDEO ON NODE B --- */}
+            {nodeYoutubeId && n.node_type === 'B' && (
+              <div style={{background:"#000",borderRadius:12,overflow:"hidden",border:"1px solid #00ff88",margin:"12px 0"}}>
+                <div style={{position:'relative',paddingBottom:'56.25%'}}>
+                  <iframe style={{position:'absolute',inset:0,width:'100%',height:'100%'}} src={`https://www.youtube.com/embed/${nodeYoutubeId}`} allowFullScreen />
+                </div>
+              </div>
+            )}
+            {/* --- END NEW BLOCK --- */}
+
+            <MathRenderer text={typeof n.content==='string'? n.content : n.content?.body_markdown || n.content?.body || ''} />
+          </div>
+        )
+      })}
     </div>
   )
 }
