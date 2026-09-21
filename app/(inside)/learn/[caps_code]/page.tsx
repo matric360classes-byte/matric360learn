@@ -38,7 +38,6 @@ export default async function LearnPage({ params }: any) {
     const { data: n2 } = await supabase.from('lesson_nodes').select('*').eq('caps_topic_id', capsId).order('node_type')
     if (n2?.length) nodes = n2
   }
-  // fallback: try topic_slug
   if (!nodes) {
     const { data: n3 } = await supabase.from('lesson_nodes').select('*').eq('topic_slug', slug).order('node_type')
     if (n3?.length) nodes = n3
@@ -61,15 +60,16 @@ export default async function LearnPage({ params }: any) {
       )}
 
       {nodes.map((n:any)=>{
-        // --- ONLY NEW LINES - VIDEO INSIDE NODE B ---
-        const nodeYoutubeId = n.content?.youtubeId || n.content?.youtube_id || (n.node_type === 'B'? videoId : null)
-        // --- END NEW LINES ---
+        // FIX: parse content if it's a JSON string
+        let parsedContent = n.content
+        try { if(typeof n.content === 'string') parsedContent = JSON.parse(n.content) } catch {}
+
+        const nodeYoutubeId = parsedContent?.youtubeId || parsedContent?.youtube_id || (n.node_type === 'B'? videoId : null)
 
         return (
           <div key={n.id} style={{border:'1px solid #222',margin:'16px 0',padding:18,borderRadius:16,background:'#141414'}}>
             <div style={{color:'#00ff88',fontWeight:'bold'}}>{n.node_type}: {n.title}</div>
 
-            {/* --- ONLY NEW BLOCK - SHOWS VIDEO ON NODE B --- */}
             {nodeYoutubeId && n.node_type === 'B' && (
               <div style={{background:"#000",borderRadius:12,overflow:"hidden",border:"1px solid #00ff88",margin:"12px 0"}}>
                 <div style={{position:'relative',paddingBottom:'56.25%'}}>
@@ -77,9 +77,8 @@ export default async function LearnPage({ params }: any) {
                 </div>
               </div>
             )}
-            {/* --- END NEW BLOCK --- */}
 
-            <MathRenderer text={typeof n.content==='string'? n.content : n.content?.body_markdown || n.content?.body || ''} />
+            <MathRenderer text={typeof parsedContent==='string'? parsedContent : parsedContent?.body_markdown || parsedContent?.body || ''} />
           </div>
         )
       })}
