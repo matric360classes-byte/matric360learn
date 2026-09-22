@@ -126,9 +126,20 @@ export default function Page(){
   const meta = META[active];
   const getContent = (n:any)=> n?.content?.body_markdown || n?.body_markdown || n?.content?.body || n?.body || (typeof n?.content==='string'? n.content:"") || "";
 
-  // FIND VIDEO FOR ACTIVE NODE - Node A-E can have own video, or fallback to topic video
+  // VIDEO LOGIC - FIXED: Check both videos table AND lesson_nodes content (from AddVideoModal)
   const videoForActive = videos.find((v:any)=> (v.node_label===active || v.node_type===active) ) || videos.find((v:any)=>!v.node_label) || null;
-  const ytId = videoForActive? (videoForActive.youtube_id || getYoutubeId(videoForActive.youtube_url)) : "";
+  let ytIdFromVideos = videoForActive? (videoForActive.youtube_id || getYoutubeId(videoForActive.youtube_url)) : "";
+
+  // NEW: Check Node B content.youtubeId saved by Admin modal
+  const ytIdFromNode = (() => {
+    try {
+      let c = activeNode?.content
+      if (typeof c === 'string') c = JSON.parse(c)
+      return c?.youtubeId || c?.youtube_id || c?.youtube_id || ""
+    } catch { return "" }
+  })();
+
+  const ytId = ytIdFromVideos || ytIdFromNode || "";
 
   const startEdit = ()=>{
     setEditText(getContent(activeNode));
@@ -172,7 +183,7 @@ export default function Page(){
         {Object.keys(META).map(k=><button key={k} onClick={()=>{setActive(k); setEditing(false);}} style={{flexShrink:0,padding:"10px 18px",borderRadius:"24px",border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
       </div>
 
-      {/* VIDEO - HIDDEN WHEN NO VIDEO, HD WHEN EXISTS */}
+      {/* VIDEO - HIDDEN WHEN NO VIDEO, HD WHEN EXISTS - NOW CHECKS BOTH TABLES */}
       {ytId && (
         <div style={{margin:"0 12px 12px",background:"#000",borderRadius:20,overflow:"hidden",aspectRatio:"16/9",border:"1px solid #252a44"}}>
           <iframe
