@@ -24,13 +24,11 @@ export default async function LearnPage({ params }: any) {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
   const slug = params.caps_code
 
-  // 1. Get real CAPS id from code
   const { data: capsByCode } = await supabase.from('caps_knowledge_base').select('*').eq('caps_code', slug).maybeSingle()
   const { data: capsById } =!capsByCode? await supabase.from('caps_knowledge_base').select('*').eq('id', slug).maybeSingle() : { data: null }
   const caps = capsByCode || capsById
   const capsId = caps?.id
 
-  // 2. Get Nodes - try slug, then real id
   let nodes = null
   const { data: n1 } = await supabase.from('lesson_nodes').select('*').eq('caps_topic_id', slug).order('node_type')
   if (n1?.length) nodes = n1
@@ -46,10 +44,24 @@ export default async function LearnPage({ params }: any) {
   const videoId = caps?.youtube_id
   if (!nodes?.length) return <div style={{padding:20,background:'black',color:'white'}}>No nodes for {slug} - capsId: {capsId||'not found'} - video: {videoId||'none'}</div>
 
+  // Debug for Node B
+  const debugNodeB = nodes.find((x:any)=>x.node_type==='B')
+  let debugContent = debugNodeB?.content
+  try{ if(typeof debugContent==='string') debugContent = JSON.parse(debugContent)}catch{}
+  const debugYoutube = debugContent?.youtubeId || debugContent?.youtube_id || 'none'
+
   return (
     <div style={{background:'#0a0a0a',minHeight:'100vh',color:'#d1d5db',padding:16}}>
       <h1 style={{color:'white',fontSize:20}}>{nodes[0].topic_slug} - {nodes.length} nodes</h1>
-      <p style={{color:'#00ff88',fontSize:13}}>{videoId? `Video READY: ${videoId}`: 'No video in caps_knowledge_base'}</p>
+
+      {/* GREY DEBUG BOX - YOU WILL SEE THIS NOW */}
+      <div style={{background:'#111',padding:10,borderRadius:8,fontSize:11,marginBottom:16,border:'1px solid #333',color:'#aaa'}}>
+        <div>Page Slug: {slug}</div>
+        <div>Real capsId: {capsId}</div>
+        <div>caps.youtube_id: {videoId || 'none'}</div>
+        <div>Node B youtube: {debugYoutube}</div>
+        <div>Node B id: {debugNodeB?.id || 'not found'}</div>
+      </div>
 
       {videoId && (
         <div style={{background:"#000",borderRadius:16,overflow:"hidden",border:"1px solid #00ff88",marginBottom:20}}>
@@ -60,10 +72,8 @@ export default async function LearnPage({ params }: any) {
       )}
 
       {nodes.map((n:any)=>{
-        // FIX: parse content if it's a JSON string
         let parsedContent = n.content
         try { if(typeof n.content === 'string') parsedContent = JSON.parse(n.content) } catch {}
-
         const nodeYoutubeId = parsedContent?.youtubeId || parsedContent?.youtube_id || (n.node_type === 'B'? videoId : null)
 
         return (
