@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { supabase } from "@/lib/supabase/client"
 
 export default function LoginPage(){
   const [email,setEmail]=useState("")
@@ -10,58 +11,29 @@ export default function LoginPage(){
   const [loading,setLoading]=useState(false)
   const router=useRouter()
 
-  const handleLogin=()=>{
+  const handleLogin=async()=>{
+    setError("")
     if(!email.includes("@")){ setError("Enter valid email"); return }
     if(password.length<6){ setError("Password must be at least 6 chars"); return }
 
     setLoading(true)
-    setError("")
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    setLoading(false)
 
-    // Save real user
-    const realName = email.split("@")[0] || "Learner"
-    localStorage.setItem("matric360_name", realName)
-    localStorage.setItem("matric360_email", email)
-
-    // Add to all users list so Admin sees him
-    const all = JSON.parse(localStorage.getItem("matric360_all_users") || "[]")
-    if(!all.find((u:any)=>u.email===email)){
-      all.push({
-        id: Date.now().toString(),
-        name: realName,
-        email: email,
-        phone: "+27 XX XXX XXXX",
-        role: "Student",
-        plan_name: "FREE",
-        plan_price: 0,
-        billing_cycle: "monthly",
-        subscription_status: "Active",
-        created_at: new Date().toLocaleDateString(),
-        last_login: new Date().toLocaleDateString()
-      })
-      localStorage.setItem("matric360_all_users", JSON.stringify(all))
-    }
-
-    // TODO: Replace with Supabase later:
-    // const {error} = await supabase.auth.signInWithPassword({email,password})
-
+    if(error){ setError(error.message); return }
     router.push("/dashboard")
   }
 
-  const handleGoogle=()=>{
-    // For now fake Google, later: supabase.auth.signInWithOAuth({provider:'google'})
-    const gEmail = "google.user@gmail.com"
-    const gName = "Google User"
-    localStorage.setItem("matric360_name", gName)
-    localStorage.setItem("matric360_email", gEmail)
-    const all = JSON.parse(localStorage.getItem("matric360_all_users") || "[]")
-    all.push({
-      id: Date.now().toString(),
-      name: gName, email: gEmail, phone: "+27 XX XXX XXXX",
-      role:"Student", plan_name:"FREE", plan_price:0, billing_cycle:"monthly",
-      subscription_status:"Active", created_at:new Date().toLocaleDateString(), last_login:new Date().toLocaleDateString()
+  const handleGoogle=async()=>{
+    setError("")
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options:{
+        redirectTo: `${window.location.origin}/dashboard`,
+        queryParams: { prompt: 'select_account' } // Forces Gmail chooser
+      }
     })
-    localStorage.setItem("matric360_all_users", JSON.stringify(all))
-    router.push("/dashboard")
+    if(error) setError(error.message)
   }
 
   return(
