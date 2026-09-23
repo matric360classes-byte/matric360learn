@@ -18,7 +18,7 @@ export default function SignupPage(){
     const { error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
-      options:{ data:{ name: form.name, phone: form.phone } }
+      options:{ data:{ full_name: form.name, name: form.name, phone: form.phone } }
     })
     setLoading(false)
     if(error){ setError(error.message); return }
@@ -28,7 +28,7 @@ export default function SignupPage(){
   const handleGoogle=async()=>{
     const { error } = await supabase.auth.signInWithOAuth({
       provider:'google',
-      options:{ redirectTo: `${window.location.origin}/dashboard`, queryParams:{ prompt:'select_account' } }
+      options:{ redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`, queryParams:{ prompt:'select_account' } }
     })
     if(error) setError(error.message)
   }
