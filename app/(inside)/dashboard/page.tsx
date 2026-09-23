@@ -1,102 +1,90 @@
-"use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+"use client"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { supabase } from "@/lib/supabase/client"
 
-export default function DashboardPage(){
-  const [name,setName]=useState("Learner");
-  const router=useRouter();
+export default function SignupPage(){
+  const router=useRouter()
+  const [form,setForm]=useState({name:"",email:"",phone:"",password:""})
+  const [error,setError]=useState("")
+  const [loading,setLoading]=useState(false)
+  const [googleLoading,setGoogleLoading]=useState(false)
 
-  useEffect(()=>{
-    const getRealName = async () => {
-      const { data } = await supabase.auth.getUser();
-      const user = data.user;
-      if (user) {
-        const realName =
-          user.user_metadata?.full_name ||
-          user.user_metadata?.name ||
-          user.user_metadata?.display_name ||
-          user.email?.split("@")[0] ||
-          localStorage.getItem("matric360_name") ||
-          "Learner";
-        setName(realName);
-        // save for offline
-        localStorage.setItem("matric360_name", realName);
-      } else {
-        const n=localStorage.getItem("matric360_name");
-        if(n) setName(n);
+  const handleSignup=async()=>{
+    setError("")
+    if(!form.name || !form.email || !form.phone || !form.password){ setError("Fill in all fields"); return }
+    if(!form.email.includes("@")){ setError("Enter valid email"); return }
+    if(form.password.length<6){ setError("Password min 6 chars"); return }
+    
+    setLoading(true)
+    const { data, error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options:{ 
+        data:{ full_name: form.name, name: form.name, phone: form.phone },
+        // Important: after email confirm, go to callback -> dashboard
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`
       }
-    };
-    getRealName();
-  },[]);
+    })
+    setLoading(false)
+    
+    if(error){ setError(error.message); return }
+    
+    // If confirm email is ON, data.session will be null
+    if(!data.session){
+      alert("Account created! Check your email to confirm, then sign in.")
+      router.push("/login")
+    } else {
+      // If confirm email is OFF, it logs in immediately -> goes inside
+      router.push("/dashboard")
+    }
+  }
 
-  const goMaths = ()=> router.push("/subjects/mathematics");
-  const goPhysics = ()=> router.push("/subjects/physical-sciences");
-  const goContinue = ()=> {
-    const last = localStorage.getItem("last_studied_unit") || "/subjects/mathematics";
-    router.push(last);
-  };
+  const handleGoogle=async()=>{
+    setError("")
+    setGoogleLoading(true)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider:'google',
+      options:{ 
+        redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+        queryParams:{ prompt:'select_account' } 
+      }
+    })
+    if(error){ 
+      setError(error.message)
+      setGoogleLoading(false)
+    }
+    // Don't set loading false here - it will redirect
+  }
 
   return(
-    <div style={{padding:"8px 4px 90px"}}>
-      <div style={{margin:"10px 0 18px 4px"}}>
-        <div style={{fontSize:14,color:"#9ca3af"}}>Welcome back</div>
-        <div style={{fontSize:24,fontWeight:900,marginTop:2}}>{name}</div>
-      </div>
-
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
-        <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:16,padding:"14px"}}>
-          <div style={{fontSize:12,color:"#9ca3af"}}>Streak</div>
-          <div style={{fontSize:22,fontWeight:800,marginTop:8}}>1<span style={{fontSize:13,color:"#9ca3af"}}> d</span></div>
-        </div>
-        <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:16,padding:"14px"}}>
-          <div style={{fontSize:12,color:"#9ca3af"}}>XP</div>
-          <div style={{fontSize:22,fontWeight:800,marginTop:8}}>15945</div>
-        </div>
-        <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:16,padding:"14px"}}>
-          <div style={{fontSize:12,color:"#9ca3af"}}>Progress</div>
-          <div style={{fontSize:22,fontWeight:800,marginTop:8}}>48%</div>
-        </div>
-      </div>
-
-      <div style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px",marginBottom:16}}>
-        <div style={{fontWeight:700,marginBottom:12}}>Daily goal</div>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:13}}>
-          <div><b style={{fontSize:16}}>0</b> <span style={{color:"#9ca3af"}}>/ 100 XP today</span></div>
-          <div style={{color:"#9ca3af"}}>0%</div>
-        </div>
-        <div style={{height:8,background:"#232946",borderRadius:999,marginTop:10}}><div style={{width:"2%",height:"100%",background:"#6366f1"}}></div></div>
-      </div>
-
-      <div onClick={goContinue} style={{background:"linear-gradient(180deg,#1c1f3a,#171a2e)",border:"1px solid #4f46e5",borderRadius:18,padding:"16px",marginBottom:18,cursor:"pointer"}}>
-        <div style={{fontSize:11,color:"#818cf8",marginBottom:8}}>CONTINUE LEARNING • RECENTLY STUDIED</div>
-        <div style={{fontWeight:800}}>Arithmetic Sequences</div>
-        <div style={{fontSize:13,color:"#9ca3af",marginTop:4}}>Node A - Exam Hook - Concepts</div>
-        <div style={{marginTop:12,color:"#818cf8",fontWeight:700,fontSize:14}}>Resume &gt;</div>
-      </div>
-
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
-        <div style={{fontWeight:700,color:"#c7c7d1"}}>Your subjects</div>
-        <button onClick={()=>router.push("/subjects")} style={{color:"#818cf8",background:"transparent",border:0,fontSize:13,cursor:"pointer"}}>See all</button>
-      </div>
-
-      <div style={{display:"flex",flexDirection:"column",gap:12}}>
-        <div onClick={goMaths} style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px",cursor:"pointer"}}>
-          <div style={{display:"flex",justifyContent:"space-between"}}>
-            <div style={{display:"flex",gap:12}}><div style={{width:40,height:40,borderRadius:999,background:"#2a2d4a",display:"grid",placeItems:"center"}}>M</div><div><div style={{fontWeight:800}}>Mathematics</div><div style={{fontSize:12,color:"#9ca3af"}}>16 units in progress</div></div></div>
-            <div style={{fontSize:13,color:"#9ca3af"}}>59%</div>
-          </div>
-          <div style={{height:6,background:"#2a2d4a",borderRadius:999,marginTop:12}}><div style={{width:"59%",height:"100%",background:"#818cf8"}}></div></div>
-        </div>
-
-        <div onClick={goPhysics} style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px",cursor:"pointer"}}>
-          <div style={{display:"flex",justifyContent:"space-between"}}>
-            <div style={{display:"flex",gap:12}}><div style={{width:40,height:40,borderRadius:999,background:"#2a2d4a",display:"grid",placeItems:"center"}}>P</div><div><div style={{fontWeight:800}}>Physical Sciences</div><div style={{fontSize:12,color:"#9ca3af"}}>12 units</div></div></div>
-            <div style={{fontSize:13,color:"#9ca3af"}}>26%</div>
-          </div>
-          <div style={{height:6,background:"#2a2d4a",borderRadius:999,marginTop:12}}><div style={{width:"26%",height:"100%",background:"#818cf8"}}></div></div>
-        </div>
-      </div>
+    <div style={{background:"#0a0d1a",minHeight:"100vh",color:"white",padding:20}}>
+      <h1 style={{fontWeight:900,fontSize:28,marginTop:20}}>Create account</h1>
+      <p style={{color:"#94a3b8",fontSize:13,marginTop:6}}>Join learners on Matric360</p>
+      
+      <button 
+        onClick={handleGoogle} 
+        disabled={googleLoading}
+        style={{marginTop:20,background:"white",color:"black",padding:14,borderRadius:12,border:"none",fontWeight:700,width:"100%",cursor:"pointer",opacity: googleLoading ? 0.7 : 1}}
+      >
+        {googleLoading ? "Redirecting..." : "Continue with Google"}
+      </button>
+      
+      <div style={{textAlign:"center",color:"#64748b",fontSize:12,margin:"16px 0"}}>or</div>
+      
+      <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Full name" style={{background:"#1a1d2f",border:"1px solid #252a44",borderRadius:12,padding:14,color:"white",width:"100%",boxSizing:"border-box",marginBottom:10}}/>
+      <input value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="Email" type="email" style={{background:"#1a1d2f",border:"1px solid #252a44",borderRadius:12,padding:14,color:"white",width:"100%",boxSizing:"border-box",marginBottom:10}}/>
+      <input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="Phone e.g. 073 118 8782" style={{background:"#1a1d2f",border:"1px solid #252a44",borderRadius:12,padding:14,color:"white",width:"100%",boxSizing:"border-box",marginBottom:10}}/>
+      <input value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Password (min 6)" type="password" style={{background:"#1a1d2f",border:"1px solid #252a44",borderRadius:12,padding:14,color:"white",width:"100%",boxSizing:"border-box"}}/>
+      
+      {error && <div style={{background:"#ef444420",color:"#ef4444",padding:10,borderRadius:10,fontSize:12,marginTop:10}}>{error}</div>}
+      
+      <button onClick={handleSignup} disabled={loading} style={{marginTop:14,background:"#fbbf24",color:"black",padding:14,borderRadius:12,border:"none",fontWeight:800,width:"100%",cursor:"pointer",opacity: loading ? 0.7 : 1}}>
+        {loading?"Creating...":"Create account"}
+      </button>
+      
+      <div style={{textAlign:"center",marginTop:16,fontSize:13,color:"#94a3b8"}}>Have account? <Link href="/login" style={{color:"#fbbf24",fontWeight:700}}>Sign in</Link></div>
     </div>
-  );
+  )
 }
