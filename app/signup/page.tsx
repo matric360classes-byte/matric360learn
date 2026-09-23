@@ -15,14 +15,22 @@ export default function SignupPage(){
     if(!form.email.includes("@")){ setError("Enter valid email"); return }
     if(form.password.length<6){ setError("Password min 6 chars"); return }
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
-      options:{ data:{ full_name: form.name, name: form.name, phone: form.phone } }
+      options:{ 
+        data:{ full_name: form.name, name: form.name, phone: form.phone },
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`
+      }
     })
     setLoading(false)
     if(error){ setError(error.message); return }
-    router.push("/dashboard")
+    if(!data.session){
+      alert("Check your email to confirm account, then sign in")
+      router.push("/login")
+    } else {
+      router.push("/dashboard")
+    }
   }
 
   const handleGoogle=async()=>{
