@@ -1,13 +1,33 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
 
 export default function DashboardPage(){
-  const [name,setName]=useState("Mike Sibanda");
+  const [name,setName]=useState("Learner");
   const router=useRouter();
+
   useEffect(()=>{
-    const n=localStorage.getItem("matric360_name");
-    if(n) setName(n);
+    const getRealName = async () => {
+      const { data } = await supabase.auth.getUser();
+      const user = data.user;
+      if (user) {
+        const realName =
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.user_metadata?.display_name ||
+          user.email?.split("@")[0] ||
+          localStorage.getItem("matric360_name") ||
+          "Learner";
+        setName(realName);
+        // save for offline
+        localStorage.setItem("matric360_name", realName);
+      } else {
+        const n=localStorage.getItem("matric360_name");
+        if(n) setName(n);
+      }
+    };
+    getRealName();
   },[]);
 
   const goMaths = ()=> router.push("/subjects/mathematics");
@@ -48,7 +68,6 @@ export default function DashboardPage(){
         <div style={{height:8,background:"#232946",borderRadius:999,marginTop:10}}><div style={{width:"2%",height:"100%",background:"#6366f1"}}></div></div>
       </div>
 
-      {/* CONTINUE LEARNING = RECENTLY STUDIED - CLICKABLE */}
       <div onClick={goContinue} style={{background:"linear-gradient(180deg,#1c1f3a,#171a2e)",border:"1px solid #4f46e5",borderRadius:18,padding:"16px",marginBottom:18,cursor:"pointer"}}>
         <div style={{fontSize:11,color:"#818cf8",marginBottom:8}}>CONTINUE LEARNING • RECENTLY STUDIED</div>
         <div style={{fontWeight:800}}>Arithmetic Sequences</div>
@@ -62,7 +81,6 @@ export default function DashboardPage(){
       </div>
 
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
-        {/* Mathematics CLICKABLE */}
         <div onClick={goMaths} style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px",cursor:"pointer"}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div style={{display:"flex",gap:12}}><div style={{width:40,height:40,borderRadius:999,background:"#2a2d4a",display:"grid",placeItems:"center"}}>M</div><div><div style={{fontWeight:800}}>Mathematics</div><div style={{fontSize:12,color:"#9ca3af"}}>16 units in progress</div></div></div>
@@ -71,7 +89,6 @@ export default function DashboardPage(){
           <div style={{height:6,background:"#2a2d4a",borderRadius:999,marginTop:12}}><div style={{width:"59%",height:"100%",background:"#818cf8"}}></div></div>
         </div>
 
-        {/* Physical Sciences CLICKABLE */}
         <div onClick={goPhysics} style={{background:"#181a29",border:"1px solid #252a44",borderRadius:18,padding:"16px",cursor:"pointer"}}>
           <div style={{display:"flex",justifyContent:"space-between"}}>
             <div style={{display:"flex",gap:12}}><div style={{width:40,height:40,borderRadius:999,background:"#2a2d4a",display:"grid",placeItems:"center"}}>P</div><div><div style={{fontWeight:800}}>Physical Sciences</div><div style={{fontSize:12,color:"#9ca3af"}}>12 units</div></div></div>
