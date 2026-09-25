@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import Link from "next/link"
 
 export default function DashboardPage(){
   const router = useRouter()
@@ -10,18 +9,18 @@ export default function DashboardPage(){
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const checkUser = async () => {
+  useEffect(()=>{
+    const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if(!user){
         router.push("/login")
-      } else {
-        setUser(user)
-        setLoading(false)
+        return
       }
+      setUser(user)
+      setLoading(false)
     }
-    checkUser()
-  }, [])
+    getUser()
+  },[])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -32,25 +31,37 @@ export default function DashboardPage(){
     return <div style={{background:"#0a0d1a",minHeight:"100vh",color:"white",display:"flex",alignItems:"center",justifyContent:"center"}}>Loading...</div>
   }
 
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Student"
+
   return(
-    <div style={{background:"#0a0d1a",minHeight:"100vh",color:"white",padding:20}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:20}}>
-        <h1 style={{fontWeight:900,fontSize:24}}>Matric360 Learn</h1>
-        <button onClick={handleLogout} style={{background:"#1a1d2f",border:"1px solid #252a44",color:"white",padding:"8px 16px",borderRadius:8,cursor:"pointer"}}>Logout</button>
-      </div>
-      
-      <div style={{marginTop:30,background:"#1a1d2f",border:"1px solid #252a44",borderRadius:16,padding:20}}>
-        <h2 style={{fontSize:18,fontWeight:700}}>Welcome, {user?.user_metadata?.full_name || user?.email}</h2>
-        <p style={{color:"#94a3b8",fontSize:13,marginTop:6}}>{user?.email}</p>
-        <p style={{color:"#22c55e",fontSize:12,marginTop:10}}>✓ Auth working! You are inside dashboard.</p>
+    <div style={{background:"#0a0d1a",minHeight:"100vh",color:"white"}}>
+      <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #1e233a"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:22}}>☰</span>
+          <span style={{fontWeight:900,fontSize:18}}>Matric360</span>
+        </div>
+        <span style={{color:"#22c55e",fontSize:12}}>● Online</span>
       </div>
 
-      <div style={{marginTop:20,display:"grid",gap:12}}>
-        <div style={{background:"#1a1d2f",border:"1px solid #252a44",borderRadius:12,padding:16}}>
-          <h3 style={{fontWeight:700}}>📚 My Subjects</h3>
-          <p style={{color:"#64748b",fontSize:12,marginTop:4}}>Your learning content will be here</p>
+      <div style={{padding:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <h1 style={{fontWeight:900,fontSize:26}}>Matric360 Learn</h1>
+          <button onClick={handleLogout} style={{background:"#1e233a",color:"white",border:"none",padding:"10px 18px",borderRadius:12,fontSize:13,cursor:"pointer"}}>Logout</button>
         </div>
-        <Link href="/pricing" style={{background:"#fbbf24",color:"black",padding:16,borderRadius:12,textAlign:"center",fontWeight:800,textDecoration:"none"}}>Upgrade to Premium →</Link>
+
+        <div style={{marginTop:24,background:"#151a2d",borderRadius:20,padding:20,border:"1px solid #1e233a"}}>
+          <h2 style={{fontWeight:800,fontSize:18}}>Welcome, {displayName}</h2>
+          <p style={{color:"#94a3b8",fontSize:13,marginTop:6}}>{user?.email}</p>
+        </div>
+
+        <div style={{marginTop:16,background:"#151a2d",borderRadius:20,padding:20,border:"1px solid #1e233a"}}>
+          <h3 style={{fontWeight:700,fontSize:16}}>📚 My Subjects</h3>
+          <p style={{color:"#64748b",fontSize:13,marginTop:8}}>Your learning content will be here</p>
+        </div>
+
+        <button style={{marginTop:16,background:"#fbbf24",color:"black",border:"none",padding:16,borderRadius:14,fontWeight:800,width:"100%",fontSize:15,cursor:"pointer"}}>
+          Upgrade to Premium →
+        </button>
       </div>
     </div>
   )
