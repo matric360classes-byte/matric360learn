@@ -34,7 +34,7 @@ export default function Admin(){
       try{
         const r=await fetch(`/api/generate-questions?batch=${b}`)
         const j=await r.json()
-        setLog(l=>[...l, `✅ Batch ${b}: ${j.questions_created} questions - ${j.source_pdfs} PDFs`])
+        setLog(l=>[...l, `✅ Batch ${b}: ${j.questions_created} questions - ${j.topics_processed || 3} topics`
       }catch(e:any){
         setLog(l=>[...l, `❌ Batch ${b} failed: ${e.message}`])
       }
