@@ -2,7 +2,8 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
+const supabase = createClient()
 
 export default function SignupPage(){
   const router=useRouter()
