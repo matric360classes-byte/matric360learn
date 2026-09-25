@@ -3,10 +3,23 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 
-// ONLY YOUR 2 SUBJECTS - change names here if different
 const SUBJECTS = [
-  { name: "Mathematics", icon: "📐", color: "#3b82f6", slug: "mathematics" },
-  { name: "Physical Sciences", icon: "⚗️", color: "#8b5cf6", slug: "physical-sciences" },
+  {
+    name: "Mathematics",
+    shortName: "MATHS",
+    icon: "∑",
+    gradient: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+    slug: "mathematics",
+    lessons: "28 Lessons"
+  },
+  {
+    name: "Physical Sciences",
+    shortName: "PHYSICS",
+    icon: "⚛",
+    gradient: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)",
+    slug: "physical-sciences",
+    lessons: "32 Lessons"
+  },
 ]
 
 export default function DashboardPage(){
@@ -48,21 +61,54 @@ export default function DashboardPage(){
         <p style={{color:"#94a3b8",fontSize:13,marginTop:6}}>{user?.email}</p>
       </div>
 
-      <div style={{marginTop:20}}>
-        <h3 style={{fontWeight:800,fontSize:16,color:"white",marginBottom:12}}>📚 My Subjects (2)</h3>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+      <div style={{marginTop:22}}>
+        <h3 style={{fontWeight:900,fontSize:18,color:"white",marginBottom:14}}>📚 My Subjects</h3>
+
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
           {SUBJECTS.map((s)=>(
             <div key={s.slug} onClick={()=>router.push(`/subjects/${s.slug}`)}
-              style={{background:"#151a2d",border:"1px solid #1e233a",borderRadius:16,padding:16,cursor:"pointer"}}>
-              <div style={{width:42,height:42,borderRadius:12,background:`${s.color}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>{s.icon}</div>
-              <div style={{marginTop:12,fontWeight:700,fontSize:14,color:"white"}}>{s.name}</div>
-              <div style={{marginTop:4,fontSize:11,color:"#64748b"}}>Available now</div>
+              style={{
+                background:"#151a2d",
+                border:"2px solid #232a44",
+                borderRadius:20,
+                padding:18,
+                cursor:"pointer",
+                display:"flex",
+                alignItems:"center",
+                gap:16,
+                boxShadow:"0 8px 20px rgba(0,0,0,0.25)"
+              }}>
+              <div style={{
+                width:64,
+                height:64,
+                borderRadius:16,
+                background:s.gradient,
+                display:"flex",
+                alignItems:"center",
+                justifyContent:"center",
+                fontSize:32,
+                fontWeight:900,
+                color:"white",
+                flexShrink:0,
+                boxShadow:"0 4px 12px rgba(0,0,0,0.3)"
+              }}>{s.icon}</div>
+
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,fontWeight:800,letterSpacing:1,color:"#64748b"}}>{s.shortName}</div>
+                <div style={{fontSize:18,fontWeight:900,color:"white",marginTop:2,lineHeight:1.1}}>{s.name}</div>
+                <div style={{fontSize:12,color:"#94a3b8",marginTop:4,display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{width:6,height:6,borderRadius:99,background:"#22c55e",display:"inline-block"}}></span>
+                  {s.lessons} • Ready
+                </div>
+              </div>
+
+              <div style={{width:36,height:36,borderRadius:99,background:"#1e233a",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:16}}>→</div>
             </div>
           ))}
         </div>
       </div>
 
-      <button onClick={()=>router.push("/pricing")} style={{marginTop:20,background:"#fbbf24",color:"black",border:"none",padding:16,borderRadius:14,fontWeight:800,width:"100%",fontSize:15,cursor:"pointer"}}>
+      <button onClick={()=>router.push("/pricing")} style={{marginTop:22,background:"#fbbf24",color:"black",border:"none",padding:16,borderRadius:14,fontWeight:900,width:"100%",fontSize:15,cursor:"pointer"}}>
         Upgrade to Premium →
       </button>
     </div>
