@@ -2,10 +2,11 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 export default function SignupPage(){
   const router=useRouter()
+  const supabase = createClient()
   const [form,setForm]=useState({name:"",email:"",phone:"",password:""})
   const [error,setError]=useState("")
   const [loading,setLoading]=useState(false)
