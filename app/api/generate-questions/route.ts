@@ -1,35 +1,52 @@
-import { NextRequest } from "next/server"
-import OpenAI from "openai"
-import { supabase } from "@/lib/supabase"
-import { curriculum } from "@/data/curriculum" // our NO TERM file
+// @ts-nocheck
+export const dynamic = 'force-dynamic'
+export const maxDuration = 300
+
+import { createClient } from '@supabase/supabase-js'
+import OpenAI from 'openai'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! })
 
-export async function GET(req: NextRequest){
-  const batch = Number(req.nextUrl.searchParams.get("batch") || "0")
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const batch = parseInt(searchParams.get('batch') || '0')
+  const BATCH_SIZE = 3
 
-  // Same logic as your generate-all - get batch of PDFs from Source PDFs
-  const { data: allPdfs } = await supabase.storage.from("source-pdfs").list("", { limit: 200 })
-  const batchSize = 3 // 103 PDFs / 45 batches ≈ 2-3 per batch
-  const pdfs = allPdfs?.slice(batch*batchSize, (batch+1)*batchSize) || []
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // SAME as your generate-all - reads from caps_knowledge_base (your 103 PDFs)
+  const { data: topics, error } = await supabase
+   .from('caps_knowledge_base')
+   .select('id, topic, subject, grade, caps_code')
+   .range(batch * BATCH_SIZE, (batch + 1) * BATCH_SIZE - 1)
+   .order('id')
+
+  if (error) return Response.json({ error: error.message }, { status: 500 })
+  if (!topics || topics.length === 0) return Response.json({ questions_created: 0, message: "No topics in this batch" })
 
   let totalQuestions = 0
 
-  for (const pdfFile of pdfs) {
-    const { data: url } = await supabase.storage.from("source-pdfs").createSignedUrl(pdfFile.name, 3600)
+  for (const t of topics) {
+    // NO TERM - use clean grouping
+    const prompt = `
+You are generating Matric exam questions for:
+Subject: ${t.subject}
+Unit/Topic: ${t.topic}
+CAPS code: ${t.caps_code}
 
-    // Extract text from PDF via OpenAI
+RULES - NO TERM:
+- Group as: ${t.subject} > ${t.topic} > subtopic (NO Grade 12 / Term 2)
+- Generate 8 questions per topic
+- Mix: L1=Easy, L2-L3=Medium, L4=Hard, L5=Exam Style
+- Return JSON: {"questions": [{"question_text": "...", "unit": "${t.topic}", "topic": "subtopic", "difficulty_l": "L3", "difficulty_label": "Medium", "marks": 3, "correct_answer": "...", "explanation": "full memo"}]}
+`
+
     const resp = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [{
-        role: "user",
-        content: `Extract EXAM QUESTIONS from this PDF: ${pdfFile.name}.
-        Use curriculum: ${JSON.stringify(curriculum)}
-        NO TERM - use format: Subject > Unit > Topic (e.g. Mathematics > Differential Calculus > First Principles)
-        Return JSON: {questions: [{question_text, subject, unit, topic, marks, type, correct_answer, explanation, difficulty_l, difficulty_label}]}
-        difficulty_l: L1-L5, difficulty_label: Easy/Medium/Hard/Exam Style
-        PDF URL: ${url?.signedUrl}`
-      }],
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" }
     })
 
@@ -37,20 +54,19 @@ export async function GET(req: NextRequest){
     const questions = parsed.questions || []
 
     for (const q of questions) {
-      await supabase.from("questions").insert({
+      await supabase.from('questions').insert({
         question_text: q.question_text,
-        subject: q.subject,
-        unit: q.unit,
-        topic: q.topic,
-        topic_path: `${q.subject} > ${q.unit} > ${q.topic}`, // NO TERM
+        subject: t.subject,
+        unit: t.topic, // Main unit from caps_knowledge_base
+        topic: q.topic, // Subtopic - NO TERM
+        topic_path: `${t.subject} > ${t.topic} > ${q.topic}`,
         difficulty_l: q.difficulty_l,
         difficulty_label: q.difficulty_label,
         marks: q.marks,
-        type: q.type || "LONG_QUESTION",
         correct_answer: q.correct_answer,
         explanation: q.explanation,
         access: "Free",
-        source_pdf: pdfFile.name
+        source_topic_id: t.id
       })
     }
     totalQuestions += questions.length
@@ -59,6 +75,6 @@ export async function GET(req: NextRequest){
   return Response.json({
     batch,
     questions_created: totalQuestions,
-    source_pdfs: pdfs.length
+    topics_processed: topics.length
   })
 }
