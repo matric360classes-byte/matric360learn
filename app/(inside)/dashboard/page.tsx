@@ -108,7 +108,7 @@ export default function DashboardPage(){
         </div>
       </div>
 
-      <button onClick={()=>router.push("/pricing")} style={{marginTop:22,background:"#fbbf24",color:"black",border:"none",padding:16,borderRadius:14,fontWeight:900,width:"100%",fontSize:15,cursor:"pointer"}}>
+      <button onClick={()=>router.push("/subscription")} style={{marginTop:22,background:"#fbbf24",color:"black",border:"none",padding:16,borderRadius:14,fontWeight:900,width:"100%",fontSize:15,cursor:"pointer"}}>
         Upgrade to Premium →
       </button>
     </div>
