@@ -19,8 +19,7 @@ export default function ExamsPage(){
       <div style={{fontSize:28,fontWeight:900,marginTop:6}}>Exam Preparation Hub</div>
       <div style={{fontSize:13,color:"#9ca3af",marginTop:6,lineHeight:1.4}}>One tap to start. Train under exam conditions, fix weak spots, track readiness.</div>
 
-      {/* Start Practice - RECOMMENDED */}
-      <div onClick={()=>router.push("/subjects")} style={{marginTop:16,background:"linear-gradient(135deg,#8fa8ff,#b9a6ff)",borderRadius:22,padding:"18px",display:"flex",alignItems:"center",gap:14,cursor:"pointer"}}>
+      <div onClick={()=>router.push("/exams/practice")} style={{marginTop:16,background:"linear-gradient(135deg,#8fa8ff,#b9a6ff)",borderRadius:22,padding:"18px",display:"flex",alignItems:"center",gap:14,cursor:"pointer"}}>
         <div style={{width:52,height:52,background:"rgba(255,255,255,0.9)",borderRadius:16,display:"grid",placeItems:"center",fontSize:22}}>✨</div>
         <div style={{flex:1}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
