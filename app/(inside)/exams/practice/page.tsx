@@ -7,101 +7,111 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env
 
 export default function PracticeEngine(){
   const router = useRouter();
-  const [subjects,setSubjects]=useState<string[]>([]);
-  const [units,setUnits]=useState<string[]>([]);
-  const [topics,setTopics]=useState<string[]>([]);
-
-  const [subject,setSubject]=useState("");
+  const [questions,setQuestions]=useState<any[]>([]);
+  const [subject,setSubject]=useState("Physical Sciences");
   const [unit,setUnit]=useState("All units");
   const [topic,setTopic]=useState("All topics");
-  const [difficulty,setDifficulty]=useState("Medium");
+  const [difficulty,setDifficulty]=useState("Exam Style");
   const [count,setCount]=useState(10);
+  const [units,setUnits]=useState<string[]>(["All units"]);
+  const [topics,setTopics]=useState<string[]>(["All topics"]);
 
+  // Load ALL your 2100+ questions once
   useEffect(()=>{
-    async function loadMeta(){
-      const {data} = await supabase.from("questions").select("subject,unit,topic").limit(2000);
-      if(data){
-        setSubjects([...new Set(data.map(d=>d.subject).filter(Boolean))]);
-        setUnits(["All units",...new Set(data.map(d=>d.unit).filter(Boolean)) as any]);
-        setTopics(["All topics",...new Set(data.map(d=>d.topic).filter(Boolean)) as any]);
+    async function load(){
+      const {data} = await supabase.from("questions").select("*").limit(2500);
+      if(data) {
+        setQuestions(data);
+        const subj = subject || "Physical Sciences";
+        updateFilters(data, subj);
       }
     }
-    loadMeta();
+    load();
   },[]);
 
-  // Filter units/topics when subject changes
+  // When subject changes, rebuild units/topics from topic_path
   useEffect(()=>{
-    async function filterBySubject(){
-      if(!subject) return;
-      const {data} = await supabase.from("questions").select("unit,topic").eq("subject",subject).limit(2000);
-      if(data){
-        setUnits(["All units",...new Set(data.map(d=>d.unit).filter(Boolean)) as any]);
-        setTopics(["All topics",...new Set(data.map(d=>d.topic).filter(Boolean)) as any]);
-      }
-    }
-    if(subject) filterBySubject();
+    if(questions.length>0) updateFilters(questions, subject);
   },[subject]);
 
+  function updateFilters(data:any[], subj:string){
+    const filtered = data.filter(q=>q.subject===subj);
+    // Extract units from topic_path or unit field - NO TERM
+    const unitSet = new Set<string>();
+    const topicSet = new Set<string>();
+    filtered.forEach(q=>{
+      if(q.unit) unitSet.add(q.unit);
+      if(q.topic) topicSet.add(q.topic);
+      if(q.topic_path){
+        const parts = q.topic_path.split(" > ");
+        if(parts[1]) unitSet.add(parts[1]); // Unit is second part
+        if(parts[2]) topicSet.add(parts[2]); // Topic is third part
+      }
+    });
+    setUnits(["All units",...Array.from(unitSet)]);
+    setTopics(["All topics",...Array.from(topicSet)]);
+    if(unitSet.size===0) setUnits(["All units","Mechanics","Waves","Electricity","Matter","Chemical Change","Algebra","Calculus","Trigonometry"]);
+    if(topicSet.size===0) setTopics(["All topics","Vectors","Energy","Functions","First Principles"]);
+  }
+
   function startSession(){
-    localStorage.setItem("matric360_practice", JSON.stringify({subject,unit,topic,difficulty,count}));
-    router.push(`/exams/practice/session?subject=${subject}&unit=${unit}&topic=${topic}&difficulty=${difficulty}&count=${count}`);
+    const config = {subject,unit,topic,difficulty,count};
+    localStorage.setItem("matric360_practice", JSON.stringify(config));
+    router.push(`/exams/practice/session?subject=${encodeURIComponent(subject)}&unit=${encodeURIComponent(unit)}&topic=${encodeURIComponent(topic)}&difficulty=${encodeURIComponent(difficulty)}&count=${count}`);
   }
 
   return(
     <div style={{padding:"12px 12px 90px", background:"#0a0a12", minHeight:"100vh", color:"white"}}>
-      <div onClick={()=>router.push("/exams")} style={{fontSize:14,color:"#9ca3af",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>← Back to Exams</div>
+      <div onClick={()=>router.push("/exams")} style={{fontSize:14,color:"#9ca3af",cursor:"pointer"}}>← Back to Exams</div>
       <div style={{fontSize:26,fontWeight:900,marginTop:12}}>Practice Engine</div>
-      <div style={{fontSize:13,color:"#9ca3af",marginTop:6,lineHeight:1.4}}>Build a session from the live question bank. Pick a scope, difficulty, and question count.</div>
+      <div style={{fontSize:13,color:"#9ca3af",marginTop:6}}>Build a session from the live question bank. Pick a scope, difficulty, and question count.</div>
 
       <div style={{marginTop:18, display:"flex", flexDirection:"column", gap:14}}>
-
         <div style={{background:"#15151f",borderRadius:18,padding:16,border:"1px solid #222"}}>
-          <div style={{fontSize:11,letterSpacing:1,color:"#9ca3af",display:"flex",alignItems:"center",gap:6}}>📖 SUBJECT</div>
+          <div style={{fontSize:11,color:"#9ca3af"}}>SUBJECT</div>
           <select value={subject} onChange={e=>setSubject(e.target.value)} style={{width:"100%",marginTop:10,background:"#0f0f14",border:"1px solid #2a2a3a",padding:14,borderRadius:12,color:"white"}}>
-            <option value="">Choose subject...</option>
-            {subjects.map(s=><option key={s} value={s}>{s}</option>)}
-            <option value="Mathematics">Mathematics</option>
-            <option value="Physical Sciences">Physical Sciences</option>
+            <option>Physical Sciences</option>
+            <option>Mathematics</option>
+            <option>All Subjects</option>
           </select>
         </div>
 
         <div style={{background:"#15151f",borderRadius:18,padding:16,border:"1px solid #222"}}>
-          <div style={{fontSize:11,letterSpacing:1,color:"#9ca3af"}}>📚 UNIT (OPTIONAL)</div>
+          <div style={{fontSize:11,color:"#9ca3af"}}>UNIT (OPTIONAL) - {units.length-1} units found</div>
           <select value={unit} onChange={e=>setUnit(e.target.value)} style={{width:"100%",marginTop:10,background:"#0f0f14",border:"1px solid #2a2a3a",padding:14,borderRadius:12,color:"white"}}>
             {units.map(u=><option key={u} value={u}>{u}</option>)}
           </select>
         </div>
 
         <div style={{background:"#15151f",borderRadius:18,padding:16,border:"1px solid #222"}}>
-          <div style={{fontSize:11,letterSpacing:1,color:"#9ca3af"}}>🎯 TOPIC (OPTIONAL)</div>
+          <div style={{fontSize:11,color:"#9ca3af"}}>TOPIC (OPTIONAL) - {topics.length-1} topics found</div>
           <select value={topic} onChange={e=>setTopic(e.target.value)} style={{width:"100%",marginTop:10,background:"#0f0f14",border:"1px solid #2a2a3a",padding:14,borderRadius:12,color:"white"}}>
             {topics.map(t=><option key={t} value={t}>{t}</option>)}
           </select>
-          <div style={{fontSize:10,color:"#6b7280",marginTop:6}}>NO TERM grouping: Subject {'>'} Unit {'>'} Topic ✅</div>
+          <div style={{fontSize:10,color:"#22c55e",marginTop:8}}>NO TERM grouping: Subject &gt; Unit &gt; Topic ✅ {questions.length} questions loaded</div>
         </div>
 
         <div style={{background:"#15151f",borderRadius:18,padding:16,border:"1px solid #222"}}>
-          <div style={{fontSize:11,letterSpacing:1,color:"#9ca3af"}}>DIFFICULTY</div>
+          <div style={{fontSize:11,color:"#9ca3af"}}>DIFFICULTY</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:10}}>
             {["Easy","Medium","Hard","Exam Style"].map(d=>(
-              <button key={d} onClick={()=>setDifficulty(d)} style={{padding:12,borderRadius:999,border:"1px solid #2a2a3a",background:difficulty===d?"#2a2a5a":"#0f0f14",color:difficulty===d?"#818cf8":"white",fontWeight:difficulty===d?700:400}}>{d}</button>
+              <button key={d} onClick={()=>setDifficulty(d)} style={{padding:12,borderRadius:999,border:"1px solid #2a2a3a",background:difficulty===d?"#4f46e5":"#0f0f14",color:"white"}}>{d}</button>
             ))}
           </div>
         </div>
 
         <div style={{background:"#15151f",borderRadius:18,padding:16,border:"1px solid #222"}}>
-          <div style={{fontSize:11,letterSpacing:1,color:"#9ca3af"}}># QUESTION COUNT</div>
+          <div style={{fontSize:11,color:"#9ca3af"}}># QUESTION COUNT</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginTop:10}}>
             {[5,10,20,50].map(n=>(
-              <button key={n} onClick={()=>setCount(n)} style={{padding:12,borderRadius:999,border:"1px solid #2a2a3a",background:count===n?"#2a2a5a":"#0f0f14",color:count===n?"#818cf8":"white",fontWeight:count===n?700:400}}>{n}</button>
+              <button key={n} onClick={()=>setCount(n)} style={{padding:12,borderRadius:999,border:"1px solid #2a2a3a",background:count===n?"#4f46e5":"#0f0f14",color:"white"}}>{n}</button>
             ))}
           </div>
         </div>
 
-        <button onClick={startSession} disabled={!subject} style={{marginTop:6,background: subject? "linear-gradient(135deg,#8fa8ff,#b9a6ff)" : "#222",color: subject? "#1e1b4b" : "#666",padding:16,borderRadius:14,fontWeight:900,fontSize:15,border:"none"}}>
-          Start Session → {count} Questions {subject?`• ${subject}`:""}
+        <button onClick={startSession} style={{marginTop:6,background:"white",color:"black",padding:16,borderRadius:14,fontWeight:900,fontSize:15,border:"none"}}>
+          Start Session → {count} Questions • {subject}
         </button>
-        <div style={{fontSize:11,color:"#6b7280",textAlign:"center"}}>{subjects.length>0? `${subjects.length} subjects • Live from question bank` : "Loading live question bank..."}</div>
       </div>
     </div>
   )
