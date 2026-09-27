@@ -16,36 +16,41 @@ export default function PracticeEngine(){
   const [units,setUnits]=useState<string[]>(["All units"]);
   const [topics,setTopics]=useState<string[]>(["All topics"]);
 
-  // Load ALL your 2100+ questions once
+  // Load ALL your 1083 questions once
   useEffect(()=>{
     async function load(){
       const {data} = await supabase.from("questions").select("*").limit(2500);
       if(data) {
         setQuestions(data);
-        const subj = subject || "Physical Sciences";
-        updateFilters(data, subj);
+        updateFilters(data, subject);
       }
     }
     load();
   },[]);
 
-  // When subject changes, rebuild units/topics from topic_path
+  // When subject changes, rebuild units/topics
   useEffect(()=>{
     if(questions.length>0) updateFilters(questions, subject);
   },[subject]);
 
   function updateFilters(data:any[], subj:string){
-    const filtered = data.filter(q=>q.subject===subj);
-    // Extract units from topic_path or unit field - NO TERM
+    // FIX 1: CASE INSENSITIVE - was data.filter(q=>q.subject===subj)
+    const subjLower = subj.toLowerCase();
+    const filtered = data.filter(q=> (q.subject||"").toLowerCase() === subjLower);
+
+    // FIX 2: Fallback if still 0 (e.g. "Physical Sciences" vs "Physical Science")
+    const finalFiltered = filtered.length > 0? filtered :
+      data.filter(q=> (q.subject||"").toLowerCase().includes(subjLower.split(" ")[0]));
+
     const unitSet = new Set<string>();
     const topicSet = new Set<string>();
-    filtered.forEach(q=>{
+    finalFiltered.forEach(q=>{
       if(q.unit) unitSet.add(q.unit);
       if(q.topic) topicSet.add(q.topic);
       if(q.topic_path){
         const parts = q.topic_path.split(" > ");
-        if(parts[1]) unitSet.add(parts[1]); // Unit is second part
-        if(parts[2]) topicSet.add(parts[2]); // Topic is third part
+        if(parts[1]) unitSet.add(parts[1].trim());
+        if(parts[2]) topicSet.add(parts[2].trim());
       }
     });
     setUnits(["All units",...Array.from(unitSet)]);
@@ -59,6 +64,9 @@ export default function PracticeEngine(){
     localStorage.setItem("matric360_practice", JSON.stringify(config));
     router.push(`/exams/practice/session?subject=${encodeURIComponent(subject)}&unit=${encodeURIComponent(unit)}&topic=${encodeURIComponent(topic)}&difficulty=${encodeURIComponent(difficulty)}&count=${count}`);
   }
+
+  // Count for current subject only
+  const countForSubject = questions.filter(q=> (q.subject||"").toLowerCase().includes(subject.toLowerCase().split(" ")[0])).length;
 
   return(
     <div style={{padding:"12px 12px 90px", background:"#0a0a12", minHeight:"100vh", color:"white"}}>
@@ -88,7 +96,7 @@ export default function PracticeEngine(){
           <select value={topic} onChange={e=>setTopic(e.target.value)} style={{width:"100%",marginTop:10,background:"#0f0f14",border:"1px solid #2a2a3a",padding:14,borderRadius:12,color:"white"}}>
             {topics.map(t=><option key={t} value={t}>{t}</option>)}
           </select>
-          <div style={{fontSize:10,color:"#22c55e",marginTop:8}}>NO TERM grouping: Subject &gt; Unit &gt; Topic ✅ {questions.length} questions loaded</div>
+          <div style={{fontSize:10,color:"#22c55e",marginTop:8}}>NO TERM grouping: Subject &gt; Unit &gt; Topic ✅ {countForSubject} questions loaded for {subject} (Total DB: {questions.length})</div>
         </div>
 
         <div style={{background:"#15151f",borderRadius:18,padding:16,border:"1px solid #222"}}>
