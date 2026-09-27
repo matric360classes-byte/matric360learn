@@ -5,8 +5,6 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-// ===== NO HARDCODING HELPERS - FROM DB ONLY =====
-
 function getOptions(q:any): string[] {
   try {
     const o = typeof q.options === "string" ? JSON.parse(q.options) : q.options;
@@ -18,11 +16,8 @@ function getCorrectText(q:any): string {
   const opts = getOptions(q);
   const ca = (q.correct_answer ?? "").toString().trim();
   if (!ca) return "";
-  // 0,1,2,3 -> index
   if (/^[0-3]$/.test(ca) && opts[Number(ca)]) return opts[Number(ca)];
-  // 1,2,3,4 -> 1-based index from your generator
   if (/^[1-4]$/.test(ca) && opts[Number(ca)-1]) return opts[Number(ca)-1];
-  // A,B,C,D
   if (/^[A-D]$/i.test(ca) && opts[ca.toUpperCase().charCodeAt(0)-65]) return opts[ca.toUpperCase().charCodeAt(0)-65];
   return ca;
 }
@@ -45,11 +40,12 @@ function autoMarkLong(userAns:string, q:any){
   if(userNorm === correctNorm) return { correct:true, marks:q.marks, reason:"Exact match" };
 
   const numRegex = /-?\d+(\.\d+)?/g;
-  const correctNums = (ca.match(numRegex)||[]).map(normalize);
-  const userNums = (userAns.match(numRegex)||[]).map(normalize);
+  const correctNums = (ca.match(numRegex)||[]).map((n:string)=>normalize(n));
+  const userNums = (userAns.match(numRegex)||[]).map((n:string)=>normalize(n));
 
   if(correctNums.length>0){
-    let matched = correctNums.filter(n=> userNums.includes(n) || userNorm.includes(n)).length;
+    // FIXED: typed n:string
+    let matched = correctNums.filter((n:string)=> userNums.includes(n) || userNorm.includes(n)).length;
     if(matched>0){
       const ratio = matched / correctNums.length;
       if(ratio===1) return { correct:true, marks:q.marks, reason:`All values: ${correctNums.join(", ")}` };
@@ -57,8 +53,8 @@ function autoMarkLong(userAns:string, q:any){
     }
   }
 
-  const keywords = fullCorrect.split(/[^a-z0-9]+/).filter(w=>w.length>3);
-  const keyMatched = keywords.filter(k=> userAns.toLowerCase().includes(k)).length;
+  const keywords = fullCorrect.split(/[^a-z0-9]+/).filter((w:string)=>w.length>3);
+  const keyMatched = keywords.filter((k:string)=> userAns.toLowerCase().includes(k)).length;
   if(keywords.length>0 && keyMatched / keywords.length >= 0.6){
     return { correct:true, marks:q.marks, reason:"Key terms matched" };
   }
@@ -116,7 +112,7 @@ function SessionInner(){
       qId: q.id, question: q, userAnswer: opts.length>0? selected:textAns,
       correctText: result.correctText, correct: result.correct, marks: result.marks, total: q.marks, reason: result.reason
     };
-    setScores(prev=> [...prev.filter(s=>s.qId!==q.id), newEntry]);
+    setScores(prev=> [...prev.filter((s:any)=>s.qId!==q.id), newEntry]);
     setSubmitted(true);
   }
 
@@ -124,8 +120,8 @@ function SessionInner(){
     if(idx<qs.length-1){
       setIdx(idx+1); setSelected(null); setTextAns(""); setSubmitted(false);
     } else {
-      const total = scores.reduce((a,b)=>a+b.marks,0);
-      const max = qs.reduce((a,b)=>a+(b.marks||0),0);
+      const total = scores.reduce((a:number,b:any)=>a+b.marks,0);
+      const max = qs.reduce((a:number,b:any)=>a+(b.marks||0),0);
       localStorage.setItem("matric360_last_session", JSON.stringify({
         qs, scores, subject: params.get("subject"), date: new Date().toISOString(), total, max
       }));
@@ -140,9 +136,9 @@ function SessionInner(){
   if(!q) return null;
   const opts = getOptions(q);
   const isLong = opts.length===0;
-  const totalScore = scores.reduce((a,b)=>a+b.marks,0);
-  const totalMax = qs.reduce((a,b)=>a+(b.marks||0),0);
-  const currentScore = scores.find(s=>s.qId===q.id);
+  const totalScore = scores.reduce((a:number,b:any)=>a+b.marks,0);
+  const totalMax = qs.reduce((a:number,b:any)=>a+(b.marks||0),0);
+  const currentScore = scores.find((s:any)=>s.qId===q.id);
 
   return(
     <div style={{background:"#0a0a12", minHeight:"100vh", color:"white", paddingBottom:80}}>
@@ -160,14 +156,14 @@ function SessionInner(){
           {!submitted? (
             isLong? (
               <>
-                <textarea value={textAns} onChange={e=>setTextAns(e.target.value)} placeholder="Write your full answer here..." style={{marginTop:16, width:"100%", minHeight:120, background:"#0a0a12", border:"1px solid #2a2a3a", borderRadius:16, padding:14, color:"white"}}/>
+                <textarea value={textAns} onChange={(e:any)=>setTextAns(e.target.value)} placeholder="Write your full answer here..." style={{marginTop:16, width:"100%", minHeight:120, background:"#0a0a12", border:"1px solid #2a2a3a", borderRadius:16, padding:14, color:"white"}}/>
                 <button onClick={handleSubmit} disabled={!textAns.trim()} style={{width:"100%", marginTop:12, background:"#818cf8", color:"black", padding:14, borderRadius:999, fontWeight:800, border:"none", opacity: textAns.trim()?1:0.5}}>Submit answer</button>
                 <div style={{fontSize:11, color:"#9ca3af", marginTop:8}}>Auto-marked by system • No self-marking</div>
               </>
             ) : (
               <>
                 <div style={{marginTop:16, display:"flex", flexDirection:"column", gap:10}}>
-                  {opts.map((o,i)=><div key={i} onClick={()=>setSelected(o)} style={{padding:"14px 16px", borderRadius:999, border:"1px solid", borderColor:selected===o?"#818cf8":"#2a2a3a", background:selected===o?"#1e1b4b":"#0f0f14", cursor:"pointer"}}>{o}</div>)}
+                  {opts.map((o:string,i:number)=><div key={i} onClick={()=>setSelected(o)} style={{padding:"14px 16px", borderRadius:999, border:"1px solid", borderColor:selected===o?"#818cf8":"#2a2a3a", background:selected===o?"#1e1b4b":"#0f0f14", cursor:"pointer"}}>{o}</div>)}
                 </div>
                 <button onClick={handleSubmit} disabled={!selected} style={{width:"100%", marginTop:16, background:"#818cf8", color:"black", padding:14, borderRadius:999, fontWeight:800, border:"none", opacity:selected?1:0.5}}>Submit answer</button>
               </>
