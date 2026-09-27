@@ -19,15 +19,16 @@ export async function GET(req: Request) {
 
   // SAME as your generate-all - reads from caps_knowledge_base (your 103 PDFs)
   const { data: topics, error } = await supabase
-   .from('caps_knowledge_base')
-   .select('id, topic, subject, grade, caps_code')
-   .range(batch * BATCH_SIZE, (batch + 1) * BATCH_SIZE - 1)
-   .order('id')
+  .from('caps_knowledge_base')
+  .select('id, topic, subject, grade, caps_code')
+  .range(batch * BATCH_SIZE, (batch + 1) * BATCH_SIZE - 1)
+  .order('id')
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
-  if (!topics || topics.length === 0) return Response.json({ questions_created: 0, message: "No topics in this batch" })
+  if (!topics || topics.length === 0) return Response.json({ questions_created: 0, message: "No topics in this batch - done", batch, done: true })
 
   let totalQuestions = 0
+  let errors: any[] = []
 
   for (const t of topics) {
     // NO TERM - use clean grouping
@@ -54,27 +55,39 @@ RULES - NO TERM:
     const questions = parsed.questions || []
 
     for (const q of questions) {
-      await supabase.from('questions').insert({
+      const { error: insErr } = await supabase.from('questions').insert({
         question_text: q.question_text,
         subject: t.subject,
         unit: t.topic, // Main unit from caps_knowledge_base
         topic: q.topic, // Subtopic - NO TERM
         topic_path: `${t.subject} > ${t.topic} > ${q.topic}`,
-        difficulty_l: q.difficulty_l,
-        difficulty_label: q.difficulty_label,
-        marks: q.marks,
+        difficulty_l: q.difficulty_l || "L3",
+        difficulty_label: q.difficulty_label || "Medium",
+        difficulty: q.difficulty_l || "L3", // map for your UI filter
+        marks: q.marks || 3,
         correct_answer: q.correct_answer,
         explanation: q.explanation,
         access: "Free",
+        review_status: "approved",
+        grade: 12,
+        is_term_based: false, // NO TERM MODE
         source_topic_id: t.id
       })
+
+      if (insErr) {
+        errors.push(insErr.message)
+        console.error("INSERT FAILED:", insErr.message)
+      } else {
+        totalQuestions++
+      }
     }
-    totalQuestions += questions.length
   }
 
   return Response.json({
     batch,
     questions_created: totalQuestions,
-    topics_processed: topics.length
+    topics_processed: topics.length,
+    errors: errors.length > 0? errors.slice(0,3) : undefined,
+    status: totalQuestions > 0? "SAVED to questions table - NO TERM" : "FAILED - check errors"
   })
 }
