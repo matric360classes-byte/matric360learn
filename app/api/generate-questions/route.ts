@@ -116,7 +116,7 @@ export async function GET(req: Request) {
     const official = findOfficialUnit(t.subject, t.topic);
 
     const prompt = `
-You are generating Matric DBE Grade 12 exam questions for SOUTH AFRICA.
+You are generating Matric DBE Grade 12 exam questions for SOUTH AFRICA - FINAL MATH RENDERING VERSION.
 
 Subject: ${t.subject}
 Official Unit: ${official.unit}
@@ -124,25 +124,54 @@ Official Subtopic: ${official.officialTopic}
 Original CAPS code: ${t.caps_code}
 Original Topic from PDF: ${t.topic}
 
-CRITICAL RULES - NO TERM + OFFICIAL UNITS + LaTeX + SA RAND:
+CRITICAL RULES - OFFICIAL UNITS + SA RAND + PERFECT KATEX MATH:
 
-1. GROUPING: Must be ${t.subject} > ${official.unit} > ${official.officialTopic} - NO TERM, NO Grade
+1. GROUPING: Must be ${t.subject} > ${official.unit} > ${official.officialTopic} - NO TERM, NO Grade.
+
 2. CURRENCY - SOUTH AFRICAN RAND ONLY:
    - NEVER use $ for money. $ is RESERVED ONLY for LaTeX math delimiters.
    - Always use R for Rand. Format: R 5 000, R 12 500, R 150, R 2 500 000 (space as thousand separator)
-   - Example CORRECT: "Thandi invests R 15 000 at 8% p.a."
-   - Example WRONG: "Thandi invests $15 000" or "$ 15 000"
-   - For finance questions, write: "Calculate future value if R 5 000 is invested at $8\\%$ per annum" (R outside math, % inside $...$)
-3. MATH FORMULAS MUST BE LaTeX with $...$:
-   - Use $...$ ONLY for math: $2^{x+1}=8$, $\\sqrt{50}$, $\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$, $x=\\frac{-b}{2a}$, $\\sin^2\\theta+\\cos^2\\theta=1$, $A=P(1+i)^n$, $F=ma$
-   - For percentages in math: $8\\%$, $12\\%$
-4. Generate 8 questions: Mix Easy L1, Medium L2-L3, Hard L4, Exam L5
-5. Return JSON ONLY: {"questions": [{"question_text": "Question with R 5 000 and $...$ math...", "topic": "${official.officialTopic}", "difficulty_l": "Medium", "difficulty_label": "Medium", "marks": 3, "correct_answer": "R 7 320 and $...$", "explanation": "Memo with R amounts and $...$ formulas"}]}
+   - CORRECT: "Thandi invests R 15 000 at $8\\%$ p.a."
+   - WRONG: "Thandi invests $15 000" or "$ 15 000"
+   - For finance: "Calculate future value if R 5 000 is invested at $8\\%$ per annum using $A=P(1+i)^n$"
 
-Example of correct style for Finance:
-"question_text": "Thandi invests R 15 000 at $8\\%$ per annum compound interest. Calculate the future value after 3 years using $A=P(1+i)^n$."
+3. MATH FORMULAS - KATEX RULES - THIS IS WHAT MAKES IT LOOK LIKE YOUR EXAMPLE APP:
 
-Generate now.
+   A) LOGS - MOST IMPORTANT:
+   - NEVER write plain: log x, ln x, log_5 x, log base 5, In x
+   - ALWAYS write LaTeX: $\\log x$, $\\ln x$, $\\log_5 x$, $\\log_{10} x$, $\\log_2 8=3$
+   - Example: "Domain of $f^{-1}(x)=\\log_5 x$:" NOT "Domain of f^-1(x)=log_5 x"
+
+   B) POWERS & BASES & INVERSE:
+   - NEVER: x^2, x^(1/10), 2^x=8 plain, 1/10^x, f^-1(x)
+   - ALWAYS: $x^2$, $x^3$, $2^x=8$, $x^{1/10}$, $10^x$, $\\frac{1}{10^x}$, $2^{x+1}=8$, $f^{-1}(x)$, $f^{-1}(8)$
+   - Functions: $f(x)=2^x$, $f(x)=10^x$, $f^{-1}(x)=\\log_5 x$
+   - Domain/Range: $x>0$, $x\\in(0,\\infty)$, $x\\in\\mathbb{R}$, $(0,\\infty)$
+
+   C) OTHER SUBJECTS:
+   - Roots: $\\sqrt{50}$, $\\sqrt{x}$, $\\sqrt{a^2+b^2}$
+   - Fractions: $\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$, $x=\\frac{-b}{2a}$
+   - Trig: $\\sin^2\\theta+\\cos^2\\theta=1$, $\\sin 30^\\circ$
+   - Chemistry: $H_2SO_4$, $CH_4$, $n=\\frac{m}{M}$, $pH=-\\log[H^+]$, $K_c=\\frac{[C][D]}{[A][B]}$
+   - Physics: $F=ma$, $E_k=\\frac{1}{2}mv^2$, $v=20 m\\cdot s^{-1}$, $g=9.8 m\\cdot s^{-2}$
+
+4. OPTIONS RULE - CRITICAL FOR YOUR SCREENSHOT:
+   - Options must be LaTeX too
+   - WRONG: ["log x", "ln x", "x^(1/10)", "1/10^x"]
+   - CORRECT: ["$\\log x$", "$\\ln x$", "$x^{1/10}$", "$\\frac{1}{10^x}$"]
+
+5. Generate 8 questions: Mix Easy L1, Medium L2-L3, Hard L4, Exam L5
+
+6. Return JSON ONLY with options field:
+{"questions": [{"question_text": "Inverse of $f(x)=10^x$:", "topic": "${official.officialTopic}", "difficulty_l": "Medium", "difficulty_label": "Medium", "marks": 3, "correct_answer": "$\\log x$", "explanation": "Swap $x$ and $y$: $x=10^y$ => $y=\\log_{10} x = \\log x$. So $f^{-1}(x)=\\log x$. Domain $x>0$, $x\\in(0,\\infty)$.", "options": ["$\\log x$", "$\\ln x$", "$x^{1/10}$", "$\\frac{1}{10^x}$"], "type": "mcq"}]}
+
+EXAMPLES THAT MATCH YOUR SCREENSHOT:
+- "Domain of $f^{-1}(x)=\\log_5 x$: Options $x>0$"
+- "Given $f(x)=2^x$, find $f^{-1}(8)$ using $\\log_2 8=3$"
+- "Inverse of $f(x)=10^x$: $\\log x$ vs $\\ln x$ vs $x^{1/10}$"
+- Finance: "Thandi invests R 15 000 at $8\\%$ per annum. Calculate $A=P(1+i)^n$"
+
+Generate now with PERFECT $\\log$, $\\log_5$, $^{}$, $^{-1}$ rendering.
 `
 
     const resp = await openai.chat.completions.create({
@@ -155,15 +184,36 @@ Generate now.
     const questions = parsed.questions || []
 
     for (const q of questions) {
-      // Final safety: ensure no $ money slipped through
-      let cleanQ = (q.question_text||"").replace(/\$\s*([0-9,]+)/g, "R $1").replace(/US\s*\$\s*/gi, "R ").replace(/\bDollars\b/gi, "Rand")
-      let cleanA = (q.correct_answer||"").replace(/\$\s*([0-9,]+)/g, "R $1")
-      let cleanE = (q.explanation||"").replace(/\$\s*([0-9,]+)/g, "R $1")
+      // Final safety: ensure no $ money slipped through + fix old plain logs
+      let cleanQ = (q.question_text||"")
+       .replace(/\$\s*([0-9,]{2,})/g, "R $1")
+       .replace(/US\s*\$\s*/gi, "R ")
+       .replace(/\bDollars\b/gi, "Rand")
+
+      let cleanA = (q.correct_answer||"").replace(/\$\s*([0-9,]{2,})/g, "R $1")
+      let cleanE = (q.explanation||"").replace(/\$\s*([0-9,]{2,})/g, "R $1")
 
       // Fix double R
       cleanQ = cleanQ.replace(/R\s*R/g, "R ")
       cleanA = cleanA.replace(/R\s*R/g, "R ")
       cleanE = cleanE.replace(/R\s*R/g, "R ")
+
+      // Ensure options are LaTeX - auto fix common mistakes
+      let cleanOptions = (q.options||[]).map((o:string)=>{
+        if(!o) return o
+        let opt = o.trim()
+        // Fix plain logs
+        if(opt.toLowerCase()==="log x") return "$\\log x$"
+        if(opt.toLowerCase()==="ln x" || opt.toLowerCase()==="in x") return "$\\ln x$"
+        if(opt==="x^(1/10)" || opt==="x^1/10" || opt==="x^(1/10") return "$x^{1/10}$"
+        if(opt==="1/10^x" || opt==="1/(10^x)" || opt.toLowerCase().includes("1/10")) return "$\\frac{1}{10^x}$"
+        // If still no $, but looks like math, wrap
+        if(!opt.includes('$') &&!opt.startsWith('R ') && opt.match(/f\(x\)|log|ln|\^|\\/)) {
+          // Don't double wrap if already has backslash
+          if(opt.includes('\\')) return `$${opt}$`
+        }
+        return opt.replace(/\$\s*([0-9,]{2,})/g, "R $1")
+      })
 
       const { error: insErr } = await supabase.from('questions').insert({
         question_text: cleanQ,
@@ -177,6 +227,7 @@ Generate now.
         marks: q.marks || 3,
         correct_answer: cleanA,
         explanation: cleanE,
+        options: cleanOptions.length>0? cleanOptions : null,
         access: "Free",
         review_status: "approved",
         grade: 12,
@@ -197,8 +248,9 @@ Generate now.
     questions_created: totalQuestions,
     topics_processed: topics.length,
     errors: errors.length > 0? errors.slice(0,3) : undefined,
-    status: totalQuestions > 0? `SAVED ${totalQuestions} with SA RAND R and LaTeX $...$` : "FAILED",
+    status: totalQuestions > 0? `SAVED ${totalQuestions} with SA RAND R + Perfect LaTeX logs/powers` : "FAILED",
     official_mapping_used: true,
-    currency: "ZAR R"
+    currency: "ZAR R",
+    math_rendering: "KaTeX perfect - log_5, x^{1/10}, f^{-1}"
   })
 }
