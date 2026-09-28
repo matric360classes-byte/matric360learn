@@ -1,49 +1,37 @@
 'use client'
 import { useState } from 'react'
-
 export default function FixAll(){
-  const [logs, setLogs] = useState<string[]>(['Ready. Click START.'])
-  const [running, setRunning] = useState(false)
-  const [fixed, setFixed] = useState(0)
-  const [batch, setBatch] = useState(0)
-
-  const start = async()=>{
+  const [logs,setLogs]=useState<string[]>([])
+  const [running,setRunning]=useState(false)
+  const [fixed,setFixed]=useState(0)
+  const start=async()=>{
     setRunning(true)
-    let b=0
     let total=0
-    while(b<100){
-      setBatch(b)
-      setLogs(l=>[...l.slice(-12), `Batch ${b}...`])
+    for(let b=0;b<100;b++){
+      setLogs(l=>[...l.slice(-10), `Batch ${b} fetching...`])
+      const res = await fetch(`/api/admin/fix-latex?batch=${b}`)
+      const text = await res.text()
       try{
-        const r = await fetch(`/api/admin/fix-latex?batch=${b}`)
-        const j = await r.json()
-        total += j.fixed||0
+        const j = JSON.parse(text)
+        total+=j.fixed||0
         setFixed(total)
-        setLogs(l=>[...l.slice(-12), `Batch ${b}: fixed ${j.fixed} / ${j.processed} (skipped ${j.skipped_already_perfect})`])
-        if(j.done || j.processed===0){
-          setLogs(l=>[...l, `DONE - ${total} fixed`])
-          break
-        }
-        b++
-        await new Promise(res=>setTimeout(res,1000))
-      }catch(e:any){
-        setLogs(l=>[...l, `Error batch ${b}: ${e.message}`])
-        await new Promise(res=>setTimeout(res,2000))
+        setLogs(l=>[...l.slice(-10), `B${b}: fixed ${j.fixed}/${j.processed}`])
+        if(j.done || j.processed===0){ setLogs(l=>[...l, `DONE ${total}`]); break }
+      }catch{
+        setLogs(l=>[...l.slice(-10), `B${b} got HTML not JSON: ${text.slice(0,120)}...`])
+        setLogs(l=>[...l, `STOP. Open in browser: /api/admin/fix-latex?batch=0 to see what it says`])
+        break
       }
+      await new Promise(r=>setTimeout(r,1200))
     }
     setRunning(false)
   }
-
   return(
     <div style={{padding:16, background:'#111', color:'#0f0', minHeight:'100vh', fontFamily:'monospace'}}>
-      <h2>Fix 1000 - No F12 needed</h2>
-      <div>Batch: {batch} | Total Fixed: {fixed}</div>
-      <button onClick={start} disabled={running} style={{marginTop:12, padding:'14px', background: running?'#555':'#0f0', color:'#000', fontWeight:'bold', width:'100%', borderRadius:8, fontSize:16}}>
-        {running? 'RUNNING... leave phone on' : 'START FIX ALL'}
-      </button>
-      <div style={{marginTop:16, background:'#000', padding:10, borderRadius:8}}>
-        {logs.map((x,i)=><div key={i}>{x}</div>)}
-      </div>
+      <h3>Fix 1000</h3>
+      <div>Fixed: {fixed}</div>
+      <button onClick={start} disabled={running} style={{padding:14, background:'#0f0', color:'#000', width:'100%', marginTop:10, borderRadius:8, fontWeight:'bold'}}>{running?'RUNNING':'START'}</button>
+      <div style={{marginTop:12, background:'#000', padding:8}}>{logs.map((x,i)=><div key={i}>{x}</div>)}</div>
     </div>
   )
 }
