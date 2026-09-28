@@ -5,16 +5,98 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
+// OFFICIAL MIND THE GAP - SAME AS PRACTICE PAGE
+const MTG: any = {
+  Mathematics: {
+    "Unit 1: Exponents and surds": ["The number system","Working with irrational numbers","Exponents","Exponential equations","Equations with rational exponents","Exam type examples"],
+    "Unit 2: Algebra": ["Algebraic expressions","Addition and subtraction","Multiplication and division","Factorising","Notes on factorising a trinomial","Quadratic equations","Quadratic inequalities","Simultaneous equations","The nature of the roots"],
+    "Unit 3: Number patterns, sequences and series": ["Number patterns","Arithmetic sequences","Quadratic sequences","Geometric sequences","Arithmetic and geometric series","Sigma notation"],
+    "Unit 4: Functions": ["What is a function?","Function notation","The basic functions, formulas and graphs","Inverse functions","The logarithmic function","Transformation of functions"],
+    "Unit 5: Trig functions": ["Graphs of trigonometric functions","The effect of a on amplitude","The effect of q on vertical shift","The effect of b on period","The effect of p on horizontal shift"],
+    "Unit 6: Finance, growth and decay": ["Simple and compound interest","Calculating P, i and n","Simple and compound decay","Nominal and effective interest rates","Investments with time and interest rate changes","Annuities","Future Value Annuity","Present Value","Future Value"],
+    "Unit 7: Calculus": ["Average gradient","Average rate of change","Derivative of a function at a point","Uses of the derivative","Drawing graph of cubic polynomial","First principles","Rules of differentiation","Tangent to curve","Maxima and minima","Calculus"],
+    "Unit 8: Probability": ["Theoretical probability","Venn diagrams","Mutually exclusive events","Complementary events","Tree diagrams","Contingency tables","Counting principles","Permutations","Combinations","Fundamental counting principle"],
+    "Unit 9: Analytical Geometry": ["Analytical Geometry","The equation of a line","The inclination of a line","Circles in analytical geometry","Distance and midpoint formula"],
+    "Unit 10: Trigonometry": ["Trig ratios","Trig ratios in all quadrants","Trig ratios of special angles","Reduction formulae","Trigonometric identities","Solving trigonometric equations","Compound and double angle identities","Co-functions"],
+    "Unit 11: Trigonometry - Sine, cosine and area rules": ["Right-angled triangles","Area rule","Sine rule","Cosine rule","Problems in two and three dimensions","2D and 3D Problems"],
+    "Unit 12: Euclidean Geometry": ["Proportion and area of triangles","Proportion theorems","Similar polygons","Circle theorems","Cyclic quadrilaterals","Similarity and proportionality","Midpoint Theorem","Tangent chord theorem"],
+    "Unit 13: Statistics": ["Bar graphs and frequency tables","Measures of central tendency","Measures of dispersion","Five number summary and box and whisker plot","Histograms and frequency polygons","Cumulative frequency and ogives","Variance and standard deviation","Bivariate data and scatter plot","Linear regression line","Correlation coefficient","Quartiles"],
+  },
+  "Physical Sciences": {
+    "Unit 1: Mechanics - Force and Newtons Laws": ["Vectors","Force","Force diagrams","Resultant net force","Newtons First Law","Newtons Second Law","Newtons Third Law","Universal Gravitation","Mass and weight","Velocity and acceleration"],
+    "Unit 2: Momentum and impulse": ["Momentum","Change in momentum","Impulse","Conservation of linear momentum","Elastic and inelastic collisions"],
+    "Unit 3: Vertical projectile motion in 1D": ["Graphs of velocity","Free fall","Dropping a projectile","Projectile shot up then falls","Bouncing ball","Projectile motion"],
+    "Unit 4: Work, energy and power": ["Work","Energy","Power","Work-energy theorem","Conservation of energy"],
+    "Unit 5: Doppler Effect": ["Waves","Doppler Effect","Ultrasound waves","Redshift and blueshift","Applications with light"],
+    "Unit 6: Electrostatics": ["Electrical charge","Conservation of Charge","Coulombs Law","Electric fields","Electric field strength"],
+    "Unit 7: Electric circuits": ["Resistance of a wire","Ohms Law","Voltage and emf","Internal Resistance","Electric energy","Power","Electric circuits"],
+    "Unit 8: Electrodynamics - Electrical machines": ["Motors and generators","Alternating current","AC and DC","Electrical machines"],
+    "Unit 9: Optical phenomena and properties of materials": ["Electromagnetic waves","Visible light","Photoelectric effect","Optical phenomena"],
+    "Unit 10: Emission and absorption spectra": ["Continuous emission spectra","Atomic emission spectra","Atomic absorption spectra"],
+    "Unit 11: Organic compounds and macromolecules": ["Organic compounds","Physical properties and structure","IUPAC Naming","Homologous series","Reactions of organic compounds","Plastics and polymers","Plastics and pollution"],
+    "Unit 12: Rate and extent of reactions": ["Energy changes","Activation energy","Catalysts","ΔH","Endothermic and exothermic","Rates of reactions","Collision Theory","Measuring rates"],
+    "Unit 13: Chemical equilibrium": ["Le Chateliers Principle","Equilibrium Constant Kc","Chemical equilibrium","Factors that influence equilibrium","Graphs for chemical systems"],
+    "Unit 14: Acids and bases": ["Properties of acids and bases","Conjugate acid-base pairs","Ampholyte","Salt hydrolysis","Acid-base indicators","Acid-base titrations","Ka and Kb","Kw","pH scale","pH Calculations","Titration calculations"],
+    "Unit 15: Electrochemistry": ["Electrochemical cells","Electrolytic cells","Voltaic Galvanic cells","Cell notation","Standard electrode potentials","Emf of electrochemical cell"],
+    "Unit 16: The chlor-alkali industry": ["Chlor-alkali industry","Chlor-alkali reactants and products","Industrial process"],
+  }
+};
+
+function findOfficialUnit(subject: string, q: any): string {
+  const isPhys = (subject||"").toLowerCase().includes("physical") || (q.subject||"").toLowerCase().includes("physical");
+  const subjKey = isPhys? "Physical Sciences" : "Mathematics";
+  const raw = `${q.unit||""} ${q.topic||""} ${q.topic_path||""} ${q.question_text||""}`.toLowerCase();
+  const unitsObj = MTG[subjKey];
+  for (const [unitName, topics] of Object.entries(unitsObj)) {
+    for (const t of topics as string[]) {
+      const tLow = t.toLowerCase();
+      if (tLow.length > 3 && raw.includes(tLow)) return unitName;
+    }
+  }
+  if (subjKey === "Mathematics") {
+    if (raw.match(/interest|annuity|present value|future value|nominal|decay|depreci/)) return "Unit 6: Finance, growth and decay";
+    if (raw.match(/sequence|series|sigma/)) return "Unit 3: Number patterns, sequences and series";
+    if (raw.match(/probability|permutation|combination|counting|venn/)) return "Unit 8: Probability";
+    if (raw.includes("area rule") || raw.includes("sine rule") || raw.includes("cosine rule") || raw.includes("2d and 3d")) return "Unit 11: Trigonometry - Sine, cosine and area rules";
+    if (raw.match(/statistics|regression|correlation|box and whisker|quartile|ogive|variance|standard deviation|histogram|scatter/)) return "Unit 13: Statistics";
+    if (raw.match(/calculus|derivative|differentiation|first principles|cubic/)) return "Unit 7: Calculus";
+    if (raw.match(/analytical|inclination|distance.*midpoint|circle.*centre|circle.*radius/)) return "Unit 9: Analytical Geometry";
+    if (raw.match(/euclidean|circle theorem|cyclic|tangent chord|similarity|proportionality/)) return "Unit 12: Euclidean Geometry";
+    if (raw.match(/trig function|amplitude|vertical shift|period|horizontal shift|graphs of trigonometric/)) return "Unit 5: Trig functions";
+    if (raw.match(/trig|simplif.*trig|identity|compound angle|double angle|reduction|co-function/)) return "Unit 10: Trigonometry";
+    if (raw.match(/function|parabola|hyperbola|logarithmic|inverse function/)) return "Unit 4: Functions";
+    if (raw.match(/exponent|surd|irrational/)) return "Unit 1: Exponents and surds";
+    return "Unit 2: Algebra";
+  } else {
+    if (raw.match(/doppler|redshift|blueshift|ultrasound/)) return "Unit 5: Doppler Effect";
+    if (raw.match(/momentum|impulse|collision/)) return "Unit 2: Momentum and impulse";
+    if (raw.match(/projectile|free fall|bouncing ball/)) return "Unit 3: Vertical projectile motion in 1D";
+    if (raw.match(/work.*energy|work-energy/)) return "Unit 4: Work, energy and power";
+    if (raw.match(/electrostatics|coulomb|electric field/)) return "Unit 6: Electrostatics";
+    if (raw.match(/ohms|internal resistance|electric circuits/)) return "Unit 7: Electric circuits";
+    if (raw.match(/generator|motor|alternating current|electrodynamics/)) return "Unit 8: Electrodynamics - Electrical machines";
+    if (raw.match(/photoelectric|optical|electromagnetic wave/)) return "Unit 9: Optical phenomena and properties of materials";
+    if (raw.match(/emission spectra|absorption spectra/)) return "Unit 10: Emission and absorption spectra";
+    if (raw.match(/organic|iupac|homologous|polymer|plastic/)) return "Unit 11: Organic compounds and macromolecules";
+    if (raw.match(/rate.*reaction|collision theory|activation energy|catalyst/)) return "Unit 12: Rate and extent of reactions";
+    if (raw.match(/equilibrium|le chatelier|kc/)) return "Unit 13: Chemical equilibrium";
+    if (raw.match(/acid|base|ph |ka|kb|kw|titration|conjugate/)) return "Unit 14: Acids and bases";
+    if (raw.match(/electrochemistry|galvanic|voltaic|electrolytic|electrode potential/)) return "Unit 15: Electrochemistry";
+    if (raw.match(/chlor-alkali/)) return "Unit 16: The chlor-alkali industry";
+    return "Unit 1: Mechanics - Force and Newtons Laws";
+  }
+}
+
 function getOptions(q:any): string[] {
   try {
-    const o = typeof q.options === "string" ? JSON.parse(q.options) : q.options;
-    return Array.isArray(o) ? o : [];
+    const o = typeof q.options === "string"? JSON.parse(q.options) : q.options;
+    return Array.isArray(o)? o : [];
   } catch { return []; }
 }
 
 function getCorrectText(q:any): string {
   const opts = getOptions(q);
-  const ca = (q.correct_answer ?? "").toString().trim();
+  const ca = (q.correct_answer?? "").toString().trim();
   if (!ca) return "";
   if (/^[0-3]$/.test(ca) && opts[Number(ca)]) return opts[Number(ca)];
   if (/^[1-4]$/.test(ca) && opts[Number(ca)-1]) return opts[Number(ca)-1];
@@ -24,10 +106,10 @@ function getCorrectText(q:any): string {
 
 function normalize(s:string){
   return s.toLowerCase()
-   .replace(/\s+/g,"")
-   .replace(/\\[\(\)]/g,"")
-   .replace(/[*×]/g,"*")
-   .trim();
+  .replace(/\s+/g,"")
+  .replace(/\\[\(\)]/g,"")
+  .replace(/[*×]/g,"*")
+  .trim();
 }
 
 function autoMarkLong(userAns:string, q:any){
@@ -44,7 +126,6 @@ function autoMarkLong(userAns:string, q:any){
   const userNums = (userAns.match(numRegex)||[]).map((n:string)=>normalize(n));
 
   if(correctNums.length>0){
-    // FIXED: typed n:string
     let matched = correctNums.filter((n:string)=> userNums.includes(n) || userNorm.includes(n)).length;
     if(matched>0){
       const ratio = matched / correctNums.length;
@@ -87,8 +168,18 @@ function SessionInner(){
       const {data} = await supabase.from("questions").select("*").limit(2500);
       let f = data||[];
       if(subject) f = f.filter((q:any)=>(q.subject||"").toLowerCase()===subject.toLowerCase());
-      if(!unit.includes("All")) f = f.filter((q:any)=>(q.unit||"").includes(unit) || (q.topic_path||"").includes(unit));
-      if(!topic.includes("All")) f = f.filter((q:any)=>(q.topic||"").includes(topic) || (q.topic_path||"").includes(topic));
+
+      // FIXED: Use official Mind the Gap mapping - same as practice page
+      if(!unit.includes("All")){
+        f = f.filter((q:any)=> findOfficialUnit(subject,q) === unit);
+      }
+      if(!topic.includes("All")){
+        const low = topic.toLowerCase();
+        f = f.filter((q:any)=>{
+          const raw = `${q.unit||""} ${q.topic||""} ${q.topic_path||""} ${q.question_text||""}`.toLowerCase();
+          return raw.includes(low);
+        });
+      }
       if(difficulty!=="All") f = f.filter((q:any)=>q.difficulty_l===difficulty || q.difficulty_label===difficulty);
       setQs(f.sort(()=>0.5-Math.random()).slice(0,count));
       setLoading(false);
