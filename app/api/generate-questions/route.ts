@@ -56,9 +56,8 @@ function findOfficialUnit(subject: string, rawTopic: string): {unit: string, off
       }
     }
   }
-  // fallback keyword mapping
   if(subjKey==="Mathematics"){
-    if(raw.match(/interest|annuity|future value|present value/)) return {unit:"Unit 6: Finance, growth and decay", officialTopic: rawTopic};
+    if(raw.match(/interest|annuity|future value|present value|finance/)) return {unit:"Unit 6: Finance, growth and decay", officialTopic: rawTopic};
     if(raw.match(/sequence|series|sigma/)) return {unit:"Unit 3: Number patterns, sequences and series", officialTopic: rawTopic};
     if(raw.match(/probab|permutation|combination|venn/)) return {unit:"Unit 8: Probability", officialTopic: rawTopic};
     if(raw.match(/sine rule|cosine rule|area rule/)) return {unit:"Unit 11: Trigonometry - Sine, cosine and area rules", officialTopic: rawTopic};
@@ -102,10 +101,10 @@ export async function GET(req: Request) {
   )
 
   const { data: topics, error } = await supabase
- .from('caps_knowledge_base')
- .select('id, topic, subject, grade, caps_code')
- .range(batch * BATCH_SIZE, (batch + 1) * BATCH_SIZE - 1)
- .order('id')
+.from('caps_knowledge_base')
+.select('id, topic, subject, grade, caps_code')
+.range(batch * BATCH_SIZE, (batch + 1) * BATCH_SIZE - 1)
+.order('id')
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
   if (!topics || topics.length === 0) return Response.json({ questions_created: 0, message: "No topics in this batch - done", batch, done: true })
@@ -117,20 +116,33 @@ export async function GET(req: Request) {
     const official = findOfficialUnit(t.subject, t.topic);
 
     const prompt = `
-You are generating Matric exam questions for DBE Grade 12:
+You are generating Matric DBE Grade 12 exam questions for SOUTH AFRICA.
+
 Subject: ${t.subject}
 Official Unit: ${official.unit}
 Official Subtopic: ${official.officialTopic}
 Original CAPS code: ${t.caps_code}
 Original Topic from PDF: ${t.topic}
 
-RULES - NO TERM + OFFICIAL UNITS + LaTeX:
-- Group as: ${t.subject} > ${official.unit} > ${official.officialTopic} (NO Grade 12 / Term 2) - MUST use official unit name exactly
-- Generate 8 questions per topic
-- Mix: Easy (L1), Medium (L2-L3), Hard (L4), Exam Style (L5)
-- FORMULAS MUST BE LaTeX: Use $...$ for inline math. Examples: $2^{x+1}=8$, $\\sqrt{50}+\\sqrt{18}$, $\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$, $\\sin^2\\theta+\\cos^2\\theta=1$, $F=ma$, $E_k=\\frac{1}{2}mv^2$, $x=\\frac{-b}{2a}$
-- Return JSON: {"questions": [{"question_text": "Simplify $...$...", "topic": "subtopic matching official", "difficulty_l": "Medium", "difficulty_label": "Medium", "marks": 3, "correct_answer": "with LaTeX $...$", "explanation": "full memo with steps and LaTeX"}]}
-- Keep question_text short but exam-accurate, extracted style from past papers
+CRITICAL RULES - NO TERM + OFFICIAL UNITS + LaTeX + SA RAND:
+
+1. GROUPING: Must be ${t.subject} > ${official.unit} > ${official.officialTopic} - NO TERM, NO Grade
+2. CURRENCY - SOUTH AFRICAN RAND ONLY:
+   - NEVER use $ for money. $ is RESERVED ONLY for LaTeX math delimiters.
+   - Always use R for Rand. Format: R 5 000, R 12 500, R 150, R 2 500 000 (space as thousand separator)
+   - Example CORRECT: "Thandi invests R 15 000 at 8% p.a."
+   - Example WRONG: "Thandi invests $15 000" or "$ 15 000"
+   - For finance questions, write: "Calculate future value if R 5 000 is invested at $8\\%$ per annum" (R outside math, % inside $...$)
+3. MATH FORMULAS MUST BE LaTeX with $...$:
+   - Use $...$ ONLY for math: $2^{x+1}=8$, $\\sqrt{50}$, $\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$, $x=\\frac{-b}{2a}$, $\\sin^2\\theta+\\cos^2\\theta=1$, $A=P(1+i)^n$, $F=ma$
+   - For percentages in math: $8\\%$, $12\\%$
+4. Generate 8 questions: Mix Easy L1, Medium L2-L3, Hard L4, Exam L5
+5. Return JSON ONLY: {"questions": [{"question_text": "Question with R 5 000 and $...$ math...", "topic": "${official.officialTopic}", "difficulty_l": "Medium", "difficulty_label": "Medium", "marks": 3, "correct_answer": "R 7 320 and $...$", "explanation": "Memo with R amounts and $...$ formulas"}]}
+
+Example of correct style for Finance:
+"question_text": "Thandi invests R 15 000 at $8\\%$ per annum compound interest. Calculate the future value after 3 years using $A=P(1+i)^n$."
+
+Generate now.
 `
 
     const resp = await openai.chat.completions.create({
@@ -143,18 +155,28 @@ RULES - NO TERM + OFFICIAL UNITS + LaTeX:
     const questions = parsed.questions || []
 
     for (const q of questions) {
+      // Final safety: ensure no $ money slipped through
+      let cleanQ = (q.question_text||"").replace(/\$\s*([0-9,]+)/g, "R $1").replace(/US\s*\$\s*/gi, "R ").replace(/\bDollars\b/gi, "Rand")
+      let cleanA = (q.correct_answer||"").replace(/\$\s*([0-9,]+)/g, "R $1")
+      let cleanE = (q.explanation||"").replace(/\$\s*([0-9,]+)/g, "R $1")
+
+      // Fix double R
+      cleanQ = cleanQ.replace(/R\s*R/g, "R ")
+      cleanA = cleanA.replace(/R\s*R/g, "R ")
+      cleanE = cleanE.replace(/R\s*R/g, "R ")
+
       const { error: insErr } = await supabase.from('questions').insert({
-        question_text: q.question_text,
+        question_text: cleanQ,
         subject: t.subject,
-        unit: official.unit, // OFFICIAL UNIT - NOT t.topic
+        unit: official.unit,
         topic: q.topic || official.officialTopic,
         topic_path: `${t.subject} > ${official.unit} > ${q.topic || official.officialTopic}`,
         difficulty_l: q.difficulty_l || "Medium",
         difficulty_label: q.difficulty_label || q.difficulty_l || "Medium",
         difficulty: q.difficulty_l || "Medium",
         marks: q.marks || 3,
-        correct_answer: q.correct_answer,
-        explanation: q.explanation,
+        correct_answer: cleanA,
+        explanation: cleanE,
         access: "Free",
         review_status: "approved",
         grade: 12,
@@ -164,7 +186,6 @@ RULES - NO TERM + OFFICIAL UNITS + LaTeX:
 
       if (insErr) {
         errors.push(insErr.message)
-        console.error("INSERT FAILED:", insErr.message)
       } else {
         totalQuestions++
       }
@@ -176,7 +197,8 @@ RULES - NO TERM + OFFICIAL UNITS + LaTeX:
     questions_created: totalQuestions,
     topics_processed: topics.length,
     errors: errors.length > 0? errors.slice(0,3) : undefined,
-    status: totalQuestions > 0? `SAVED ${totalQuestions} questions to OFFICIAL units - NO TERM - LaTeX ready` : "FAILED - check errors",
-    official_mapping_used: true
+    status: totalQuestions > 0? `SAVED ${totalQuestions} with SA RAND R and LaTeX $...$` : "FAILED",
+    official_mapping_used: true,
+    currency: "ZAR R"
   })
 }
