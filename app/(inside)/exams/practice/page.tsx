@@ -46,16 +46,13 @@ function findOfficialUnit(subject: string, q: any): string {
   const isPhys = (subject||"").toLowerCase().includes("physical") || (q.subject||"").toLowerCase().includes("physical");
   const subjKey = isPhys? "Physical Sciences" : "Mathematics";
   const raw = `${q.unit||""} ${q.topic||""} ${q.topic_path||""} ${q.question_text||""}`.toLowerCase();
-
   const unitsObj = MTG[subjKey];
-  // try direct match to official topic name
   for (const [unitName, topics] of Object.entries(unitsObj)) {
     for (const t of topics as string[]) {
       const tLow = t.toLowerCase();
       if (tLow.length > 3 && raw.includes(tLow)) return unitName;
     }
   }
-  // fallback keyword mapping for messy old names
   if (subjKey === "Mathematics") {
     if (raw.match(/interest|annuity|present value|future value|nominal|decay|depreci/)) return "Unit 6: Finance, growth and decay";
     if (raw.match(/sequence|series|sigma/)) return "Unit 3: Number patterns, sequences and series";
@@ -104,42 +101,32 @@ export default function PracticeEngine(){
   const [difficulty,setDifficulty]=useState("All");
   const [count,setCount]=useState(10);
 
-  // Load ALL questions ONCE
   useEffect(()=>{
     async function load(){
-      const { data } = await supabase.from("questions").select("*").limit(2500);
+      const { data } = await supabase.from("questions").select("*").eq("review_status","approved").limit(4000);
       if(!data) return;
       setQuestions(data);
-
       const subs = [...new Set(data.map((q:any)=>q.subject).filter(Boolean))].sort();
       setSubjects(subs);
       if(subs.length>0 &&!subject) setSubject(subs[0]);
-
       const diffs = [...new Set(data.map((q:any)=>q.difficulty_l || q.difficulty_label).filter(Boolean))].sort();
       setDifficulties(["All",...diffs]);
     }
     load();
   },[]);
 
-  // Rebuild OFFICIAL Units/Topics when subject changes
   useEffect(()=>{
     if(!subject || questions.length===0) return;
-
-    // OFFICIAL UNITS FROM MTG - NOT FROM DB
     const subjKey = subject.toLowerCase().includes("physical")? "Physical Sciences" : "Mathematics";
     const officialUnits = Object.keys(MTG[subjKey] || MTG["Mathematics"]);
     setUnits(["All units",...officialUnits]);
-
-    // For "All units" show all official topics for that subject
     const allTopicsForSubject: string[] = [];
     Object.values(MTG[subjKey] || MTG["Mathematics"]).forEach((arr:any)=> allTopicsForSubject.push(...arr));
     setTopics(["All topics",...Array.from(new Set(allTopicsForSubject)).sort()]);
-
     setUnit("All units");
     setTopic("All topics");
   },[subject, questions]);
 
-  // When UNIT changes, rebuild TOPICS to only show topics under that unit
   useEffect(()=>{
     if(!subject) return;
     const subjKey = subject.toLowerCase().includes("physical")? "Physical Sciences" : "Mathematics";
@@ -158,7 +145,6 @@ export default function PracticeEngine(){
     router.push(`/exams/practice/session?subject=${encodeURIComponent(subject)}&unit=${encodeURIComponent(unit)}&topic=${encodeURIComponent(topic)}&difficulty=${encodeURIComponent(difficulty)}&count=${count}`);
   }
 
-  // Filtered count using OFFICIAL MAPPING - this makes it locate easily
   const filteredCount = questions.filter((q:any)=>{
     if(subject && (q.subject||"").toLowerCase()!== subject.toLowerCase()) return false;
     if(unit!=="All units"){
