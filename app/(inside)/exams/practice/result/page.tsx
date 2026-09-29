@@ -1,6 +1,27 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import 'katex/dist/katex.min.css'
+import katex from 'katex'
+
+function MathText({ text }: { text: any }) {
+  if (!text) return null
+  let t = String(text).replace(/\\\(/g, '$').replace(/\\\)/g, '$').replace(/\\\[|\\\]/g, '$')
+  const parts = t.split('$')
+  return (
+    <span>
+      {parts.map((p, i) => {
+        if (i % 2 === 1 && p.trim()) {
+          try {
+            const html = katex.renderToString(p, { throwOnError: false, displayMode: false })
+            return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />
+          } catch { return <span key={i}>{p}</span> }
+        }
+        return <span key={i} style={{whiteSpace: "pre-wrap"}}>{p}</span>
+      })}
+    </span>
+  )
+}
 
 export default function ResultPage(){
   const router = useRouter();
@@ -27,7 +48,6 @@ export default function ResultPage(){
   const percent = max>0? Math.round((total/max)*100):0;
   const correctCount = scores.filter((s:any)=>s.correct).length;
 
-  // Group weak topics from DB - no hardcoding
   const weakMap:any = {};
   scores.forEach((s:any)=>{
     if(!s.correct){
@@ -82,11 +102,11 @@ export default function ResultPage(){
                 <span>Q{i+1} • {q.marks}M • {q.difficulty_l}</span>
                 <span style={{color: sc?.correct? "#22c55e": sc?.marks>0? "#f59e0b":"#ef4444", fontWeight:800}}>{sc?.correct? `✓ ${sc.marks}/${q.marks}`: sc?.marks>0? `~ ${sc.marks}/${q.marks}`: `✗ 0/${q.marks}`}</span>
               </div>
-              <div style={{marginTop:6, fontSize:14}}>{q.question_text}</div>
+              <div style={{marginTop:6, fontSize:14}}><MathText text={q.question_text} /></div>
               <div style={{marginTop:8, fontSize:12, background:"#0a0a12", padding:10, borderRadius:10, border:"1px solid #1f2937"}}>
-                <div><span style={{color:"#9ca3af"}}>Your answer:</span> {sc?.userAnswer || <i style={{color:"#666"}}>No answer</i>}</div>
-                <div style={{marginTop:6}}><span style={{color:"#9ca3af"}}>Correct:</span> <b style={{color:"white"}}>{sc?.correctText || getCorrectText(q)}</b></div>
-                {q.explanation && <div style={{marginTop:6, color:"#d1d5db", whiteSpace:"pre-wrap"}}><span style={{color:"#9ca3af"}}>Memo:</span> {q.explanation}</div>}
+                <div><span style={{color:"#9ca3af"}}>Your answer:</span> <MathText text={sc?.userAnswer || "No answer"} /></div>
+                <div style={{marginTop:6}}><span style={{color:"#9ca3af"}}>Correct:</span> <b style={{color:"white"}}><MathText text={sc?.correctText || getCorrectText(q)} /></b></div>
+                {q.explanation && <div style={{marginTop:6, color:"#d1d5db"}}><span style={{color:"#9ca3af"}}>Memo:</span> <MathText text={q.explanation} /></div>}
                 {sc?.reason && <div style={{marginTop:6, fontSize:11, color:"#9ca3af"}}>Auto-mark: {sc.reason}</div>}
               </div>
             </div>
