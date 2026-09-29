@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-// OFFICIAL MIND THE GAP - FROM YOUR SCREENSHOTS
+// OFFICIAL MIND THE GAP
 const MTG: any = {
   Mathematics: {
     "Unit 1: Exponents and surds": ["The number system","Working with irrational numbers","Exponents","Exponential equations","Equations with rational exponents","Exam type examples"],
@@ -94,7 +94,6 @@ export default function PracticeEngine(){
   const [units,setUnits]=useState<string[]>([]);
   const [topics,setTopics]=useState<string[]>([]);
   const [difficulties,setDifficulties]=useState<string[]>([]);
-
   const [subject,setSubject]=useState("");
   const [unit,setUnit]=useState("All units");
   const [topic,setTopic]=useState("All topics");
@@ -103,12 +102,18 @@ export default function PracticeEngine(){
 
   useEffect(()=>{
     async function load(){
-      const { data } = await supabase.from("questions").select("*").eq("review_status","approved").limit(4000);
-      if(!data) return;
-      setQuestions(data);
-
-      // FIXED: Merge lowercase duplicates -> 2 subjects only
-      const rawSubs = data.map((q:any)=>q.subject).filter(Boolean);
+      let allData: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      while(true){
+        const { data } = await supabase.from("questions").select("*").eq("review_status","approved").range(from, from + batchSize - 1);
+        if(!data || data.length===0) break;
+        allData = [...allData,...data];
+        if(data.length < batchSize) break;
+        from += batchSize;
+      }
+      setQuestions(allData);
+      const rawSubs = allData.map((q:any)=>q.subject).filter(Boolean);
       const lowerMap = new Map<string,string>();
       rawSubs.forEach((s:string)=>{
         const low = s.toLowerCase().trim().replace(/-/g," ");
@@ -121,8 +126,7 @@ export default function PracticeEngine(){
       const subs = [...lowerMap.values()].sort();
       setSubjects(subs);
       if(subs.length>0 &&!subject) setSubject(subs[0]);
-
-      const diffs = [...new Set(data.map((q:any)=>q.difficulty_l || q.difficulty_label).filter(Boolean))].sort();
+      const diffs = [...new Set(allData.map((q:any)=>q.difficulty_l || q.difficulty_label).filter(Boolean))].sort();
       setDifficulties(["All",...diffs]);
     }
     load();
@@ -159,7 +163,7 @@ export default function PracticeEngine(){
   }
 
   const filteredCount = questions.filter((q:any)=>{
-    if(subject && (q.subject||"").toLowerCase()!== subject.toLowerCase()) return false;
+    if(subject && (q.subject||"").toLowerCase().replace(/-/g," ")!== subject.toLowerCase().replace(/-/g," ")) return false;
     if(unit!=="All units"){
       const official = findOfficialUnit(subject, q);
       if(official!==unit) return false;
@@ -177,7 +181,6 @@ export default function PracticeEngine(){
       <div onClick={()=>router.push("/exams")} style={{fontSize:14,color:"#9ca3af",cursor:"pointer"}}>← Back to Exams</div>
       <div style={{fontSize:26,fontWeight:900,marginTop:12}}>Practice Engine</div>
       <div style={{fontSize:13,color:"#9ca3af",marginTop:6}}>Official Mind the Gap units • {questions.length} total in DB • Topics auto-filter by Unit</div>
-
       <div style={{marginTop:18, display:"flex", flexDirection:"column", gap:14}}>
         <div style={{background:"#15151f",borderRadius:18,padding:16,border:"1px solid #222"}}>
           <div style={{fontSize:11,color:"#9ca3af"}}>SUBJECT - {subjects.length} found in DB</div>
@@ -185,14 +188,12 @@ export default function PracticeEngine(){
             {subjects.map(s=><option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-
         <div style={{background:"#15151f",borderRadius:18,padding:16,border:"1px solid #222"}}>
           <div style={{fontSize:11,color:"#9ca3af"}}>UNIT - Official Mind the Gap - {units.length-1} units for {subject}</div>
           <select value={unit} onChange={e=>setUnit(e.target.value)} style={{width:"100%",marginTop:10,background:"#0f0f14",border:"1px solid #2a2a3a",padding:14,borderRadius:12,color:"white"}}>
             {units.map(u=><option key={u} value={u}>{u}</option>)}
           </select>
         </div>
-
         <div style={{background:"#15151f",borderRadius:18,padding:16,border:"1px solid #222"}}>
           <div style={{fontSize:11,color:"#9ca3af"}}>TOPIC - {topics.length-1} official subtopics for {unit==="All units"? subject : unit}</div>
           <select value={topic} onChange={e=>setTopic(e.target.value)} style={{width:"100%",marginTop:10,background:"#0f0f14",border:"1px solid #2a2a3a",padding:14,borderRadius:12,color:"white"}}>
@@ -203,7 +204,6 @@ export default function PracticeEngine(){
             <div style={{fontSize:10,color:"#fbbf24",marginTop:6, background:"#422006", padding:6, borderRadius:8, border:"1px solid #854d0e"}}>⚠️ You asked for {count} but only {filteredCount} exist for {unit} → {topic}. Try All topics.</div>
           )}
         </div>
-
         <div style={{background:"#15151f",borderRadius:18,padding:16,border:"1px solid #222"}}>
           <div style={{fontSize:11,color:"#9ca3af"}}>DIFFICULTY - {difficulties.length-1} levels from DB</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:10}}>
@@ -212,7 +212,6 @@ export default function PracticeEngine(){
             ))}
           </div>
         </div>
-
         <div style={{background:"#15151f",borderRadius:18,padding:16,border:"1px solid #222"}}>
           <div style={{fontSize:11,color:"#9ca3af"}}># QUESTION COUNT</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginTop:10}}>
@@ -221,7 +220,6 @@ export default function PracticeEngine(){
             ))}
           </div>
         </div>
-
         <button disabled={filteredCount===0} onClick={startSession} style={{marginTop:6,background:filteredCount===0?"#333":"white",color:filteredCount===0?"#777":"black",padding:16,borderRadius:14,fontWeight:900,fontSize:15,border:"none"}}>
           {filteredCount===0? `No questions for this filter` : `Start Session → ${Math.min(count,filteredCount)} Questions • ${subject}`}
         </button>
