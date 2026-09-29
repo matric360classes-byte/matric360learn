@@ -106,9 +106,22 @@ export default function PracticeEngine(){
       const { data } = await supabase.from("questions").select("*").eq("review_status","approved").limit(4000);
       if(!data) return;
       setQuestions(data);
-      const subs = [...new Set(data.map((q:any)=>q.subject).filter(Boolean))].sort();
+
+      // FIXED: Merge lowercase duplicates -> 2 subjects only
+      const rawSubs = data.map((q:any)=>q.subject).filter(Boolean);
+      const lowerMap = new Map<string,string>();
+      rawSubs.forEach((s:string)=>{
+        const low = s.toLowerCase().trim().replace(/-/g," ");
+        if(!lowerMap.has(low)){
+          if(low.includes("physical")) lowerMap.set(low, "Physical Sciences");
+          else if(low.includes("math")) lowerMap.set(low, "Mathematics");
+          else lowerMap.set(low, s);
+        }
+      });
+      const subs = [...lowerMap.values()].sort();
       setSubjects(subs);
       if(subs.length>0 &&!subject) setSubject(subs[0]);
+
       const diffs = [...new Set(data.map((q:any)=>q.difficulty_l || q.difficulty_label).filter(Boolean))].sort();
       setDifficulties(["All",...diffs]);
     }
