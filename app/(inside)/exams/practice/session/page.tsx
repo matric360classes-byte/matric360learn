@@ -2,8 +2,30 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import 'katex/dist/katex.min.css'
+import katex from 'katex'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+// --- MATH RENDERER - FIXES YOUR \frac \sum ISSUE ---
+function MathText({ text }: { text: any }) {
+  if (!text) return null
+  let t = String(text).replace(/\\\(/g, '$').replace(/\\\)/g, '$').replace(/\\\[|\\\]/g, '$')
+  const parts = t.split('$')
+  return (
+    <span>
+      {parts.map((p, i) => {
+        if (i % 2 === 1 && p.trim()) {
+          try {
+            const html = katex.renderToString(p, { throwOnError: false, displayMode: false })
+            return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />
+          } catch { return <span key={i}>{p}</span> }
+        }
+        return <span key={i} style={{whiteSpace: "pre-wrap"}}>{p}</span>
+      })}
+    </span>
+  )
+}
 
 // OFFICIAL MIND THE GAP - SAME AS PRACTICE PAGE
 const MTG: any = {
@@ -105,11 +127,7 @@ function getCorrectText(q:any): string {
 }
 
 function normalize(s:string){
-  return s.toLowerCase()
-  .replace(/\s+/g,"")
-  .replace(/\\[\(\)]/g,"")
-  .replace(/[*×]/g,"*")
-  .trim();
+  return s.toLowerCase().replace(/\s+/g,"").replace(/\\[\(\)]/g,"").replace(/[*×]/g,"*").trim();
 }
 
 function autoMarkLong(userAns:string, q:any){
@@ -120,11 +138,9 @@ function autoMarkLong(userAns:string, q:any){
   const correctNorm = normalize(ca);
   if(!userNorm) return { correct:false, marks:0, reason:"No answer" };
   if(userNorm === correctNorm) return { correct:true, marks:q.marks, reason:"Exact match" };
-
   const numRegex = /-?\d+(\.\d+)?/g;
   const correctNums = (ca.match(numRegex)||[]).map((n:string)=>normalize(n));
   const userNums = (userAns.match(numRegex)||[]).map((n:string)=>normalize(n));
-
   if(correctNums.length>0){
     let matched = correctNums.filter((n:string)=> userNums.includes(n) || userNorm.includes(n)).length;
     if(matched>0){
@@ -133,17 +149,14 @@ function autoMarkLong(userAns:string, q:any){
       if(ratio>=0.5) return { correct:false, marks: Math.max(1, Math.round(ratio*q.marks)), reason:`Partial - found ${matched}/${correctNums.length}` };
     }
   }
-
   const keywords = fullCorrect.split(/[^a-z0-9]+/).filter((w:string)=>w.length>3);
   const keyMatched = keywords.filter((k:string)=> userAns.toLowerCase().includes(k)).length;
   if(keywords.length>0 && keyMatched / keywords.length >= 0.6){
     return { correct:true, marks:q.marks, reason:"Key terms matched" };
   }
-
   if(userNorm.length>=3 && (correctNorm.includes(userNorm) || fullCorrect.replace(/\s+/g,"").includes(userNorm))){
     return { correct:true, marks:q.marks, reason:"Contains answer" };
   }
-
   return { correct:false, marks:0, reason:`Expected: ${ca || memo.slice(0,80)}` };
 }
 
@@ -165,11 +178,9 @@ function SessionInner(){
       const topic = params.get("topic")||"All topics";
       const difficulty = params.get("difficulty")||"All";
       const count = Number(params.get("count")||10);
-      const {data} = await supabase.from("questions").select("*").limit(2500);
+      const {data} = await supabase.from("questions").select("*").eq("review_status","approved").limit(4000);
       let f = data||[];
       if(subject) f = f.filter((q:any)=>(q.subject||"").toLowerCase()===subject.toLowerCase());
-
-      // FIXED: Use official Mind the Gap mapping - same as practice page
       if(!unit.includes("All")){
         f = f.filter((q:any)=> findOfficialUnit(subject,q) === unit);
       }
@@ -242,7 +253,7 @@ function SessionInner(){
       <div style={{padding:16}}>
         <div style={{background:"#15151f", borderRadius:20, padding:16, border:"1px solid #222"}}>
           <div style={{fontSize:11, color:"#9ca3af"}}>{(q.question_type|| (isLong?"LONG_QUESTION":"MCQ")).toUpperCase()} · {q.marks} MARKS · {q.difficulty_l||q.difficulty_label} {q.topic_path? `· ${q.topic_path}`: ""}</div>
-          <div style={{marginTop:8, fontSize:16, lineHeight:1.5}}>{q.question_text}</div>
+          <div style={{marginTop:8, fontSize:16, lineHeight:1.5}}><MathText text={q.question_text} /></div>
 
           {!submitted? (
             isLong? (
@@ -254,7 +265,7 @@ function SessionInner(){
             ) : (
               <>
                 <div style={{marginTop:16, display:"flex", flexDirection:"column", gap:10}}>
-                  {opts.map((o:string,i:number)=><div key={i} onClick={()=>setSelected(o)} style={{padding:"14px 16px", borderRadius:999, border:"1px solid", borderColor:selected===o?"#818cf8":"#2a2a3a", background:selected===o?"#1e1b4b":"#0f0f14", cursor:"pointer"}}>{o}</div>)}
+                  {opts.map((o:string,i:number)=><div key={i} onClick={()=>setSelected(o)} style={{padding:"14px 16px", borderRadius:999, border:"1px solid", borderColor:selected===o?"#818cf8":"#2a2a3a", background:selected===o?"#1e1b4b":"#0f0f14", cursor:"pointer"}}><MathText text={o} /></div>)}
                 </div>
                 <button onClick={handleSubmit} disabled={!selected} style={{width:"100%", marginTop:16, background:"#818cf8", color:"black", padding:14, borderRadius:999, fontWeight:800, border:"none", opacity:selected?1:0.5}}>Submit answer</button>
               </>
@@ -267,8 +278,8 @@ function SessionInner(){
                   <span>{currentScore?.correct? "✓ Correct": (currentScore?.marks>0? `~ Partial · ${currentScore?.marks}/${q.marks}`: `✗ Incorrect · 0/${q.marks}`)}</span>
                   <span style={{fontSize:11, opacity:0.8}}>{currentScore?.reason}</span>
                 </div>
-                <div style={{fontSize:13, marginTop:6}}><b>Answer:</b> {getCorrectText(q) || q.explanation?.slice(0,200)}</div>
-                {q.explanation && <div style={{fontSize:13, marginTop:8, color:"#d1d5db", whiteSpace:"pre-wrap"}}><b>Memo:</b> {q.explanation}</div>}
+                <div style={{fontSize:13, marginTop:6}}><b>Answer:</b> <MathText text={currentScore?.correctText || getCorrectText(q)} /></div>
+                {q.explanation && <div style={{fontSize:13, marginTop:8, color:"#d1d5db"}}><b>Memo:</b> <MathText text={q.explanation} /></div>}
               </div>
               <button onClick={next} style={{width:"100%", marginTop:16, background:"#818cf8", color:"black", padding:14, borderRadius:999, fontWeight:800, border:"none"}}>{idx<qs.length-1?"Next question →":"Finish → View Results"}</button>
             </>
