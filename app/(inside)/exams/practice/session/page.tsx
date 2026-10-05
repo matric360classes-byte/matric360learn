@@ -7,13 +7,27 @@ import katex from 'katex'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-// --- GENERAL MATH CLEANER - FIXES ANY STRIPPED LATEX FROM OLD 1000 BATCH ---
+// --- FINAL GENERAL CLEANER - FIXES OLD 1000 BATCH: infty, ext{}, R, ^(x), log_2 ---
 function cleanLatex(input: any): string {
   if (!input) return "";
   let t = String(input);
-  // Quick exit for clean questions (2350)
-  if (!/ext|rac|frac|qrt|sqrt/i.test(t)) return t;
 
+  // Fast exit for clean 2350
+  if (!/ext|rac|frac|qrt|infty|\\t|\bR\b|10\^|log_/i.test(t)) return t;
+
+  // 1. Remove empty wrappers like ext{ } and ext{}
+  t = t.replace(/\\?ext\s*\{\s*\}/gi, "");
+  t = t.replace(/\[R\s*0,?/gi, "[0,");
+  t = t.replace(/\[R/gi, "[");
+  t = t.replace(/\bR\s+(?=\d|10\^|log|\\log)/gi, ""); // R 10^x -> 10^x
+
+  // 2. Fix \infty - your main bug: \t infty, infty, \tinfty
+  t = t.replace(/\\t\s*infty/gi, "\\infty");
+  t = t.replace(/\\tinfty/gi, "\\infty");
+  t = t.replace(/\\t\b/gi, "\\");
+  t = t.replace(/\binfty\b/gi, "\\infty");
+
+  // 3. Fix log/ln/text/frac
   t = t.replace(/\\?ext\s*\{\s*log\s*\}/gi, "\\log");
   t = t.replace(/\\?ext\s*\{\s*ln\s*\}/gi, "\\ln");
   t = t.replace(/ext\s*log/gi, "\\log");
@@ -25,15 +39,20 @@ function cleanLatex(input: any): string {
   t = t.replace(/(^|[^a-z\\])frac\s*\{/gi, "$1\\frac{");
   t = t.replace(/(^|[^a-z\\])qrt\s*\{/gi, "$1\\sqrt{");
   t = t.replace(/(^|[^a-z\\])sqrt\s*\{/gi, "$1\\sqrt{");
-  t = t.replace(/(^|[^a-z\\])og\s*\{/gi, "$1\\log{");
-  t = t.replace(/\b(ln|log)\s*\{/gi, "\\$1{");
+  t = t.replace(/\blog_(\d+)\((.*?)\)/gi, "\\log_{$1}($2)");
+  t = t.replace(/\blog_(\d+)/gi, "\\log_{$1}");
+  t = t.replace(/\blog\b/gi, "\\log");
 
-  t = t.replace(/(^|[^a-z\\])sin\s*\(/gi, "$1\\sin(");
-  t = t.replace(/(^|[^a-z\\])cos\s*\(/gi, "$1\\cos(");
-  t = t.replace(/(^|[^a-z\\])tan\s*\(/gi, "$1\\tan(");
+  // 4. Fix exponents 10^(x) -> 10^{x}
+  t = t.replace(/10\^\(([^)]+)\)/g, "10^{$1}");
+  t = t.replace(/(\d+)\^\(([^)]+)\)/g, "$1^{$2}");
+  t = t.replace(/(\d+)\^x/gi, "$1^{x}");
+  t = t.replace(/\^x/gi, "^{x}");
 
-  t = t.replace(/Since R 16/gi, "Since 16");
-  t = t.replace(/\bR\s+(\d+)\b/g, "$1");
+  // 5. Clean double spaces and stray "ext"
+  t = t.replace(/\bext\b/gi, "");
+  t = t.replace(/\s{2,}/g, " ");
+
   return t;
 }
 
@@ -42,7 +61,7 @@ function MathText({ text }: { text: any }) {
   let raw = String(text);
   if (!raw.includes("$")) {
     raw = cleanLatex(raw);
-    if (/\\(frac|log|ln|sqrt|sin|cos|tan|text)/.test(raw)) {
+    if (/\\(frac|log|ln|sqrt|infty)/.test(raw)) {
       if (!raw.startsWith("$")) raw = `$${raw}$`;
     }
   } else {
@@ -206,7 +225,6 @@ function SessionInner(){
       const topic = params.get("topic")||"All topics";
       const difficulty = params.get("difficulty")||"All";
       const count = Number(params.get("count")||10);
-
       let allData: any[] = [];
       let from = 0;
       const batchSize = 1000;
@@ -217,7 +235,6 @@ function SessionInner(){
         if(data.length < batchSize) break;
         from += batchSize;
       }
-
       let f = allData;
       if(subject) f = f.filter((q:any)=>(q.subject||"").toLowerCase().replace(/-/g," ").trim() === subject.toLowerCase().replace(/-/g," ").trim());
       if(!unit.includes("All")){
