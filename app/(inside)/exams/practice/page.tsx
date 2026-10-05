@@ -5,7 +5,6 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-// OFFICIAL MIND THE GAP
 const MTG: any = {
   Mathematics: {
     "Unit 1: Exponents and surds": ["The number system","Working with irrational numbers","Exponents","Exponential equations","Equations with rational exponents","Exam type examples"],
@@ -60,7 +59,7 @@ function findOfficialUnit(subject: string, q: any): string {
     if (raw.includes("area rule") || raw.includes("sine rule") || raw.includes("cosine rule") || raw.includes("2d and 3d")) return "Unit 11: Trigonometry - Sine, cosine and area rules";
     if (raw.match(/statistics|regression|correlation|box and whisker|quartile|ogive|variance|standard deviation|histogram|scatter/)) return "Unit 13: Statistics";
     if (raw.match(/calculus|derivative|differentiation|first principles|cubic/)) return "Unit 7: Calculus";
-    if (raw.match(/analytical|inclination|distance.*midpoint|circle.*centre|circle.*radius/)) return "Unit 9: Analytical Geometry";
+    if (raw.match(/analytical|inclination|distance.*midpoint|circle.*centre|circle.*radius|circles in analytical/)) return "Unit 9: Analytical Geometry";
     if (raw.match(/euclidean|circle theorem|cyclic|tangent chord|similarity|proportionality/)) return "Unit 12: Euclidean Geometry";
     if (raw.match(/trig function|amplitude|vertical shift|period|horizontal shift|graphs of trigonometric/)) return "Unit 5: Trig functions";
     if (raw.match(/trig|simplif.*trig|identity|compound angle|double angle|reduction|co-function/)) return "Unit 10: Trigonometry";
@@ -170,7 +169,10 @@ export default function PracticeEngine(){
     }
     if(topic!=="All topics"){
       const raw = `${q.unit||""} ${q.topic||""} ${q.topic_path||""} ${q.question_text||""}`.toLowerCase();
-      if(!raw.includes(topic.toLowerCase())) return false;
+      const tLow = topic.toLowerCase();
+      const words = tLow.split(/[^a-z0-9]+/).filter((w:string)=>w.length>3);
+      const hasWord = words.some((w:string)=> raw.includes(w));
+      if(!raw.includes(tLow) &&!hasWord) return false;
     }
     if(difficulty!=="All" && (q.difficulty_l!==difficulty && q.difficulty_label!==difficulty)) return false;
     return true;
