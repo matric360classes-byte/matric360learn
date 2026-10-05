@@ -7,7 +7,6 @@ import katex from 'katex'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
-// --- MATH RENDERER - FIXES YOUR \frac \sum ISSUE ---
 function MathText({ text }: { text: any }) {
   if (!text) return null
   let t = String(text).replace(/\\\(/g, '$').replace(/\\\)/g, '$').replace(/\\\[|\\\]/g, '$')
@@ -27,7 +26,6 @@ function MathText({ text }: { text: any }) {
   )
 }
 
-// OFFICIAL MIND THE GAP - SAME AS PRACTICE PAGE
 const MTG: any = {
   Mathematics: {
     "Unit 1: Exponents and surds": ["The number system","Working with irrational numbers","Exponents","Exponential equations","Equations with rational exponents","Exam type examples"],
@@ -82,7 +80,7 @@ function findOfficialUnit(subject: string, q: any): string {
     if (raw.includes("area rule") || raw.includes("sine rule") || raw.includes("cosine rule") || raw.includes("2d and 3d")) return "Unit 11: Trigonometry - Sine, cosine and area rules";
     if (raw.match(/statistics|regression|correlation|box and whisker|quartile|ogive|variance|standard deviation|histogram|scatter/)) return "Unit 13: Statistics";
     if (raw.match(/calculus|derivative|differentiation|first principles|cubic/)) return "Unit 7: Calculus";
-    if (raw.match(/analytical|inclination|distance.*midpoint|circle.*centre|circle.*radius/)) return "Unit 9: Analytical Geometry";
+    if (raw.match(/analytical|inclination|distance.*midpoint|circle.*centre|circle.*radius|circles in analytical/)) return "Unit 9: Analytical Geometry";
     if (raw.match(/euclidean|circle theorem|cyclic|tangent chord|similarity|proportionality/)) return "Unit 12: Euclidean Geometry";
     if (raw.match(/trig function|amplitude|vertical shift|period|horizontal shift|graphs of trigonometric/)) return "Unit 5: Trig functions";
     if (raw.match(/trig|simplif.*trig|identity|compound angle|double angle|reduction|co-function/)) return "Unit 10: Trigonometry";
@@ -115,7 +113,6 @@ function getOptions(q:any): string[] {
     return Array.isArray(o)? o : [];
   } catch { return []; }
 }
-
 function getCorrectText(q:any): string {
   const opts = getOptions(q);
   const ca = (q.correct_answer?? "").toString().trim();
@@ -125,11 +122,7 @@ function getCorrectText(q:any): string {
   if (/^[A-D]$/i.test(ca) && opts[ca.toUpperCase().charCodeAt(0)-65]) return opts[ca.toUpperCase().charCodeAt(0)-65];
   return ca;
 }
-
-function normalize(s:string){
-  return s.toLowerCase().replace(/\s+/g,"").replace(/\\[\(\)]/g,"").replace(/[*×]/g,"*").trim();
-}
-
+function normalize(s:string){ return s.toLowerCase().replace(/\s+/g,"").replace(/\\[\(\)]/g,"").replace(/[*×]/g,"*").trim(); }
 function autoMarkLong(userAns:string, q:any){
   const ca = (q.correct_answer||"").toString();
   const memo = (q.explanation||"").toString();
@@ -151,12 +144,8 @@ function autoMarkLong(userAns:string, q:any){
   }
   const keywords = fullCorrect.split(/[^a-z0-9]+/).filter((w:string)=>w.length>3);
   const keyMatched = keywords.filter((k:string)=> userAns.toLowerCase().includes(k)).length;
-  if(keywords.length>0 && keyMatched / keywords.length >= 0.6){
-    return { correct:true, marks:q.marks, reason:"Key terms matched" };
-  }
-  if(userNorm.length>=3 && (correctNorm.includes(userNorm) || fullCorrect.replace(/\s+/g,"").includes(userNorm))){
-    return { correct:true, marks:q.marks, reason:"Contains answer" };
-  }
+  if(keywords.length>0 && keyMatched / keywords.length >= 0.6){ return { correct:true, marks:q.marks, reason:"Key terms matched" }; }
+  if(userNorm.length>=3 && (correctNorm.includes(userNorm) || fullCorrect.replace(/\s+/g,"").includes(userNorm))){ return { correct:true, marks:q.marks, reason:"Contains answer" }; }
   return { correct:false, marks:0, reason:`Expected: ${ca || memo.slice(0,80)}` };
 }
 
@@ -178,17 +167,32 @@ function SessionInner(){
       const topic = params.get("topic")||"All topics";
       const difficulty = params.get("difficulty")||"All";
       const count = Number(params.get("count")||10);
-      const {data} = await supabase.from("questions").select("*").eq("review_status","approved").limit(4000);
-      let f = data||[];
-      if(subject) f = f.filter((q:any)=>(q.subject||"").toLowerCase()===subject.toLowerCase());
+
+      // FIX 1: BATCH FETCH 3350 NOT 1000
+      let allData: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      while(true){
+        const { data } = await supabase.from("questions").select("*").eq("review_status","approved").range(from, from + batchSize - 1);
+        if(!data || data.length===0) break;
+        allData = [...allData,...data];
+        if(data.length < batchSize) break;
+        from += batchSize;
+      }
+
+      let f = allData;
+      if(subject) f = f.filter((q:any)=>(q.subject||"").toLowerCase().replace(/-/g," ").trim() === subject.toLowerCase().replace(/-/g," ").trim());
       if(!unit.includes("All")){
         f = f.filter((q:any)=> findOfficialUnit(subject,q) === unit);
       }
+      // FIX 2: FUZZY TOPIC - SAME AS PRACTICE PAGE
       if(!topic.includes("All")){
-        const low = topic.toLowerCase();
+        const tLow = topic.toLowerCase();
+        const words = tLow.split(/[^a-z0-9]+/).filter((w:string)=>w.length>3);
         f = f.filter((q:any)=>{
           const raw = `${q.unit||""} ${q.topic||""} ${q.topic_path||""} ${q.question_text||""}`.toLowerCase();
-          return raw.includes(low);
+          const hasWord = words.some((w:string)=> raw.includes(w));
+          return raw.includes(tLow) || hasWord;
         });
       }
       if(difficulty!=="All") f = f.filter((q:any)=>q.difficulty_l===difficulty || q.difficulty_label===difficulty);
@@ -210,29 +214,22 @@ function SessionInner(){
       const auto = autoMarkLong(textAns, q);
       result = { correct:auto.correct, marks:auto.marks, correctText: getCorrectText(q) || q.explanation, reason:auto.reason };
     }
-    const newEntry = {
-      qId: q.id, question: q, userAnswer: opts.length>0? selected:textAns,
-      correctText: result.correctText, correct: result.correct, marks: result.marks, total: q.marks, reason: result.reason
-    };
+    const newEntry = { qId: q.id, question: q, userAnswer: opts.length>0? selected:textAns, correctText: result.correctText, correct: result.correct, marks: result.marks, total: q.marks, reason: result.reason };
     setScores(prev=> [...prev.filter((s:any)=>s.qId!==q.id), newEntry]);
     setSubmitted(true);
   }
-
   function next(){
-    if(idx<qs.length-1){
-      setIdx(idx+1); setSelected(null); setTextAns(""); setSubmitted(false);
-    } else {
+    if(idx<qs.length-1){ setIdx(idx+1); setSelected(null); setTextAns(""); setSubmitted(false); }
+    else {
       const total = scores.reduce((a:number,b:any)=>a+b.marks,0);
       const max = qs.reduce((a:number,b:any)=>a+(b.marks||0),0);
-      localStorage.setItem("matric360_last_session", JSON.stringify({
-        qs, scores, subject: params.get("subject"), date: new Date().toISOString(), total, max
-      }));
+      localStorage.setItem("matric360_last_session", JSON.stringify({ qs, scores, subject: params.get("subject"), date: new Date().toISOString(), total, max }));
       router.push("/exams/practice/result");
     }
   }
 
   if(loading) return <div style={{padding:20, background:"#0a0a12", color:"white", minHeight:"100vh"}}>Loading...</div>;
-  if(qs.length===0) return <div style={{padding:20, background:"#0a0a12", color:"white", minHeight:"100vh"}}>No questions found <button onClick={()=>router.push("/exams/practice")}>Back</button></div>;
+  if(qs.length===0) return <div style={{padding:20, background:"#0a0a12", color:"white", minHeight:"100vh"}}>No questions found for {params.get("unit")} → {params.get("topic")} <button onClick={()=>router.push("/exams/practice")}>Back</button></div>;
 
   const q = qs[idx];
   if(!q) return null;
@@ -249,12 +246,10 @@ function SessionInner(){
         <span style={{fontSize:14, color:"#9ca3af"}}>Score: {totalScore} / {totalMax}</span>
       </div>
       <div style={{height:4, background:"#1a1a2e"}}><div style={{height:4, background:"#818cf8", width:`${((idx)/qs.length)*100}%`, transition:"0.3s"}} /></div>
-
       <div style={{padding:16}}>
         <div style={{background:"#15151f", borderRadius:20, padding:16, border:"1px solid #222"}}>
           <div style={{fontSize:11, color:"#9ca3af"}}>{(q.question_type|| (isLong?"LONG_QUESTION":"MCQ")).toUpperCase()} · {q.marks} MARKS · {q.difficulty_l||q.difficulty_label} {q.topic_path? `· ${q.topic_path}`: ""}</div>
           <div style={{marginTop:8, fontSize:16, lineHeight:1.5}}><MathText text={q.question_text} /></div>
-
           {!submitted? (
             isLong? (
               <>
@@ -274,10 +269,7 @@ function SessionInner(){
             <>
               {isLong && <div style={{marginTop:16, background:"#0a0a12", border:"1px solid #2a2a3a", borderRadius:16, padding:14, color:"#d1d5db"}}><b>Your answer:</b> {textAns}</div>}
               <div style={{marginTop:16, padding:14, borderRadius:16, border:"1px solid", borderColor: currentScore?.correct? "#22c55e": (currentScore?.marks>0? "#f59e0b":"#ef4444"), background: currentScore?.correct? "#052e16": (currentScore?.marks>0? "#422006":"#450a0a")}}>
-                <div style={{fontWeight:800, display:"flex", justifyContent:"space-between"}}>
-                  <span>{currentScore?.correct? "✓ Correct": (currentScore?.marks>0? `~ Partial · ${currentScore?.marks}/${q.marks}`: `✗ Incorrect · 0/${q.marks}`)}</span>
-                  <span style={{fontSize:11, opacity:0.8}}>{currentScore?.reason}</span>
-                </div>
+                <div style={{fontWeight:800, display:"flex", justifyContent:"space-between"}}><span>{currentScore?.correct? "✓ Correct": (currentScore?.marks>0? `~ Partial · ${currentScore?.marks}/${q.marks}`: `✗ Incorrect · 0/${q.marks}`)}</span><span style={{fontSize:11, opacity:0.8}}>{currentScore?.reason}</span></div>
                 <div style={{fontSize:13, marginTop:6}}><b>Answer:</b> <MathText text={currentScore?.correctText || getCorrectText(q)} /></div>
                 {q.explanation && <div style={{fontSize:13, marginTop:8, color:"#d1d5db"}}><b>Memo:</b> <MathText text={q.explanation} /></div>}
               </div>
@@ -289,7 +281,6 @@ function SessionInner(){
     </div>
   )
 }
-
 export default function SessionPage(){
   return(
     <Suspense fallback={<div style={{padding:20,background:"black",color:"white",minHeight:"100vh"}}>Loading...</div>}>
