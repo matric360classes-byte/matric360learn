@@ -7,23 +7,62 @@ import katex from 'katex'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
+// --- GENERAL MATH CLEANER - FIXES ANY STRIPPED LATEX FROM OLD 1000 BATCH ---
+function cleanLatex(input: any): string {
+  if (!input) return "";
+  let t = String(input);
+  // Quick exit for clean questions (2350)
+  if (!/ext|rac|frac|qrt|sqrt/i.test(t)) return t;
+
+  t = t.replace(/\\?ext\s*\{\s*log\s*\}/gi, "\\log");
+  t = t.replace(/\\?ext\s*\{\s*ln\s*\}/gi, "\\ln");
+  t = t.replace(/ext\s*log/gi, "\\log");
+  t = t.replace(/ext\s*ln/gi, "\\ln");
+  t = t.replace(/\\?ext\s*\{/gi, "\\text{");
+  t = t.replace(/\\?ext\b/gi, "\\text");
+
+  t = t.replace(/(^|[^a-z\\])rac\s*\{/gi, "$1\\frac{");
+  t = t.replace(/(^|[^a-z\\])frac\s*\{/gi, "$1\\frac{");
+  t = t.replace(/(^|[^a-z\\])qrt\s*\{/gi, "$1\\sqrt{");
+  t = t.replace(/(^|[^a-z\\])sqrt\s*\{/gi, "$1\\sqrt{");
+  t = t.replace(/(^|[^a-z\\])og\s*\{/gi, "$1\\log{");
+  t = t.replace(/\b(ln|log)\s*\{/gi, "\\$1{");
+
+  t = t.replace(/(^|[^a-z\\])sin\s*\(/gi, "$1\\sin(");
+  t = t.replace(/(^|[^a-z\\])cos\s*\(/gi, "$1\\cos(");
+  t = t.replace(/(^|[^a-z\\])tan\s*\(/gi, "$1\\tan(");
+
+  t = t.replace(/Since R 16/gi, "Since 16");
+  t = t.replace(/\bR\s+(\d+)\b/g, "$1");
+  return t;
+}
+
 function MathText({ text }: { text: any }) {
-  if (!text) return null
-  let t = String(text).replace(/\\\(/g, '$').replace(/\\\)/g, '$').replace(/\\\[|\\\]/g, '$')
-  const parts = t.split('$')
+  if (!text) return null;
+  let raw = String(text);
+  if (!raw.includes("$")) {
+    raw = cleanLatex(raw);
+    if (/\\(frac|log|ln|sqrt|sin|cos|tan|text)/.test(raw)) {
+      if (!raw.startsWith("$")) raw = `$${raw}$`;
+    }
+  } else {
+    raw = raw.split("$").map((p,i)=> i%2===1? cleanLatex(p) : p).join("$");
+  }
+  raw = raw.replace(/\\\(/g, "$").replace(/\\\)/g, "$").replace(/\\\[|\\\]/g, "$");
+  const parts = raw.split("$");
   return (
-    <span>
+    <span style={{lineHeight:"1.6"}}>
       {parts.map((p, i) => {
         if (i % 2 === 1 && p.trim()) {
           try {
-            const html = katex.renderToString(p, { throwOnError: false, displayMode: false })
-            return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />
-          } catch { return <span key={i}>{p}</span> }
+            const html = katex.renderToString(p, { throwOnError: false, displayMode: false, strict: false });
+            return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />;
+          } catch { return <span key={i}>{p}</span>; }
         }
-        return <span key={i} style={{whiteSpace: "pre-wrap"}}>{p}</span>
+        return <span key={i} style={{whiteSpace:"pre-wrap"}}>{p}</span>;
       })}
     </span>
-  )
+  );
 }
 
 const MTG: any = {
@@ -168,7 +207,6 @@ function SessionInner(){
       const difficulty = params.get("difficulty")||"All";
       const count = Number(params.get("count")||10);
 
-      // FIX 1: BATCH FETCH 3350 NOT 1000
       let allData: any[] = [];
       let from = 0;
       const batchSize = 1000;
@@ -185,7 +223,6 @@ function SessionInner(){
       if(!unit.includes("All")){
         f = f.filter((q:any)=> findOfficialUnit(subject,q) === unit);
       }
-      // FIX 2: FUZZY TOPIC - SAME AS PRACTICE PAGE
       if(!topic.includes("All")){
         const tLow = topic.toLowerCase();
         const words = tLow.split(/[^a-z0-9]+/).filter((w:string)=>w.length>3);
