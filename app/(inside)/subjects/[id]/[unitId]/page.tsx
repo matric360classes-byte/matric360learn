@@ -4,6 +4,8 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SUBJECTS_DATA } from "../../../../../lib/subjects";
 
+const norm = (s:string)=> (s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
+
 export default function UnitPage(){
  const p=useParams() as any;
  let sid=p.id as string; if(sid==="physical-science") sid="physical-sciences";
@@ -11,7 +13,7 @@ export default function UnitPage(){
  const subj=(SUBJECTS_DATA as any)[sid];
  const unit = subj?.sections?.flatMap((s:any)=>s.units).find((u:any)=>u.id===uid);
  const [done,setDone]=useState<Set<string>>(new Set());
- const [videosSet,setVideosSet]=useState<Set<string>>(new Set());
+ const [videosNorm,setVideosNorm]=useState<Set<string>>(new Set());
 
  useEffect(()=>{
   try{
@@ -20,21 +22,31 @@ export default function UnitPage(){
   }catch{}
  },[]);
 
- // FAST videos check - only badge
+ // DYNAMIC CHECK - from videos table
  useEffect(()=>{
   (async()=>{
     try{
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
       const subjNorm = sid.toLowerCase().includes('math')? 'mathematics' : 'physical-sciences';
-      const res = await fetch(`${url}/rest/v1/videos?select=topic&subject=eq.${subjNorm}&limit=200`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      const res = await fetch(`${url}/rest/v1/videos?select=topic&subject=eq.${subjNorm}&limit=300`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       const data:any = await res.json();
       const s = new Set<string>();
-      if(Array.isArray(data)) data.forEach((v:any)=>{ if(v.topic) s.add(v.topic.toLowerCase().trim()); });
-      setVideosSet(s);
+      if(Array.isArray(data)) data.forEach((v:any)=>{ if(v.topic) s.add(norm(v.topic)); });
+      setVideosNorm(s);
     }catch{}
   })();
  },[sid]);
+
+ const hasVideo = (t:any)=>{
+  const nTitle = norm(t.title);
+  const nId = norm(t.id);
+  for(const v of videosNorm){
+    if(!v) continue;
+    if(v===nId || v===nTitle || nId.includes(v) || v.includes(nId) || nTitle.includes(v) || v.includes(nTitle)) return true;
+  }
+  return false;
+ };
 
  if(!unit) return <div style={{padding:20,color:"#fff"}}>Unit not found</div>;
 
@@ -52,15 +64,20 @@ export default function UnitPage(){
     {unit.topics?.map((t:any)=>{
      const tid = `${sid}_${uid}_${t.id}`;
      const isDone = done.has(tid);
-     const hasVideo = videosSet.has((t.title||"").toLowerCase().trim());
+     const show = hasVideo(t);
      return(
       <Link key={t.id} href={`/subjects/${sid}/${uid}/${t.id}`} style={{textDecoration:"none"}}>
        <div style={{background:"#1a1c2e",border:"1px solid #252a44",borderRadius:24,padding:"18px 16px"}}>
         <div style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:12}}>{t.title}</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
-         {hasVideo && (
-           <div style={{display:"flex",alignItems:"center",gap:6,background:"#252a5a",border:"1px solid #3a3f8a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#8b8bff",fontWeight:600}}>◧ Video Lesson <span style={{background:"#3a3f8a",padding:"2px 6px",borderRadius:6,fontSize:10}}>INCLUDED</span></div>
+
+         {/* DYNAMIC BADGE - EXACTLY LIKE YOUR REFERENCE PHOTO */}
+         {show && (
+           <div style={{display:"flex",alignItems:"center",gap:6,background:"#2a335a",border:"1px solid #3d4a8a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#8ea0ff",fontWeight:700}}>
+             <span style={{fontSize:12}}>◧</span> Video Lesson <span style={{background:"#3d4a8a",padding:"2px 7px",borderRadius:8,fontSize:10,color:"#aab6ff",fontWeight:800,letterSpacing:0.5}}>INCLUDED</span>
+           </div>
          )}
+
          <div style={{display:"flex",alignItems:"center",gap:5,background:"#1f1f2e",border:"1px solid #2a2d4a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#9aa0b6"}}>☰ Practice</div>
          <div style={{display:"flex",alignItems:"center",gap:5,background:"#1f1f2e",border:"1px solid #2a2d4a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#9aa0b6"}}>⎙ Exam Challenge</div>
          {isDone? (
