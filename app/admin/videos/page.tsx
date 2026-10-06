@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
@@ -46,15 +46,23 @@ export default function AdminVideosPage(){
   const [topic,setTopic]=useState<string>("");
   const [title,setTitle]=useState<string>("");
   const [youtubeUrl,setYoutubeUrl]=useState<string>("");
+  const [description,setDescription]=useState<string>("");
   const [loading,setLoading]=useState<boolean>(false);
+  const [videos,setVideos]=useState<any[]>([]);
 
   const units = useMemo(()=>Object.keys(MTG[subject]||{}),[subject]);
   const topics = useMemo(()=>MTG[subject]?.[unit]||[],[subject,unit]);
+  const ytId = useMemo(()=>youtubeUrl.match(/(?:youtu\.be\/|v=)([^&?]+)/)?.[1] || "",[youtubeUrl]);
+
+  const fetchVideos = async ()=>{
+    const { data } = await supabase.from("videos").select("*").order("created_at",{ascending:false}).limit(20);
+    if(data) setVideos(data);
+  };
+  useEffect(()=>{ fetchVideos(); },[]);
 
   const handleSave = async ()=>{
-    if(!unit ||!topic ||!title ||!youtubeUrl){ alert("Fill all fields"); return; }
+    if(!unit ||!topic ||!title ||!youtubeUrl){ alert("Fill Subject, Unit, Topic, Title, YouTube"); return; }
     setLoading(true);
-    const ytId = youtubeUrl.match(/(?:youtu\.be\/|v=)([^&?]+)/)?.[1] || "";
     const { error } = await supabase.from("videos").insert({
       youtube_id: ytId,
       youtube_url: youtubeUrl,
@@ -62,6 +70,7 @@ export default function AdminVideosPage(){
       caps_code: unit,
       topic: topic,
       title: title,
+      description: description || null,
       status: "Ready",
       is_premium: false,
       order_index: 0,
@@ -69,27 +78,73 @@ export default function AdminVideosPage(){
     });
     setLoading(false);
     if(error) alert(error.message);
-    else { alert("Saved! "+title); setTitle(""); setYoutubeUrl(""); }
+    else { alert("Saved! "+title); setTitle(""); setYoutubeUrl(""); setDescription(""); fetchVideos(); }
+  };
+
+  const handleDelete = async (id:string)=>{
+    if(!confirm("Delete video?")) return;
+    await supabase.from("videos").delete().eq("id",id);
+    fetchVideos();
   };
 
   return(
-    <div style={{background:"#0a0a12",minHeight:"100vh",color:"white",padding:16}}>
+    <div style={{background:"#0a0a12",minHeight:"100vh",color:"white",padding:16, paddingBottom:100}}>
       <h1 style={{fontWeight:800,fontSize:22}}>Admin - Add Video</h1>
-      <p style={{color:"#9ca3af",fontSize:12}}>MTG Units: {subject==="Physical Sciences"?16:13} | Same as Practice</p>
-      <select value={subject} onChange={(e)=>{setSubject(e.target.value); setUnit(""); setTopic("");}} style={{marginTop:12,width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222"}}>
+      <p style={{color:"#9ca3af",fontSize:12, marginBottom:12}}>MTG Units: {subject==="Physical Sciences"?16:13} | Same as Practice • Preview restored</p>
+
+      <select value={subject} onChange={(e)=>{setSubject(e.target.value); setUnit(""); setTopic("");}} style={{width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222"}}>
         {Object.keys(MTG).map((s:string)=><option key={s} value={s}>{s}</option>)}
       </select>
+
       <select value={unit} onChange={(e)=>{setUnit(e.target.value); setTopic("");}} style={{marginTop:10,width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222"}}>
         <option value="">Select Unit... ({units.length})</option>
         {units.map((u:string)=><option key={u} value={u}>{u}</option>)}
       </select>
+
       <select value={topic} onChange={(e)=>setTopic(e.target.value)} style={{marginTop:10,width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222"}}>
         <option value="">Select Topic... ({topics.length})</option>
         {topics.map((t:string)=><option key={t} value={t}>{t}</option>)}
       </select>
-      <input value={title} onChange={(e)=>setTitle(e.target.value)} placeholder="Video title e.g. Power" style={{marginTop:10,width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222"}}/>
+
+      <input value={title} onChange={(e)=>setTitle(e.target.value)} placeholder="Video title e.g. Power - Work Energy Theorem" style={{marginTop:10,width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222"}}/>
       <input value={youtubeUrl} onChange={(e)=>setYoutubeUrl(e.target.value)} placeholder="YouTube URL https://youtu.be/..." style={{marginTop:10,width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222"}}/>
-      <button onClick={handleSave} disabled={loading} style={{marginTop:14,width:"100%",padding:14,borderRadius:12,background:"#818cf8",color:"black",fontWeight:800}}>{loading?"Saving...":"Save Video"}</button>
+      <textarea value={description} onChange={(e)=>setDescription(e.target.value)} placeholder="Description (optional)" style={{marginTop:10,width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222", minHeight:70}}/>
+
+      {/* PREVIEW RESTORED */}
+      {ytId && (
+        <div style={{marginTop:16, background:"#15151f", borderRadius:16, padding:12, border:"1px solid #222"}}>
+          <p style={{fontSize:12, color:"#9ca3af", marginBottom:8}}>Preview</p>
+          <div style={{aspectRatio:"16/9", background:"black", borderRadius:12, overflow:"hidden"}}>
+            <img src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`} style={{width:"100%", height:"100%", objectFit:"cover"}} alt="thumb"/>
+          </div>
+          <div style={{marginTop:10, fontSize:13}}>
+            <p style={{fontWeight:700}}>{title || "Untitled video"}</p>
+            <p style={{color:"#9ca3af", fontSize:11, marginTop:4}}>{subject} • {unit} • {topic}</p>
+            <p style={{color:"#6b7280", fontSize:11, marginTop:4}}>youtube_id: {ytId}</p>
+          </div>
+          <div style={{marginTop:10}}>
+            <iframe width="100%" height="180" src={`https://www.youtube.com/embed/${ytId}`} style={{borderRadius:12, border:0}} allowFullScreen />
+          </div>
+        </div>
+      )}
+
+      <button onClick={handleSave} disabled={loading} style={{marginTop:16,width:"100%",padding:14,borderRadius:12,background:"#818cf8",color:"black",fontWeight:800}}>{loading?"Saving...":"Save Video"}</button>
+
+      {/* LIST RESTORED */}
+      <div style={{marginTop:28}}>
+        <h2 style={{fontWeight:700, fontSize:16}}>Recent Videos ({videos.length})</h2>
+        {videos.map((v:any)=>(
+          <div key={v.id} style={{marginTop:10, background:"#11111a", padding:12, borderRadius:12, border:"1px solid #1f1f2a", display:"flex", gap:10}}>
+            <img src={v.thumbnail_url || `https://img.youtube.com/vi/${v.youtube_id}/hqdefault.jpg`} style={{width:80, height:50, borderRadius:8, objectFit:"cover"}}/>
+            <div style={{flex:1}}>
+              <p style={{fontSize:13, fontWeight:600}}>{v.title}</p>
+              <p style={{fontSize:11, color:"#9ca3af"}}>{v.caps_code} • {v.topic}</p>
+              <p style={{fontSize:10, color:"#6b7280"}}>{v.subject}</p>
+            </div>
+            <button onClick={()=>handleDelete(v.id)} style={{color:"#ef4444", fontSize:12}}>Delete</button>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
