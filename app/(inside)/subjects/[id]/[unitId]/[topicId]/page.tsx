@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
-import { SUBJECTS_DATA } from "../../../../../../lib/subjects";
+import { SUBJECTS_DATA } from "@/lib/subjects";
 
 const META:any = {
   A:{label:"Exam Hook", icon:"📌", color:"#ff6b35"},
