@@ -1,59 +1,86 @@
 "use client";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { SUBJECTS_DATA } from "../../../../../lib/subjects";
+import Link from "next/link";
 
 export default function UnitPage(){
- const p=useParams() as any;
- let sid=p.id as string; if(sid==="physical-science") sid="physical-sciences";
- const uid=p.unitId as string;
- const subj=(SUBJECTS_DATA as any)[sid];
- const unit = subj?.sections?.flatMap((s:any)=>s.units).find((u:any)=>u.id===uid);
- const [done,setDone]=useState<Set<string>>(new Set());
+  const p = useParams() as any;
+  const subjectId = p?.id;
+  const unitId = p?.unitId;
+  const [topics, setTopics] = useState<any[]>([]);
+  const [videosMap, setVideosMap] = useState<Record<string, boolean>>({});
 
- useEffect(()=>{
-  try{
-   const saved = localStorage.getItem("matric360_progress");
-   if(saved) setDone(new Set(JSON.parse(saved)));
-  }catch{}
- },[]);
+  useEffect(()=>{(async()=>{
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const subjRaw = decodeURIComponent(subjectId||"").toLowerCase().trim();
+    const subjNorm = subjRaw.includes('math')? 'mathematics' : subjRaw.includes('physical')? 'physical-sciences' : subjRaw;
+    const unitRaw = decodeURIComponent(unitId||"").toLowerCase().trim();
 
- if(!unit) return <div style={{padding:20,color:"#fff"}}>Unit not found</div>;
+    // Fetch topics for this unit from caps_knowledge_base
+    const resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,caps_code,unit&subject=eq.${subjNorm}&unit=ilike.%${unitRaw.split('-')[0]}%`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+    let kb:any = await resKb.json();
+    if(!Array.isArray(kb) || kb.length===0){
+      // fallback: try all for subject
+      const resAll = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,caps_code,unit&subject=eq.${subjNorm}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      kb = await resAll.json();
+    }
+    if(Array.isArray(kb)) setTopics(kb);
 
- return(
-  <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:100}}>
-   <div style={{padding:"12px 16px 0",fontSize:13,color:"#6b7280",display:"flex",gap:6}}>
-    <Link href="/subjects" style={{color:"#6b7280",textDecoration:"none"}}>Subjects</Link> <span>›</span>
-    <Link href={`/subjects/${sid}`} style={{color:"#6b7280",textDecoration:"none"}}>{subj?.name}</Link> <span>›</span>
-    <span style={{color:"#e5e7eb"}}>{unit.title}</span>
-   </div>
-   <div style={{padding:"12px 16px 0",fontSize:11,color:"#6b7280",letterSpacing:1.2}}>UNIT</div>
-   <h1 style={{fontSize:28,fontWeight:900,padding:"2px 16px 18px",lineHeight:"1.15"}}>{unit.title}</h1>
+    // FETCH VIDEOS - BUILD MAP FOR BADGE
+    try {
+      const resVid = await fetch(`${url}/rest/v1/videos?select=topic,subject&subject=eq.${subjNorm}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      const allVids:any = await resVid.json();
+      if(Array.isArray(allVids)){
+        const map:Record<string,boolean> = {};
+        allVids.forEach((v:any)=>{
+          const vt = (v.topic||"").toLowerCase().trim();
+          if(vt) map[vt] = true;
+        });
+        setVideosMap(map);
+      }
+    } catch(e){}
 
-   <div style={{padding:"0 12px",display:"flex",flexDirection:"column",gap:14}}>
-    {unit.topics?.map((t:any)=>{
-     const tid = `${sid}_${uid}_${t.id}`;
-     const isDone = done.has(tid);
-     return(
-      <Link key={t.id} href={`/subjects/${sid}/${uid}/${t.id}`} style={{textDecoration:"none"}}>
-       <div style={{background:"#1a1c2e",border:"1px solid #252a44",borderRadius:24,padding:"18px 16px"}}>
-        <div style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:12}}>{t.title}</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
-         <div style={{display:"flex",alignItems:"center",gap:6,background:"#252a5a",border:"1px solid #3a3f8a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#8b8bff",fontWeight:600}}>◧ Video Lesson <span style={{background:"#3a3f8a",padding:"2px 6px",borderRadius:6,fontSize:10}}>INCLUDED</span></div>
-         <div style={{display:"flex",alignItems:"center",gap:5,background:"#1f1f2e",border:"1px solid #2a2d4a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#9aa0b6"}}>☰ Practice</div>
-         <div style={{display:"flex",alignItems:"center",gap:5,background:"#1f1f2e",border:"1px solid #2a2d4a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#9aa0b6"}}>⎙ Exam Challenge</div>
-         {isDone? (
-          <div style={{display:"flex",gap:5,background:"#0f2a1e",border:"1px solid #14532d",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#4ade80",fontWeight:700}}>✔ Completed</div>
-         ) : (
-          <div style={{display:"flex",gap:5,background:"#1f1f2e",border:"1px solid #2a2d4a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#6b7280"}}>○ Not started</div>
-         )}
-        </div>
-       </div>
-      </Link>
-     )
-    })}
-   </div>
-  </div>
- )
+  })()},[subjectId, unitId]);
+
+  const hasVideo = (topicName:string)=>{
+    const lower = (topicName||"").toLowerCase().trim();
+    return!!videosMap[lower] || Object.keys(videosMap).some(k => lower.includes(k) || k.includes(lower));
+  };
+
+  const cleanUnit = decodeURIComponent(unitId||"").replace(/-/g," ");
+
+  return(
+    <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",padding:"16px",paddingBottom:100}}>
+      <Link href={`/subjects/${subjectId}`} style={{color:"#6b7280",fontSize:"14px",textDecoration:"none"}}>← Back</Link>
+      <h1 style={{fontSize:"24px",fontWeight:900,margin:"12px 0",textTransform:"capitalize"}}>{cleanUnit}</h1>
+
+      <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+        {topics.map((t:any)=>{
+          const topicSlug = (t.caps_code || t.topic||"").toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"");
+          const showBadge = hasVideo(t.topic);
+          return(
+            <Link key={t.id} href={`/subjects/${subjectId}/${unitId}/${topicSlug}`} style={{textDecoration:"none"}}>
+              <div style={{background:"#1a1c2e",border:"1px solid #252a44",borderRadius:"20px",padding:"16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <div style={{fontWeight:700,color:"#fff",textTransform:"capitalize"}}>{t.topic}</div>
+                  <div style={{fontSize:"11px",color:"#6b7280",marginTop:"4px"}}>{t.caps_code}</div>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"6px"}}>
+                  {/* ONLY SHOW IF VIDEO EXISTS - NOT HARDCODED */}
+                  {showBadge && (
+                    <span style={{fontSize:"9px",background:"#00ff88",color:"#000",padding:"4px 8px",borderRadius:"20px",fontWeight:800}}>
+                      Video Lesson INCLUDED
+                    </span>
+                  )}
+                  <span style={{fontSize:"10px",color:"#6b7280"}}>View →</span>
+                </div>
+              </div>
+            </Link>
+          )
+        })}
+        {topics.length===0 && <div style={{color:"#6b7280",marginTop:"20px"}}>Loading topics...</div>}
+      </div>
+    </div>
+  )
 }
