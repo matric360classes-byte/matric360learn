@@ -1,5 +1,5 @@
-export const dynamic = "force-dynamic";
 "use client";
+export const dynamic = "force-dynamic";
 import { useRouter } from "next/navigation";
 
 export default function SubjectsPage(){
@@ -8,22 +8,14 @@ export default function SubjectsPage(){
   return(
     <div style={{padding:"8px 4px 90px"}}>
       <h1 style={{fontSize:26,fontWeight:900,margin:"12px 0 16px 4px"}}>Subjects</h1>
-
       <div style={{display:"flex",flexDirection:"column",gap:16}}>
-        {/* Mathematics */}
-        <div
-          onClick={()=>router.push("/subjects/mathematics")}
-          style={{background:"#1a1f35",border:"1px solid #2a324f",borderRadius:18,padding:"20px"}}>
+        <div onClick={()=>router.push("/subjects/mathematics")} style={{background:"#1a1f35",border:"1px solid #2a324f",borderRadius:18,padding:"20px"}}>
           <div style={{fontSize:18,fontWeight:800,marginBottom:6}}>Mathematics</div>
-          <div style={{fontSize:14,color:"#a1a1b5",lineHeight:"1.4"}}>CAPS-aligned exam practice</div>
+          <div style={{fontSize:14,color:"#a1a1b5"}}>CAPS-aligned exam practice</div>
         </div>
-
-        {/* Physical Sciences */}
-        <div
-          onClick={()=>router.push("/subjects/physical-sciences")}
-          style={{background:"#1a1f35",border:"1px solid #2a324f",borderRadius:18,padding:"20px"}}>
+        <div onClick={()=>router.push("/subjects/physical-sciences")} style={{background:"#1a1f35",border:"1px solid #2a324f",borderRadius:18,padding:"20px"}}>
           <div style={{fontSize:18,fontWeight:800,marginBottom:6}}>Physical Sciences</div>
-          <div style={{fontSize:14,color:"#a1a1b5",lineHeight:"1.4"}}>CAPS Grade 12 Physical Sciences</div>
+          <div style={{fontSize:14,color:"#a1a1b5"}}>CAPS Grade 12 Physical Sciences</div>
         </div>
       </div>
     </div>
