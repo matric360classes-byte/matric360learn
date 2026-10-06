@@ -114,9 +114,27 @@ export default function Page(){
     nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
     setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
 
-    // FETCH VIDEOS for this topic - hidden if none, HD if exists
-    const resVid = await fetch(`${url}/rest/v1/videos?select=*&caps_topic_id=eq.${kb.id}&order=order_num.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-    const vids:any = await resVid.json();
+    // FETCH VIDEOS - FIXED: videos table uses subject + topic + caps_code, NOT caps_topic_id. Only shows if Admin added.
+    let resVid = await fetch(`${url}/rest/v1/videos?select=*&subject=eq.${subjNorm}&topic=ilike.%${encodeURIComponent(kb.topic)}%&order=order_index.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+    let vids:any = await resVid.json();
+    if(!Array.isArray(vids) || vids.length===0){
+      resVid = await fetch(`${url}/rest/v1/videos?select=*&subject=eq.${subjNorm}&order=order_index.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      vids = await resVid.json();
+      if(Array.isArray(vids)){
+        const filtered = vids.filter((v:any)=>
+          v.topic?.toLowerCase() === kb.topic?.toLowerCase() ||
+          v.topic?.toLowerCase().includes(kb.topic?.toLowerCase()) ||
+          v.topic?.toLowerCase().includes(cleanTopicRaw) ||
+          v.caps_code?.toLowerCase().includes(cleanTopicRaw)
+        );
+        if(filtered.length>0) vids = filtered;
+        else {
+          // if no match, don't show video (correct behavior) - keep empty if not relevant
+          const exactSubjectMatch = vids.filter((v:any)=> v.topic?.toLowerCase().trim() === kb.topic?.toLowerCase().trim());
+          vids = exactSubjectMatch.length? exactSubjectMatch : [];
+        }
+      }
+    }
     if(Array.isArray(vids)) setVideos(vids);
 
   })()},[topicId, subjectId]);
@@ -126,19 +144,16 @@ export default function Page(){
   const meta = META[active];
   const getContent = (n:any)=> n?.content?.body_markdown || n?.body_markdown || n?.content?.body || n?.body || (typeof n?.content==='string'? n.content:"") || "";
 
-  // VIDEO LOGIC - FIXED: Check both videos table AND lesson_nodes content (from AddVideoModal)
-  const videoForActive = videos.find((v:any)=> (v.node_label===active || v.node_type===active) ) || videos.find((v:any)=>!v.node_label) || null;
+  // VIDEO LOGIC - ONLY if video exists in DB (no hardcode)
+  const videoForActive = videos.find((v:any)=> (v.node_label===active || v.node_type===active) ) || videos.find((v:any)=>!v.node_label) || videos[0] || null;
   let ytIdFromVideos = videoForActive? (videoForActive.youtube_id || getYoutubeId(videoForActive.youtube_url)) : "";
-
-  // NEW: Check Node B content.youtubeId saved by Admin modal
   const ytIdFromNode = (() => {
     try {
       let c = activeNode?.content
       if (typeof c === 'string') c = JSON.parse(c)
-      return c?.youtubeId || c?.youtube_id || c?.youtube_id || ""
+      return c?.youtubeId || c?.youtube_id || ""
     } catch { return "" }
   })();
-
   const ytId = ytIdFromVideos || ytIdFromNode || "";
 
   const startEdit = ()=>{
@@ -163,7 +178,7 @@ export default function Page(){
         setEditing(false);
         alert("Saved! Live for learners.");
       }else{
-        alert("Save blocked by RLS - run the SQL policy I gave you: "+JSON.stringify(data));
+        alert("Save blocked by RLS - run policy: "+JSON.stringify(data));
       }
     }catch(e:any){ alert("Error: "+e.message); }
     setSaving(false);
@@ -183,18 +198,21 @@ export default function Page(){
         {Object.keys(META).map(k=><button key={k} onClick={()=>{setActive(k); setEditing(false);}} style={{flexShrink:0,padding:"10px 18px",borderRadius:"24px",border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
       </div>
 
-      {/* VIDEO - HIDDEN WHEN NO VIDEO, HD WHEN EXISTS - NOW CHECKS BOTH TABLES */}
+      {/* VIDEO AT TOP - EXACTLY LIKE YOUR SCREENSHOT - ONLY IF ADMIN ADDED VIDEO */}
       {ytId && (
-        <div style={{margin:"0 12px 12px",background:"#000",borderRadius:20,overflow:"hidden",aspectRatio:"16/9",border:"1px solid #252a44"}}>
-          <iframe
-            width="100%" height="100%"
-            src={`https://www.youtube-nocookie.com/embed/${ytId}?vq=hd1080&hd=1&modestbranding=1&rel=0&playsinline=1`}
-            title="Lesson Video"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-            allowFullScreen
-            style={{width:"100%",height:"100%",border:0}}
-          />
+        <div style={{margin:"0 12px 12px"}}>
+          <div style={{background:"#000",borderRadius:"24px",overflow:"hidden",aspectRatio:"16/9",border:"1px solid #252a44",position:"relative"}}>
+            <iframe
+              width="100%" height="100%"
+              src={`https://www.youtube-nocookie.com/embed/${ytId}?vq=hd1080&hd=1&modestbranding=1&rel=0&playsinline=1`}
+              title={videoForActive?.title || clean}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              allowFullScreen
+              style={{width:"100%",height:"100%",border:0}}
+            />
+          </div>
+          <div style={{fontSize:"10px",color:"#6b7280",marginTop:"8px",padding:"0 4px"}}>Content is licensed to your Matric360 account. Sharing, downloading or recording is prohibited.</div>
         </div>
       )}
 
