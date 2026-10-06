@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
+import { SUBJECTS_DATA } from "../../../../../lib/subjects";
 
 const META:any = {
   A:{label:"Exam Hook", icon:"📌", color:"#ff6b35"},
@@ -153,8 +154,33 @@ export default function Page(){
     setSaving(false);
   };
 
+  // --- NEW: Next/Prev Node + Topic Logic (added, not breaking) ---
+  const NODE_ORDER = ["A","B","C","D","E"];
+  const nodeIdx = NODE_ORDER.indexOf(active);
+  const prevNodeId = nodeIdx>0? NODE_ORDER[nodeIdx-1] : null;
+  const nextNodeId = nodeIdx < NODE_ORDER.length-1? NODE_ORDER[nodeIdx+1] : null;
+
+  let sidNorm = (subjectId||"").toLowerCase(); if(sidNorm==="physical-science") sidNorm="physical-sciences";
+  const subjData = (SUBJECTS_DATA as any)[sidNorm];
+  const unitsList = subjData?.sections?.flatMap((s:any)=>s.units) || [];
+  const curUnit = unitsList.find((u:any)=>u.id===unitId);
+  const topicsList = curUnit?.topics || [];
+  const tIdx = topicsList.findIndex((t:any)=>t.id===topicId);
+  const nextTopic = tIdx>=0 && tIdx < topicsList.length-1? topicsList[tIdx+1] : null;
+  const prevTopic = tIdx>0? topicsList[tIdx-1] : null;
+
+  const handleFinish = ()=>{
+    try{
+      const progKey = `${sidNorm}_${unitId}_${topicId}`;
+      const saved = localStorage.getItem("matric360_progress");
+      const arr = saved? JSON.parse(saved):[];
+      const set = new Set(arr); set.add(progKey);
+      localStorage.setItem("matric360_progress", JSON.stringify([...set]));
+    }catch{}
+  };
+
   return(
-    <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:100}}>
+    <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:140}}>
       <div style={{padding:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:"14px",textDecoration:"none"}}>← Back</Link>
@@ -193,6 +219,23 @@ export default function Page(){
             </div>
           )}
         </div>
+      </div>
+
+      {/* NEW BOTTOM NAV - Next/Prev Node + Finish */}
+      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:70,background:"rgba(14,15,26,0.98)",borderTop:"1px solid #1f223a",padding:"12px 12px 22px",display:"flex",gap:10}}>
+        {prevNodeId? (
+          <button onClick={()=>{setActive(prevNodeId); window.scrollTo(0,0);}} style={{flex:1,background:"#1a1c2e",border:"1px solid #2a2d4a",padding:"14px",borderRadius:16,color:"#9aa0b6",fontWeight:700,fontSize:13}}>← {META[prevNodeId]?.label || prevNodeId}</button>
+        ) : prevTopic? (
+          <Link href={`/subjects/${subjectId}/${unitId}/${prevTopic.id}`} style={{flex:1,textDecoration:"none",background:"#1a1c2e",border:"1px solid #2a2d4a",padding:"14px",borderRadius:16,color:"#9aa0b6",textAlign:"center",fontWeight:700,fontSize:13}}>← {prevTopic.title?.slice(0,20)}</Link>
+        ) : <div style={{flex:1}}/>}
+
+        {nextNodeId? (
+          <button onClick={()=>{setActive(nextNodeId); window.scrollTo(0,0);}} style={{flex:1,background:"#3a5bff",border:"none",padding:"14px",borderRadius:16,color:"#fff",fontWeight:800,fontSize:13}}>{META[nextNodeId]?.label || nextNodeId} →</button>
+        ) : nextTopic? (
+          <Link href={`/subjects/${subjectId}/${unitId}/${nextTopic.id}`} onClick={handleFinish} style={{flex:1,textDecoration:"none",background:"#0f2a1e",border:"1px solid #14532d",padding:"14px",borderRadius:16,color:"#4ade80",textAlign:"center",fontWeight:800,fontSize:13}}>Finish Topic ✓ → {nextTopic.title?.slice(0,15)}</Link>
+        ) : (
+          <Link href={`/subjects/${subjectId}/${unitId}`} onClick={handleFinish} style={{flex:1,textDecoration:"none",background:"#0f2a1e",border:"1px solid #14532d",padding:"14px",borderRadius:16,color:"#4ade80",textAlign:"center",fontWeight:800,fontSize:13}}>Finish Unit ✓</Link>
+        )}
       </div>
     </div>
   )
