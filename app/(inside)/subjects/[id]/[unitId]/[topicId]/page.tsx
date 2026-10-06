@@ -154,7 +154,6 @@ export default function Page(){
     setSaving(false);
   };
 
-  // --- NEW: Next/Prev Node + Topic Logic (added, not breaking) ---
   const NODE_ORDER = ["A","B","C","D","E"];
   const nodeIdx = NODE_ORDER.indexOf(active);
   const prevNodeId = nodeIdx>0? NODE_ORDER[nodeIdx-1] : null;
@@ -180,7 +179,7 @@ export default function Page(){
   };
 
   return(
-    <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:140}}>
+    <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:180}}>
       <div style={{padding:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:"14px",textDecoration:"none"}}>← Back</Link>
@@ -221,18 +220,18 @@ export default function Page(){
         </div>
       </div>
 
-      {/* NEW BOTTOM NAV - Next/Prev Node + Finish */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:70,background:"rgba(14,15,26,0.98)",borderTop:"1px solid #1f223a",padding:"12px 12px 22px",display:"flex",gap:10}}>
+      {/* FIXED - Now above Dashboard bar */}
+      <div style={{position:"fixed",bottom:72,left:0,right:0,zIndex:80,background:"rgba(14,15,26,0.98)",borderTop:"1px solid #1f223a",padding:"12px",display:"flex",gap:10}}>
         {prevNodeId? (
-          <button onClick={()=>{setActive(prevNodeId); window.scrollTo(0,0);}} style={{flex:1,background:"#1a1c2e",border:"1px solid #2a2d4a",padding:"14px",borderRadius:16,color:"#9aa0b6",fontWeight:700,fontSize:13}}>← {META[prevNodeId]?.label || prevNodeId}</button>
+          <button onClick={()=>{setActive(prevNodeId); window.scrollTo(0,0);}} style={{flex:1,background:"#1a1c2e",border:"1px solid #2a2d4a",padding:"14px",borderRadius:16,color:"#9aa0b6",fontWeight:700,fontSize:13}}>← {META[prevNodeId]?.label}</button>
         ) : prevTopic? (
           <Link href={`/subjects/${subjectId}/${unitId}/${prevTopic.id}`} style={{flex:1,textDecoration:"none",background:"#1a1c2e",border:"1px solid #2a2d4a",padding:"14px",borderRadius:16,color:"#9aa0b6",textAlign:"center",fontWeight:700,fontSize:13}}>← {prevTopic.title?.slice(0,20)}</Link>
         ) : <div style={{flex:1}}/>}
 
         {nextNodeId? (
-          <button onClick={()=>{setActive(nextNodeId); window.scrollTo(0,0);}} style={{flex:1,background:"#3a5bff",border:"none",padding:"14px",borderRadius:16,color:"#fff",fontWeight:800,fontSize:13}}>{META[nextNodeId]?.label || nextNodeId} →</button>
+          <button onClick={()=>{setActive(nextNodeId); window.scrollTo(0,0);}} style={{flex:1,background:"#3a5bff",border:"none",padding:"14px",borderRadius:16,color:"#fff",fontWeight:800,fontSize:13}}>{META[nextNodeId]?.label} →</button>
         ) : nextTopic? (
-          <Link href={`/subjects/${subjectId}/${unitId}/${nextTopic.id}`} onClick={handleFinish} style={{flex:1,textDecoration:"none",background:"#0f2a1e",border:"1px solid #14532d",padding:"14px",borderRadius:16,color:"#4ade80",textAlign:"center",fontWeight:800,fontSize:13}}>Finish Topic ✓ → {nextTopic.title?.slice(0,15)}</Link>
+          <Link href={`/subjects/${subjectId}/${unitId}/${nextTopic.id}`} onClick={handleFinish} style={{flex:1,textDecoration:"none",background:"#0f2a1e",border:"1px solid #14532d",padding:"14px",borderRadius:16,color:"#4ade80",textAlign:"center",fontWeight:800,fontSize:13}}>Finish ✓ → {nextTopic.title?.slice(0,15)}</Link>
         ) : (
           <Link href={`/subjects/${subjectId}/${unitId}`} onClick={handleFinish} style={{flex:1,textDecoration:"none",background:"#0f2a1e",border:"1px solid #14532d",padding:"14px",borderRadius:16,color:"#4ade80",textAlign:"center",fontWeight:800,fontSize:13}}>Finish Unit ✓</Link>
         )}
