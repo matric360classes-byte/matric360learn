@@ -1,5 +1,11 @@
-const MTG:any = {
- "Mathematics": {
+"use client";
+import { useState, useMemo } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+const MTG: any = {
+ Mathematics: {
   "Unit 1: Exponents and surds": ["The number system","Working with irrational numbers","Exponents","Exponential equations","Equations with rational exponents","Exam type examples"],
   "Unit 2: Algebra": ["Algebraic expressions","Addition and subtraction","Multiplication and division","Factorising","Notes on factorising a trinomial","Quadratic equations","Quadratic inequalities","Simultaneous equations","The nature of the roots"],
   "Unit 3: Number patterns, sequences and series": ["Number patterns","Arithmetic sequences","Quadratic sequences","Geometric sequences","Arithmetic and geometric series","Sigma notation"],
@@ -33,3 +39,62 @@ const MTG:any = {
   "Unit 16: The chlor-alkali industry": ["Chlor-alkali industry","Chlor-alkali reactants and products","Industrial process"],
  }
 };
+
+export default function AdminVideosPage(){
+  const [subject,setSubject]=useState("Physical Sciences");
+  const [unit,setUnit]=useState("");
+  const [topic,setTopic]=useState("");
+  const [title,setTitle]=useState("");
+  const [youtubeUrl,setYoutubeUrl]=useState("");
+  const [loading,setLoading]=useState(false);
+
+  const units = useMemo(()=>Object.keys(MTG[subject]||{}),[subject]);
+  const topics = useMemo(()=>MTG[subject]?.[unit]||[],[subject,unit]);
+
+  const handleSave = async ()=>{
+    if(!unit ||!topic ||!title ||!youtubeUrl){ alert("Fill all fields"); return; }
+    setLoading(true);
+    const ytId = youtubeUrl.match(/(?:youtu\.be\/|v=)([^&?]+)/)?.[1] || "";
+    const { error } = await supabase.from("videos").insert({
+      youtube_id: ytId,
+      youtube_url: youtubeUrl,
+      subject: subject.toLowerCase().replace(/\s+/g,"-"),
+      caps_code: unit,
+      topic: topic,
+      title: title,
+      status: "Ready",
+      is_premium: false,
+      order_index: 0,
+      thumbnail_url: `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`,
+    });
+    setLoading(false);
+    if(error) alert(error.message);
+    else { alert("Saved! "+title); setTitle(""); setYoutubeUrl(""); }
+  };
+
+  return(
+    <div style={{background:"#0a0a12",minHeight:"100vh",color:"white",padding:16}}>
+      <h1 style={{fontWeight:800,fontSize:22}}>Admin - Add Video</h1>
+      <p style={{color:"#9ca3af",fontSize:12}}>MTG Units: {subject==="Physical Sciences"?16:13} | Topics linked to Practice page</p>
+
+      <select value={subject} onChange={e=>{setSubject(e.target.value); setUnit(""); setTopic("");}} style={{marginTop:12,width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222"}}>
+        {Object.keys(MTG).map(s=><option key={s} value={s}>{s}</option>)}
+      </select>
+
+      <select value={unit} onChange={e=>{setUnit(e.target.value); setTopic("");}} style={{marginTop:10,width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222"}}>
+        <option value="">Select Unit... ({units.length})</option>
+        {units.map(u=><option key={u} value={u}>{u}</option>)}
+      </select>
+
+      <select value={topic} onChange={e=>setTopic(e.target.value)} style={{marginTop:10,width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222"}}>
+        <option value="">Select Topic... ({topics.length})</option>
+        {topics.map(t=><option key={t} value={t}>{t}</option>)}
+      </select>
+
+      <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Video title e.g. Power" style={{marginTop:10,width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222"}}/>
+      <input value={youtubeUrl} onChange={e=>setYoutubeUrl(e.target.value)} placeholder="YouTube URL https://youtu.be/..." style={{marginTop:10,width:"100%",padding:12,borderRadius:12,background:"#15151f",color:"white",border:"1px solid #222"}}/>
+
+      <button onClick={handleSave} disabled={loading} style={{marginTop:14,width:"100%",padding:14,borderRadius:12,background:"#818cf8",color:"black",fontWeight:800}}>{loading?"Saving...":"Save Video"}</button>
+    </div>
+  )
+}
