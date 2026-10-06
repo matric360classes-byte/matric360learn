@@ -1,80 +1,59 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { SUBJECTS_DATA } from "../../../../../lib/subjects";
 
 export default function UnitPage(){
-  const p = useParams() as any;
-  const subjectId = p?.id;
-  const unitId = p?.unitId;
-  const [topics, setTopics] = useState<any[]>([]);
-  const [videosSet, setVideosSet] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
+ const p=useParams() as any;
+ let sid=p.id as string; if(sid==="physical-science") sid="physical-sciences";
+ const uid=p.unitId as string;
+ const subj=(SUBJECTS_DATA as any)[sid];
+ const unit = subj?.sections?.flatMap((s:any)=>s.units).find((u:any)=>u.id===uid);
+ const [done,setDone]=useState<Set<string>>(new Set());
 
-  useEffect(()=>{
-    let alive = true;
-    (async()=>{
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-      const subjRaw = decodeURIComponent((subjectId||"")+"").toLowerCase().trim();
-      const subjNorm = subjRaw.includes('math')? 'mathematics' : subjRaw.includes('physical')? 'physical-sciences' : subjRaw;
-      const unitRaw = decodeURIComponent((unitId||"")+"").toLowerCase().trim();
+ useEffect(()=>{
+  try{
+   const saved = localStorage.getItem("matric360_progress");
+   if(saved) setDone(new Set(JSON.parse(saved)));
+  }catch{}
+ },[]);
 
-      // 1. FAST TOPICS - exact eq, not ilike, with limit
-      try {
-        // try exact unit match first - FAST
-        let res = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,caps_code,unit&subject=eq.${subjNorm}&unit=eq.${unitRaw}&limit=50`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-        let data:any = await res.json();
-        if(!Array.isArray(data) || data.length===0){
-          // try caps_code starts with unit first word
-          const first = unitRaw.split('-')[0];
-          res = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,caps_code,unit&subject=eq.${subjNorm}&caps_code=like.${first}%&limit=50`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-          data = await res.json();
-        }
-        if(alive && Array.isArray(data)) setTopics(data);
-      } catch {}
+ if(!unit) return <div style={{padding:20,color:"#fff"}}>Unit not found</div>;
 
-      // 2. FAST VIDEOS - only 5 rows, instant
-      try {
-        const resV = await fetch(`${url}/rest/v1/videos?select=topic&subject=eq.${subjNorm}&limit=100`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-        const vData:any = await resV.json();
-        if(alive && Array.isArray(vData)){
-          const s = new Set<string>();
-          vData.forEach((v:any)=>{ if(v.topic) s.add(v.topic.toLowerCase().trim()); });
-          setVideosSet(s);
-        }
-      } catch {}
-      if(alive) setLoading(false);
-    })();
-    return ()=>{ alive = false; };
-  },[subjectId, unitId]);
+ return(
+  <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:100}}>
+   <div style={{padding:"12px 16px 0",fontSize:13,color:"#6b7280",display:"flex",gap:6}}>
+    <Link href="/subjects" style={{color:"#6b7280",textDecoration:"none"}}>Subjects</Link> <span>›</span>
+    <Link href={`/subjects/${sid}`} style={{color:"#6b7280",textDecoration:"none"}}>{subj?.name}</Link> <span>›</span>
+    <span style={{color:"#e5e7eb"}}>{unit.title}</span>
+   </div>
+   <div style={{padding:"12px 16px 0",fontSize:11,color:"#6b7280",letterSpacing:1.2}}>UNIT</div>
+   <h1 style={{fontSize:28,fontWeight:900,padding:"2px 16px 18px",lineHeight:"1.15"}}>{unit.title}</h1>
 
-  const hasVideo = (name:string)=> videosSet.has((name||"").toLowerCase().trim());
-
-  if(loading) return <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#6b7280",padding:20}}>Loading {decodeURIComponent(unitId||"")}...</div>;
-
-  return(
-    <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",padding:16,paddingBottom:100}}>
-      <Link href={`/subjects/${subjectId}`} style={{color:"#6b7280",fontSize:14,textDecoration:"none"}}>← Back</Link>
-      <h1 style={{fontSize:24,fontWeight:900,margin:"12px 0",textTransform:"capitalize"}}>{decodeURIComponent(unitId||"").replace(/-/g," ")}</h1>
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {topics.map((t:any)=>{
-          const slug = (t.caps_code||t.topic||"").toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"-").replace(/--+/g,"-");
-          const show = hasVideo(t.topic);
-          return(
-            <Link key={t.id} href={`/subjects/${subjectId}/${unitId}/${slug}`} style={{textDecoration:"none"}}>
-              <div style={{background:"#1a1c2e",border:"1px solid #252a44",borderRadius:18,padding:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:700,color:"#fff",fontSize:14}}>{t.topic}</div>
-                  <div style={{fontSize:10,color:"#6b7280",marginTop:3}}>{t.caps_code}</div>
-                </div>
-                {show && <span style={{fontSize:8,background:"#00ff88",color:"#000",padding:"5px 8px",borderRadius:20,fontWeight:900,marginLeft:8,whiteSpace:"nowrap"}}>Video INCLUDED</span>}
-              </div>
-            </Link>
-          );
-        })}
-        {topics.length===0 && <div style={{color:"#6b7280"}}>No topics found for this unit.</div>}
-      </div>
-    </div>
-  );
+   <div style={{padding:"0 12px",display:"flex",flexDirection:"column",gap:14}}>
+    {unit.topics?.map((t:any)=>{
+     const tid = `${sid}_${uid}_${t.id}`;
+     const isDone = done.has(tid);
+     return(
+      <Link key={t.id} href={`/subjects/${sid}/${uid}/${t.id}`} style={{textDecoration:"none"}}>
+       <div style={{background:"#1a1c2e",border:"1px solid #252a44",borderRadius:24,padding:"18px 16px"}}>
+        <div style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:12}}>{t.title}</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
+         <div style={{display:"flex",alignItems:"center",gap:6,background:"#252a5a",border:"1px solid #3a3f8a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#8b8bff",fontWeight:600}}>◧ Video Lesson <span style={{background:"#3a3f8a",padding:"2px 6px",borderRadius:6,fontSize:10}}>INCLUDED</span></div>
+         <div style={{display:"flex",alignItems:"center",gap:5,background:"#1f1f2e",border:"1px solid #2a2d4a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#9aa0b6"}}>☰ Practice</div>
+         <div style={{display:"flex",alignItems:"center",gap:5,background:"#1f1f2e",border:"1px solid #2a2d4a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#9aa0b6"}}>⎙ Exam Challenge</div>
+         {isDone? (
+          <div style={{display:"flex",gap:5,background:"#0f2a1e",border:"1px solid #14532d",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#4ade80",fontWeight:700}}>✔ Completed</div>
+         ) : (
+          <div style={{display:"flex",gap:5,background:"#1f1f2e",border:"1px solid #2a2d4a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#6b7280"}}>○ Not started</div>
+         )}
+        </div>
+       </div>
+      </Link>
+     )
+    })}
+   </div>
+  </div>
+ )
 }
