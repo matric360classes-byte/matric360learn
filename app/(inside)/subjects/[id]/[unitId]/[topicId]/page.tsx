@@ -36,13 +36,13 @@ function getYoutubeId(url:string){ if(!url) return ""; const m=url.match(/(?:you
 export default function Page(){
   const p = useParams() as any;
   const subjectId=p?.id, unitId=p?.unitId, topicId=p?.topicId;
-  const [rows,setRows]=useState<any[]>([]);
-  const [videos,setVideos]=useState<any[]>([]);
-  const [active,setActive]=useState("A");
-  const [isAdmin,setIsAdmin]=useState(false);
-  const [editing,setEditing]=useState(false);
-  const [editText,setEditText]=useState("");
-  const [saving,setSaving]=useState(false);
+  const [rows][setRows]=useState<any[]>([]);
+  const [videos][setVideos]=useState<any[]>([]);
+  const [active][setActive]=useState("A");
+  const [isAdmin][setIsAdmin]=useState(false);
+  const [editing][setEditing]=useState(false);
+  const [editText][setEditText]=useState("");
+  const [saving][setSaving]=useState(false);
 
   useEffect(()=>{
     if(typeof window!=='undefined'){
@@ -114,28 +114,25 @@ export default function Page(){
     nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
     setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
 
-    // FETCH VIDEOS - FIXED: videos table uses subject + topic + caps_code, NOT caps_topic_id. Only shows if Admin added.
-    let resVid = await fetch(`${url}/rest/v1/videos?select=*&subject=eq.${subjNorm}&topic=ilike.%${encodeURIComponent(kb.topic)}%&order=order_index.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-    let vids:any = await resVid.json();
-    if(!Array.isArray(vids) || vids.length===0){
-      resVid = await fetch(`${url}/rest/v1/videos?select=*&subject=eq.${subjNorm}&order=order_index.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-      vids = await resVid.json();
-      if(Array.isArray(vids)){
-        const filtered = vids.filter((v:any)=>
-          v.topic?.toLowerCase() === kb.topic?.toLowerCase() ||
-          v.topic?.toLowerCase().includes(kb.topic?.toLowerCase()) ||
-          v.topic?.toLowerCase().includes(cleanTopicRaw) ||
-          v.caps_code?.toLowerCase().includes(cleanTopicRaw)
-        );
-        if(filtered.length>0) vids = filtered;
-        else {
-          // if no match, don't show video (correct behavior) - keep empty if not relevant
-          const exactSubjectMatch = vids.filter((v:any)=> v.topic?.toLowerCase().trim() === kb.topic?.toLowerCase().trim());
-          vids = exactSubjectMatch.length? exactSubjectMatch : [];
-        }
+    // FETCH VIDEOS - FIXED: videos table has subject + topic (no caps_topic_id) - client side match, no % encoding bug
+    try {
+      const resVid = await fetch(`${url}/rest/v1/videos?select=*&subject=eq.${subjNorm}&order=order_index.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      const allVids:any = await resVid.json();
+      if(Array.isArray(allVids) && allVids.length>0){
+        const lowerKb = (kb.topic||"").toLowerCase().trim();
+        const lowerRaw = cleanTopicRaw.toLowerCase().trim();
+        const lowerDash = cleanTopic.toLowerCase().trim();
+        const matched = allVids.filter((v:any)=>{
+          const vt = (v.topic||"").toLowerCase().trim();
+          if(!vt) return false;
+          return vt === lowerKb || lowerKb === vt || vt.includes(lowerKb) || lowerKb.includes(vt) || vt.includes(lowerRaw) || vt.includes(lowerDash);
+        });
+        // Only show video if matched - correct behavior, no hardcode
+        setVideos(matched.length>0? matched : []);
+      } else {
+        setVideos([]);
       }
-    }
-    if(Array.isArray(vids)) setVideos(vids);
+    } catch(e){ setVideos([]); }
 
   })()},[topicId, subjectId]);
 
@@ -144,9 +141,9 @@ export default function Page(){
   const meta = META[active];
   const getContent = (n:any)=> n?.content?.body_markdown || n?.body_markdown || n?.content?.body || n?.body || (typeof n?.content==='string'? n.content:"") || "";
 
-  // VIDEO LOGIC - ONLY if video exists in DB (no hardcode)
-  const videoForActive = videos.find((v:any)=> (v.node_label===active || v.node_type===active) ) || videos.find((v:any)=>!v.node_label) || videos[0] || null;
-  let ytIdFromVideos = videoForActive? (videoForActive.youtube_id || getYoutubeId(videoForActive.youtube_url)) : "";
+  // VIDEO - ONLY if exists in videos table
+  const videoForActive = videos[0] || null;
+  let ytIdFromVideos = videoForActive? (videoForActive.youtube_id || getYoutubeId(videoForActive.youtube_url||videoForActive.youtubeUrl||"")) : "";
   const ytIdFromNode = (() => {
     try {
       let c = activeNode?.content
@@ -178,7 +175,7 @@ export default function Page(){
         setEditing(false);
         alert("Saved! Live for learners.");
       }else{
-        alert("Save blocked by RLS - run policy: "+JSON.stringify(data));
+        alert("Save blocked: "+JSON.stringify(data));
       }
     }catch(e:any){ alert("Error: "+e.message); }
     setSaving(false);
@@ -192,16 +189,16 @@ export default function Page(){
           {isAdmin? <span style={{fontSize:"10px",background:"#00ff88",color:"#000",padding:"4px 8px",borderRadius:"8px",fontWeight:800}}>ADMIN • Quick Edit ON</span> : <button onClick={()=>{const pw=prompt("Admin key?"); if(pw==="admin123"){localStorage.setItem('isContentAdmin','true'); setIsAdmin(true);}}} style={{fontSize:"10px",color:"#222",background:"transparent",border:"none"}}>•</button>}
         </div>
         <h1 style={{fontSize:"26px",fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
-        <div style={{fontSize:"12px",color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES • {rows[0]?.caps_topic_id?.slice(0,8)||clean} • {rows.length? "675 Allocated":"0 NODES"}</div>
+        <div style={{fontSize:"12px",color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES • {rows[0]?.caps_topic_id?.slice(0,8)||clean} {videos.length>0? `• 🎥 ${videos.length} VIDEO(S)`:"• No video yet"}</div>
       </div>
       <div style={{display:"flex",gap:"8px",overflowX:"auto",padding:"0 12px 16px"}}>
         {Object.keys(META).map(k=><button key={k} onClick={()=>{setActive(k); setEditing(false);}} style={{flexShrink:0,padding:"10px 18px",borderRadius:"24px",border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
       </div>
 
-      {/* VIDEO AT TOP - EXACTLY LIKE YOUR SCREENSHOT - ONLY IF ADMIN ADDED VIDEO */}
+      {/* VIDEO AT TOP - LIKE YOUR SCREENSHOT - ONLY IF VIDEO EXISTS */}
       {ytId && (
         <div style={{margin:"0 12px 12px"}}>
-          <div style={{background:"#000",borderRadius:"24px",overflow:"hidden",aspectRatio:"16/9",border:"1px solid #252a44",position:"relative"}}>
+          <div style={{background:"#000",borderRadius:"24px",overflow:"hidden",aspectRatio:"16/9",border:"1px solid #252a44"}}>
             <iframe
               width="100%" height="100%"
               src={`https://www.youtube-nocookie.com/embed/${ytId}?vq=hd1080&hd=1&modestbranding=1&rel=0&playsinline=1`}
