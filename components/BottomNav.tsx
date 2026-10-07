@@ -6,6 +6,12 @@ export default function BottomNav() {
   const path = usePathname();
   const isActive = (p: string) => path === p;
 
+  // HIDE on landing and auth pages (outside app)
+  const hiddenRoutes = ["/", "/login", "/signup", "/signin", "/pricing", "/about", "/contact", "/privacy", "/terms", "/cookies"];
+  if (hiddenRoutes.includes(path) || path === "") {
+    return null;
+  }
+
   const item = (href: string, icon: string, label: string) => (
     <Link href={href} style={{ 
       display: "flex", flexDirection: "column", alignItems: "center", 
