@@ -8,6 +8,12 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Matric360 Learn",
   description: "CAPS Matric Learning",
+  manifest: "/manifest.json",
+  themeColor: "#000000",
+  icons: {
+    icon: "/icon-512.png",
+    apple: "/icon-512.png",
+  },
 }
 
 export default function RootLayout({
