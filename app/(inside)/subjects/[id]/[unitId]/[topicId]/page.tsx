@@ -25,11 +25,17 @@ function MathRenderer({ text }: { text: string }) {
     const isInline = (part.startsWith('\\(')&&part.endsWith('\\)')) || (part.startsWith('$')&&part.endsWith('$')&&part.length>2);
     if(isBlock||isInline){
       let math = part.slice(2,-2); if(part.startsWith('$')&&!part.startsWith('$$')) math=part.slice(1,-1);
-      try{ return katex.renderToString(math,{displayMode:isBlock,throwOnError:false}) }catch{return part}
+      try{
+        const rendered = katex.renderToString(math,{displayMode:isBlock,throwOnError:false});
+        // FIX 1: block math scrolls instead of overlapping
+        if(isBlock) return `<div style="overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch"><div style="min-width:max-content">${rendered}</div></div>`;
+        return rendered;
+      }catch{return part}
     }
     return part.replace(/\*\*(.*?)\*\*/g,'<b style="color:#fff">$1</b>').replace(/\n/g,'<br/>');
   }).join('');
-  return <div dangerouslySetInnerHTML={{__html:html}} style={{lineHeight:'1.9',fontSize:'15px',color:'#e5e7eb'}} />
+  // FIX 1: allow wrapping + prevent overlap
+  return <div dangerouslySetInnerHTML={{__html:html}} style={{lineHeight:'1.9',fontSize:'15px',color:'#e5e7eb',maxWidth:'100%',overflowWrap:'anywhere',wordBreak:'break-word'}} />
 }
 
 function getYoutubeId(url:string){ if(!url) return ""; const m=url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([^&?\/]+)/); return m?m[1]:url; }
@@ -179,14 +185,16 @@ export default function Page(){
   };
 
   return(
-    <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:180}}>
+    // FIX 3: 180 -> 150 removes big empty gap under content
+    <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:150}}>
       <div style={{padding:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:"14px",textDecoration:"none"}}>← Back</Link>
           {isAdmin? <span style={{fontSize:"10px",background:"#00ff88",color:"#000",padding:"4px 8px",borderRadius:"8px",fontWeight:800}}>ADMIN</span> : null}
         </div>
         <h1 style={{fontSize:"26px",fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
-        <div style={{fontSize:"12px",color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES {videos.length>0? `• 🎥 VIDEO INCLUDED`:"• No video yet"}</div>
+        {/* FIX 2: hidden for students, admin only */}
+        {isAdmin && <div style={{fontSize:"12px",color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES {videos.length>0? `• 🎥 VIDEO INCLUDED`:"• No video yet"}</div>}
       </div>
       <div style={{display:"flex",gap:"8px",overflowX:"auto",padding:"0 12px 16px"}}>
         {Object.keys(META).map(k=><button key={k} onClick={()=>{setActive(k); setEditing(false);}} style={{flexShrink:0,padding:"10px 18px",borderRadius:"24px",border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
@@ -199,7 +207,7 @@ export default function Page(){
           <div style={{fontSize:"10px",color:"#6b7280",marginTop:"8px"}}>Content is licensed to your Matric360 account. Sharing prohibited.</div>
         </div>
       )}
-      <div style={{margin:"0 12px",background:"#1a1c2e",borderRadius:"24px",border:"1px solid #252a44"}}>
+      <div style={{margin:"0 12px",background:"#1a1c2e",borderRadius:"24px",border:"1px solid #252a44",overflow:"hidden"}}>
         <div style={{padding:"16px",borderBottom:"1px solid #252a44",display:"flex",gap:"12px",alignItems:"center",justifyContent:"space-between"}}>
           <div style={{display:"flex",gap:"12px",alignItems:"center"}}>
             <div style={{width:"44px",height:"44px",borderRadius:"12px",background:meta?.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{meta?.icon}</div>
@@ -207,7 +215,7 @@ export default function Page(){
           </div>
           {isAdmin &&!editing && <button onClick={startEdit} style={{background:"#ff6b35",color:"#fff",border:"none",padding:"8px 14px",borderRadius:"12px",fontWeight:700,fontSize:"12px"}}>Quick Edit</button>}
         </div>
-        <div style={{padding:"20px",minHeight:"250px"}}>
+        <div style={{padding:"20px",minHeight:"250px",maxWidth:"100%",overflow:"hidden"}}>
           {!editing? ( activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean}...</div> ) : (
             <div>
               <textarea value={editText} onChange={e=>setEditText(e.target.value)} style={{width:"100%",minHeight:"320px",background:"#0e0f1a",color:"#e5e7eb",border:"1px solid #ff6b35",borderRadius:"12px",padding:"12px",fontSize:"14px",fontFamily:"monospace"}} />
