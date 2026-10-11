@@ -22,15 +22,18 @@ function SuccessContent() {
         })
         const data = await res.json()
         if (data.success) {
-          // Unlock premium
+          // Unlock premium for 30 DAYS
           const saved = localStorage.getItem("matric360_plan")
           if (saved) {
             const plan = JSON.parse(saved)
             plan.subscription_status = "active"
             plan.payment_reference = reference
+            plan.subscription_start = new Date().toISOString()
+            plan.subscription_expires = new Date(Date.now() + 30*24*60*60*1000).toISOString()
+            plan.paystack_response = data.data
             localStorage.setItem("matric360_plan", JSON.stringify(plan))
           }
-          setStatus("Payment successful! 🎉 Redirecting to dashboard...")
+          setStatus("Payment successful! 🎉 30 days unlocked. Redirecting...")
           setTimeout(() => router.push("/dashboard"), 2000)
         } else {
           setStatus("Verification failed: " + JSON.stringify(data))
