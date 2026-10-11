@@ -27,6 +27,7 @@ export default function DashboardPage(){
   const supabase = createClient()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [plan, setPlan] = useState<any>(null) // ADDED
 
   useEffect(()=>{
     const getUser = async () => {
@@ -34,6 +35,12 @@ export default function DashboardPage(){
       if(!user){ router.push("/login"); return }
       setUser(user)
       setLoading(false)
+
+      // ADDED: check Paystack
+      const saved = localStorage.getItem("matric360_plan")
+      if (saved) {
+        try { setPlan(JSON.parse(saved)) } catch {}
+      }
     }
     getUser()
   },[])
@@ -48,6 +55,7 @@ export default function DashboardPage(){
   }
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Student"
+  const isPremium = plan?.subscription_status === "active" // ADDED
 
   return(
     <div style={{padding:"20px 20px 100px 20px"}}>
@@ -59,6 +67,9 @@ export default function DashboardPage(){
       <div style={{marginTop:24,background:"#151a2d",borderRadius:20,padding:20,border:"1px solid #1e233a"}}>
         <h2 style={{fontWeight:800,fontSize:18,color:"white"}}>Welcome, {displayName}</h2>
         <p style={{color:"#94a3b8",fontSize:13,marginTop:6}}>{user?.email}</p>
+        {isPremium && (
+          <div style={{marginTop:10,color:"#22c55e",fontSize:12,fontWeight:800}}>✅ Premium Active • {plan.plan_name} • R{plan.plan_price}</div>
+        )}
       </div>
 
       <div style={{marginTop:22}}>
@@ -108,9 +119,15 @@ export default function DashboardPage(){
         </div>
       </div>
 
-      <button onClick={()=>router.push("/subscription")} style={{marginTop:22,background:"#fbbf24",color:"black",border:"none",padding:16,borderRadius:14,fontWeight:900,width:"100%",fontSize:15,cursor:"pointer"}}>
-        Upgrade to Premium →
-      </button>
+      {!isPremium? (
+        <button onClick={()=>router.push("/subscription")} style={{marginTop:22,background:"#fbbf24",color:"black",border:"none",padding:16,borderRadius:14,fontWeight:900,width:"100%",fontSize:15,cursor:"pointer"}}>
+          Upgrade to Premium →
+        </button>
+      ) : (
+        <div style={{marginTop:22,background:"#22c55e20",border:"1px solid #22c55e30",color:"#22c55e",padding:16,borderRadius:14,fontWeight:900,width:"100%",fontSize:14,textAlign:"center"}}>
+          ✅ Premium Active — You have full access
+        </div>
+      )}
     </div>
   )
 }
