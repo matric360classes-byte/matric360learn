@@ -24,21 +24,16 @@ const SUBJECTS = [
 
 export default function DashboardPage(){
   const router = useRouter()
-  const supabase = createClient()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [plan, setPlan] = useState<any>(null)
   const [isExpired, setIsExpired] = useState(false)
 
   useEffect(()=>{
+    const supabase = createClient()
     const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      let currentUser = session?.user || null
-
-      if (!currentUser) {
-        const { data: { user } } = await supabase.auth.getUser()
-        currentUser = user
-      }
+      // FIX: use getUser() directly, not getSession() - works with auth.matric360learn.co.za
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
 
       if(!currentUser){
         window.location.href = "/login"
@@ -68,9 +63,20 @@ export default function DashboardPage(){
       setLoading(false)
     }
     getUser()
+
+    // Also listen for auth changes - if session comes late, set it
+    const supabase2 = createClient()
+    const { data: { subscription } } = supabase2.auth.onAuthStateChange((_event, session) => {
+      if (session?.user &&!user) {
+        setUser(session.user)
+        setLoading(false)
+      }
+    })
+    return () => subscription.unsubscribe()
   },[])
 
   const handleLogout = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     window.location.href = "/login"
   }
