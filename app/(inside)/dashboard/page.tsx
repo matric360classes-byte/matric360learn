@@ -32,9 +32,7 @@ export default function DashboardPage(){
 
   useEffect(()=>{
     const getUser = async () => {
-      // FIX: First check session (instant from cookie), then verify with getUser
       const { data: { session } } = await supabase.auth.getSession()
-
       let currentUser = session?.user || null
 
       if (!currentUser) {
@@ -43,12 +41,11 @@ export default function DashboardPage(){
       }
 
       if(!currentUser){
-        router.push("/login");
+        window.location.href = "/login"
         return
       }
       setUser(currentUser)
 
-      // CHECK PAYSTACK + 30 DAY EXPIRY
       const saved = localStorage.getItem("matric360_plan")
       if (saved) {
         try {
