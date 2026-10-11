@@ -11,8 +11,6 @@ export async function GET(request: Request) {
 
   if (code) {
     const cookieStore = await cookies()
-    
-    // Create a response object first — we will attach cookies to THIS response
     const response = NextResponse.redirect(`${origin}${next}`)
     
     const supabase = createServerClient(
@@ -20,17 +18,13 @@ export async function GET(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
+          getAll() { return cookieStore.getAll() },
           setAll(cookiesToSet) {
-            // Must set on BOTH stores
             try {
               cookiesToSet.forEach(({ name, value, options }) =>
                 cookieStore.set(name, value, options)
               )
             } catch {}
-            // This is the critical part that fixes your 1st-try loop
             cookiesToSet.forEach(({ name, value, options }) =>
               response.cookies.set(name, value, options)
             )
@@ -40,12 +34,11 @@ export async function GET(request: Request) {
     )
     
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
     if (!error) {
       return response
     }
     console.error('Auth error:', error.message)
   }
   
-  return NextResponse.redirect(`${origin}/auth?error=auth_failed`)
+  return NextResponse.redirect(`${origin}/login`)
 }
