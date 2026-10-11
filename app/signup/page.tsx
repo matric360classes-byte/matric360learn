@@ -29,7 +29,7 @@ export default function SignupPage(){
     if(error){ setError(error.message); return }
     if(data.user){
       if(data.session){
-        router.push("/dashboard")
+        window.location.href = "/dashboard"
       } else {
         setSuccess(true)
       }
