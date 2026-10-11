@@ -15,11 +15,12 @@ export default function LoginPage(){
     setLoading(true)
     setError("")
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    setLoading(false)
-    if(error){ setError(error.message); return }
-    if(data.session){
-      window.location.href = "/dashboard"
+    if(error){ 
+      setError(error.message)
+      setLoading(false)
+      return 
     }
+    window.location.href = "/dashboard"
   }
 
   const handleGoogle=async()=>{
