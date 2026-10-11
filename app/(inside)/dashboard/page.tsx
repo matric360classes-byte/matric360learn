@@ -27,20 +27,38 @@ export default function DashboardPage(){
   const supabase = createClient()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [plan, setPlan] = useState<any>(null) // ADDED
+  const [plan, setPlan] = useState<any>(null)
+  const [isExpired, setIsExpired] = useState(false)
 
   useEffect(()=>{
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if(!user){ router.push("/login"); return }
       setUser(user)
-      setLoading(false)
 
-      // ADDED: check Paystack
+      // CHECK PAYSTACK + 30 DAY EXPIRY
       const saved = localStorage.getItem("matric360_plan")
       if (saved) {
-        try { setPlan(JSON.parse(saved)) } catch {}
+        try {
+          const parsed = JSON.parse(saved)
+          // If it has expiry date, check it
+          if (parsed.subscription_expires) {
+            const expired = new Date(parsed.subscription_expires) < new Date()
+            if (expired) {
+              parsed.subscription_status = "expired"
+              localStorage.setItem("matric360_plan", JSON.stringify(parsed))
+              setIsExpired(true)
+            }
+          } else if (parsed.subscription_status === "active") {
+            // Old payment without expiry - give 30 days from now
+            parsed.subscription_start = new Date().toISOString()
+            parsed.subscription_expires = new Date(Date.now() + 30*24*60*60*1000).toISOString()
+            localStorage.setItem("matric360_plan", JSON.stringify(parsed))
+          }
+          setPlan(parsed)
+        } catch {}
       }
+      setLoading(false)
     }
     getUser()
   },[])
@@ -55,7 +73,8 @@ export default function DashboardPage(){
   }
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Student"
-  const isPremium = plan?.subscription_status === "active" // ADDED
+  const isPremium = plan?.subscription_status === "active" &&!isExpired
+  const daysLeft = plan?.subscription_expires? Math.max(0, Math.ceil((new Date(plan.subscription_expires).getTime() - Date.now()) / (1000*60*60*24))) : 0
 
   return(
     <div style={{padding:"20px 20px 100px 20px"}}>
@@ -68,7 +87,10 @@ export default function DashboardPage(){
         <h2 style={{fontWeight:800,fontSize:18,color:"white"}}>Welcome, {displayName}</h2>
         <p style={{color:"#94a3b8",fontSize:13,marginTop:6}}>{user?.email}</p>
         {isPremium && (
-          <div style={{marginTop:10,color:"#22c55e",fontSize:12,fontWeight:800}}>✅ Premium Active • {plan.plan_name} • R{plan.plan_price}</div>
+          <div style={{marginTop:10,color:"#22c55e",fontSize:12,fontWeight:800}}>✅ Premium Active • {plan.plan_name} • R{plan.plan_price} • {daysLeft} days left</div>
+        )}
+        {isExpired && (
+          <div style={{marginTop:10,color:"#fbbf24",fontSize:12,fontWeight:800}}>⚠️ Subscription expired — {daysLeft} days left</div>
         )}
       </div>
 
@@ -108,8 +130,8 @@ export default function DashboardPage(){
                 <div style={{fontSize:11,fontWeight:800,letterSpacing:1,color:"#64748b"}}>{s.shortName}</div>
                 <div style={{fontSize:18,fontWeight:900,color:"white",marginTop:2,lineHeight:1.1}}>{s.name}</div>
                 <div style={{fontSize:12,color:"#94a3b8",marginTop:4,display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{width:6,height:6,borderRadius:99,background:"#22c55e",display:"inline-block"}}></span>
-                  {s.lessons} • Ready
+                  <span style={{width:6,height:6,borderRadius:99,background:isPremium?"#22c55e":"#f59e0b",display:"inline-block"}}></span>
+                  {s.lessons} • {isPremium? `${daysLeft} days left` : isExpired? "Expired" : "Ready"}
                 </div>
               </div>
 
@@ -121,11 +143,11 @@ export default function DashboardPage(){
 
       {!isPremium? (
         <button onClick={()=>router.push("/subscription")} style={{marginTop:22,background:"#fbbf24",color:"black",border:"none",padding:16,borderRadius:14,fontWeight:900,width:"100%",fontSize:15,cursor:"pointer"}}>
-          Upgrade to Premium →
+          {isExpired? "Renew Premium →" : "Upgrade to Premium →"}
         </button>
       ) : (
         <div style={{marginTop:22,background:"#22c55e20",border:"1px solid #22c55e30",color:"#22c55e",padding:16,borderRadius:14,fontWeight:900,width:"100%",fontSize:14,textAlign:"center"}}>
-          ✅ Premium Active — You have full access
+          ✅ Premium Active — You have full access • {daysLeft} days left
         </div>
       )}
     </div>
