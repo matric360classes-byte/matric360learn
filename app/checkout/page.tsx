@@ -22,34 +22,56 @@ function CheckoutContent(){
   const params = useSearchParams()
   const router = useRouter()
 
-  // Dynamic values from subscription page
-  const planParam = params.get("plan") || "2" // 1,2,3,4,5,6
-  const billing = params.get("billing") || "monthly" // monthly | annual
-  const priceParam = params.get("price") || "249" // e.g. 149, 249, 1490, 2490
+  const planParam = params.get("plan") || "2"
+  const billing = params.get("billing") || "monthly"
+  const priceParam = params.get("price") || "249"
   const label = params.get("label") || `${planParam} Subjects`
 
   const planNumber = parseInt(planParam) || 2
   const price = parseInt(priceParam) || 0
 
-  // LIVE CAP
   const LIVE_COUNT = 2
   const effectiveCount = Math.min(planNumber, LIVE_COUNT)
   const chosenSubjects = LIVE_SUBJECTS.slice(0, effectiveCount)
 
-  const handlePay = () => {
-    const data = {
+  const handlePay = async () => {
+    // Save plan locally before pay
+    const planData = {
       plan_name: label,
       plan_price: price,
       billing_cycle: billing,
       subjects_count: effectiveCount,
       max_premium_subjects: effectiveCount,
       chosen_subjects: chosenSubjects.map(s=>s.slug),
-      subscription_status: "active",
+      subscription_status: "pending_payment",
       subscription_start: new Date().toISOString().split('T')[0]
     }
-    localStorage.setItem("matric360_plan", JSON.stringify(data))
-    alert(`PayStack next:\n${label} • R${price} ${billing}\nSubjects: ${chosenSubjects.map(s=>s.name).join(" + ")}\n\nConnect PayStack here`)
-    router.push("/dashboard")
+    localStorage.setItem("matric360_plan", JSON.stringify(planData))
+
+    try {
+      const res = await fetch("/api/paystack/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "learner@matric360learn.co.za", // TODO: replace with real user email from Supabase auth
+          amount: price,
+          subjects: chosenSubjects.map(s=>s.slug),
+          planCount: effectiveCount,
+          planName: label,
+          billing: billing
+        }),
+      })
+
+      const data = await res.json()
+      
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url
+      } else {
+        alert("Paystack error: " + (data.error || data.message || JSON.stringify(data)))
+      }
+    } catch (err: any) {
+      alert("Payment failed: " + err.message)
+    }
   }
 
   return(
