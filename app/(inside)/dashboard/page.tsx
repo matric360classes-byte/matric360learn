@@ -32,16 +32,27 @@ export default function DashboardPage(){
 
   useEffect(()=>{
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if(!user){ router.push("/login"); return }
-      setUser(user)
+      // FIX: First check session (instant from cookie), then verify with getUser
+      const { data: { session } } = await supabase.auth.getSession()
+
+      let currentUser = session?.user || null
+
+      if (!currentUser) {
+        const { data: { user } } = await supabase.auth.getUser()
+        currentUser = user
+      }
+
+      if(!currentUser){
+        router.push("/login");
+        return
+      }
+      setUser(currentUser)
 
       // CHECK PAYSTACK + 30 DAY EXPIRY
       const saved = localStorage.getItem("matric360_plan")
       if (saved) {
         try {
           const parsed = JSON.parse(saved)
-          // If it has expiry date, check it
           if (parsed.subscription_expires) {
             const expired = new Date(parsed.subscription_expires) < new Date()
             if (expired) {
@@ -50,7 +61,6 @@ export default function DashboardPage(){
               setIsExpired(true)
             }
           } else if (parsed.subscription_status === "active") {
-            // Old payment without expiry - give 30 days from now
             parsed.subscription_start = new Date().toISOString()
             parsed.subscription_expires = new Date(Date.now() + 30*24*60*60*1000).toISOString()
             localStorage.setItem("matric360_plan", JSON.stringify(parsed))
@@ -65,7 +75,7 @@ export default function DashboardPage(){
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push("/login")
+    window.location.href = "/login"
   }
 
   if(loading){
