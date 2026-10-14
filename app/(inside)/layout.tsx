@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 function Logo(){
@@ -60,7 +60,7 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
     {label:"Physical Sciences", href:"/subjects/physical-sciences", icon:"🎓"},
   ];
   const toolsNav = [
-    {label:"Mock Exams", href:"/mock-exams", icon:"📋"}, // WIRED - same as card
+    {label:"Mock Exams", href:"/exams/practice", icon:"📋"}, // NOW REDIRECTS TO START PRACTICE
     {label:"Live Lessons", href:"/live", icon:"📡"},
     {label:"Announcements", href:"/announcements", icon:"📢"},
     {label:"Progress", href:"/progress", icon:"📊"},
@@ -72,7 +72,7 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
   ];
 
   const Item = ({label,href,icon}:{label:string,href:string,icon:string})=>{
-    const active = path===href || (href==="/mock-exams" && path==="/exams/mock");
+    const active = path===href;
     return(
       <Link href={href} onClick={()=>setOpen(false)} style={{
         display:"flex",gap:12,padding:"12px 16px",borderRadius:10,
@@ -106,7 +106,17 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
           <div style={{height:1,background:"#252a44",margin:"14px 0"}} />
           {toolsNav.map(n=><Item key={n.href} {...n} />)}
           <div style={{height:1,background:"#252a44",margin:"14px 0"}} />
-          <Link href="/logout" style={{display:"flex",gap:12,padding:"12px 16px",color:"#ef4444",textDecoration:"none"}}><span>↪</span> Logout</Link>
+          {/* FIXED LOGOUT - NOW ACTUALLY LOGS OUT */}
+          <button
+            onClick={async()=>{
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              window.location.href = "/login";
+            }}
+            style={{display:"flex",gap:12,padding:"12px 16px",color:"#ef4444",background:"transparent",border:0,width:"100%",textAlign:"left",cursor:"pointer",fontSize:15}}
+          >
+            <span>↪</span> Logout
+          </button>
         </div>
       </aside>
 
