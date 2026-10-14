@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 function Logo(){
   return (
@@ -39,7 +40,16 @@ function LogoSmall(){
 
 export default function InsideLayout({children}:{children:React.ReactNode}){
   const [open,setOpen]=useState(false);
+  const [isAdmin,setIsAdmin]=useState(false);
   const path = usePathname();
+
+  useEffect(()=>{
+    (async()=>{
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if(user?.email === 'megaluno28@gmail.com') setIsAdmin(true);
+    })();
+  },[]);
 
   const mainNav = [
     {label:"Dashboard", href:"/dashboard", icon:"⌂"},
@@ -58,7 +68,7 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
     {label:"How to use Matric360", href:"/help", icon:"❓"},
     {label:"Install Matric360", href:"/install", icon:"⬇"},
     {label:"Profile", href:"/profile", icon:"👤"},
-    {label:"Content Admin", href:"/admin", icon:"🛡"},
+    ...(isAdmin ? [{label:"Content Admin", href:"/admin", icon:"🛡"}] as const : []),
   ];
 
   const Item = ({label,href,icon}:{label:string,href:string,icon:string})=>{
@@ -108,7 +118,6 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
    </header>
    <main style={{flex:1, paddingBottom:90}}>{children}</main>
 
-   {/* BOTTOM MENU - SVG ICONS WIRED */}
    <div style={{position:"fixed",bottom:0,left:0,right:0,height:74,background:"#12131f",borderTop:"1px solid #252a44",display:"flex",justifyContent:"space-around",alignItems:"center",zIndex:90,paddingBottom:"env(safe-area-inset-bottom)"}}>
      {[
        {href:"/dashboard",label:"Dashboard", d:"M3 12L12 3l9 9v8a1 1 0 0 1-1 1h-4V14H8v7H4a1 1 0 0 1-1-1z"},
