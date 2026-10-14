@@ -30,49 +30,47 @@ export default function DashboardPage(){
   const [isExpired, setIsExpired] = useState(false)
 
   useEffect(()=>{
-    const supabase = createClient()
     const getUser = async () => {
-      // FIX: use getUser() directly, not getSession() - works with auth.matric360learn.co.za
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      try {
+        // FIX: Ask server who we are (server CAN read the cookie you saw in /debug)
+        const res = await fetch('/api/me', { cache: 'no-store' })
+        if (!res.ok) {
+          window.location.href = "/login"
+          return
+        }
+        const { user: currentUser } = await res.json()
+        if(!currentUser){
+          window.location.href = "/login"
+          return
+        }
+        setUser(currentUser)
 
-      if(!currentUser){
+        const saved = localStorage.getItem("matric360_plan")
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved)
+            if (parsed.subscription_expires) {
+              const expired = new Date(parsed.subscription_expires) < new Date()
+              if (expired) {
+                parsed.subscription_status = "expired"
+                localStorage.setItem("matric360_plan", JSON.stringify(parsed))
+                setIsExpired(true)
+              }
+            } else if (parsed.subscription_status === "active") {
+              parsed.subscription_start = new Date().toISOString()
+              parsed.subscription_expires = new Date(Date.now() + 30*24*60*60*1000).toISOString()
+              localStorage.setItem("matric360_plan", JSON.stringify(parsed))
+            }
+            setPlan(parsed)
+          } catch {}
+        }
+      } catch {
         window.location.href = "/login"
         return
-      }
-      setUser(currentUser)
-
-      const saved = localStorage.getItem("matric360_plan")
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          if (parsed.subscription_expires) {
-            const expired = new Date(parsed.subscription_expires) < new Date()
-            if (expired) {
-              parsed.subscription_status = "expired"
-              localStorage.setItem("matric360_plan", JSON.stringify(parsed))
-              setIsExpired(true)
-            }
-          } else if (parsed.subscription_status === "active") {
-            parsed.subscription_start = new Date().toISOString()
-            parsed.subscription_expires = new Date(Date.now() + 30*24*60*60*1000).toISOString()
-            localStorage.setItem("matric360_plan", JSON.stringify(parsed))
-          }
-          setPlan(parsed)
-        } catch {}
       }
       setLoading(false)
     }
     getUser()
-
-    // Also listen for auth changes - if session comes late, set it
-    const supabase2 = createClient()
-    const { data: { subscription } } = supabase2.auth.onAuthStateChange((_event, session) => {
-      if (session?.user &&!user) {
-        setUser(session.user)
-        setLoading(false)
-      }
-    })
-    return () => subscription.unsubscribe()
   },[])
 
   const handleLogout = async () => {
