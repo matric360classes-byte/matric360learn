@@ -2,9 +2,10 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request,
-  })
+  const url = request.nextUrl
+  const code = url.searchParams.get('code')
+  
+  let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +22,17 @@ export async function middleware(request: NextRequest) {
       },
     }
   )
+
+  if (code) {
+    await supabase.auth.exchangeCodeForSession(code)
+    // Now response has fresh session cookies
+    const redirectResponse = NextResponse.redirect(new URL('/dashboard', request.url))
+    // Copy FRESH cookies from response to redirect
+    response.cookies.getAll().forEach(cookie => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, cookie as any)
+    })
+    return redirectResponse
+  }
 
   await supabase.auth.getUser()
   return response
