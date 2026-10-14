@@ -33,7 +33,7 @@ export default function DashboardPage(){
     const getUser = async () => {
       try {
         // FIX: Ask server who we are (server CAN read the cookie you saw in /debug)
-        const res = await fetch('/api/me', { cache: 'no-store' })
+        const res = await fetch('/api/me', { cache: 'no-store', credentials: 'include' })
         if (!res.ok) {
           window.location.href = "/login"
           return
