@@ -1,15 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
+import DashboardClient from './DashboardClient'
 
-export default async function DashboardPage() {
+export default async function Page() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
-  // Always fresh from Google, not from old profiles table
-  const displayName = user?.user_metadata?.full_name ||
-                      user?.user_metadata?.name ||
-                      user?.email?.split('@')[0] ||
-                      'there'
-
-  // Pass to client
-  return <DashboardClient user={user} displayName={displayName} />
+  if (!user) {
+    // middleware will redirect, but safety
+    return null
+  }
+  return <DashboardClient user={user} />
 }
