@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 function Logo(){
@@ -60,7 +60,7 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
     {label:"Physical Sciences", href:"/subjects/physical-sciences", icon:"🎓"},
   ];
   const toolsNav = [
-    {label:"Mock Exams", href:"/exams/mock", icon:"📋"},
+    {label:"Mock Exams", href:"/mock-exams", icon:"📋"}, // WIRED - same as card
     {label:"Live Lessons", href:"/live", icon:"📡"},
     {label:"Announcements", href:"/announcements", icon:"📢"},
     {label:"Progress", href:"/progress", icon:"📊"},
@@ -72,7 +72,7 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
   ];
 
   const Item = ({label,href,icon}:{label:string,href:string,icon:string})=>{
-    const active = path===href;
+    const active = path===href || (href==="/mock-exams" && path==="/exams/mock");
     return(
       <Link href={href} onClick={()=>setOpen(false)} style={{
         display:"flex",gap:12,padding:"12px 16px",borderRadius:10,
