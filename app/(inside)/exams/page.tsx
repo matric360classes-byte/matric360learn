@@ -26,14 +26,14 @@ export default function ExamsHubPage(){
       <div style={{fontSize:11,letterSpacing:2,color:"#9ca3af",fontWeight:700,marginTop:24,marginBottom:12}}>MORE EXAM TOOLS</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         {[
-          {icon:"⚡",title:"Daily Sprint",desc:"5 questions. 5 minutes. Every day."},
-          {icon:"🎯",title:"Weak Areas",desc:"Practice the topics holding you back, automatically."},
-          {icon:"📝",title:"Past Papers",desc:"Real NSC & Prep papers with memos and video solutions."},
-          {icon:"🏆",title:"Mock Exams",desc:"Full exam simulation. Timer, marks, no peeking."},
-          {icon:"🎯",title:"Exam Readiness",desc:"See how prepared you are for the final CAPS exam."},
-          {icon:"🔄",title:"Retry Incorrect",desc:"Turn your mistakes into strengths."},
+          {icon:"⚡",title:"Daily Sprint",desc:"5 questions. 5 minutes. Every day.", href:"/exams/daily"},
+          {icon:"🎯",title:"Weak Areas",desc:"Practice the topics holding you back, automatically.", href:"/exams/weak-areas"},
+          {icon:"📝",title:"Past Papers",desc:"Real NSC & Prep papers with memos and video solutions.", href:"/exams/past-papers"},
+          {icon:"🏆",title:"Mock Exams",desc:"Full exam simulation. Timer, marks, no peeking.", href:"/mock-exams"},
+          {icon:"🎯",title:"Exam Readiness",desc:"See how prepared you are for the final CAPS exam.", href:"/exams/readiness"},
+          {icon:"🔄",title:"Retry Incorrect",desc:"Turn your mistakes into strengths.", href:"/exams/retry"},
         ].map(c=>(
-          <div key={c.title} style={{background:"#1a1a24",border:"1px solid rgba(255,255,255,0.08)",borderRadius:18,padding:16,position:"relative"}}>
+          <div key={c.title} onClick={()=>router.push(c.href)} style={{background:"#1a1a24",border:"1px solid rgba(255,255,255,0.08)",borderRadius:18,padding:16,position:"relative",cursor:"pointer"}}>
             <span style={{position:"absolute",top:10,right:10,fontSize:9,background:"rgba(255,140,0,0.2)",color:"#ffb26e",border:"1px solid rgba(255,140,0,0.3)",padding:"2px 8px",borderRadius:999}}>BETA</span>
             <div style={{fontSize:22}}>{c.icon}</div>
             <div style={{fontWeight:800,marginTop:10}}>{c.title}</div>
