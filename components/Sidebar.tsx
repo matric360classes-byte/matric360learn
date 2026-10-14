@@ -1,7 +1,18 @@
 "use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email === 'megaluno28@gmail.com') setIsAdmin(true);
+    })();
+  }, []);
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -33,7 +44,10 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           <Link href="/how-to-use" onClick={onClose} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-300 hover:bg-[#1a1e2e] hover:text-white"><span>❓</span> How to use Matric360</Link>
           <button onClick={onClose} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-300 w-full"><span>⬇️</span> Install Matric360</button>
           <Link href="/profile" onClick={onClose} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-300 hover:bg-[#1a1e2e] hover:text-white"><span>👤</span> Profile</Link>
-          <Link href="/admin" onClick={onClose} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-300 hover:bg-[#1a1e2e] hover:text-white"><span>🛡️</span> Content Admin</Link>
+
+          {isAdmin && (
+            <Link href="/admin" onClick={onClose} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-300 hover:bg-[#1a1e2e] hover:text-white"><span>🛡️</span> Content Admin</Link>
+          )}
 
           <div className="h-[1px] bg-[#1e2336] my-4" />
           <button className="flex items-center gap-3 px-3 py-3 rounded-xl text-red-500 w-full"><span>↪️</span> Logout</button>
