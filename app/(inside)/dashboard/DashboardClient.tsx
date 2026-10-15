@@ -12,6 +12,7 @@ export default function DashboardClient({ user }: { user: any }){
   const router = useRouter()
   const [plan, setPlan] = useState<any>(null)
   const [isExpired, setIsExpired] = useState(false)
+  const [hasNewAnnouncement, setHasNewAnnouncement] = useState(false)
 
   useEffect(()=>{
     const saved = localStorage.getItem("matric360_plan")
@@ -33,6 +34,20 @@ export default function DashboardClient({ user }: { user: any }){
         setPlan(parsed)
       } catch {}
     }
+
+    // CHECK FOR NEW ANNOUNCEMENTS - dot logic
+    ;(async()=>{
+      try{
+        const supabase = createClient()
+        const lastSeen = localStorage.getItem("last_announcement_seen")
+        const { data } = await supabase.from("announcements").select("created_at").eq("is_active", true).order("created_at",{ascending:false}).limit(1).single()
+        if(data){
+          if(!lastSeen || new Date(data.created_at) > new Date(lastSeen)){
+            setHasNewAnnouncement(true)
+          }
+        }
+      }catch{}
+    })()
   },[])
 
   const handleLogout = async () => {
@@ -57,6 +72,24 @@ export default function DashboardClient({ user }: { user: any }){
         {isPremium && <div style={{marginTop:10,color:"#22c55e",fontSize:12,fontWeight:800}}>✅ Premium Active • {plan.plan_name} • R{plan.plan_price} • {daysLeft} days left</div>}
         {isExpired && <div style={{marginTop:10,color:"#fbbf24",fontSize:12,fontWeight:800}}>⚠️ Subscription expired — {daysLeft} days left</div>}
       </div>
+
+      {/* ANNOUNCEMENTS WITH DOT - ONLY ADDITION */}
+      <div onClick={()=>router.push("/announcements")} style={{marginTop:14, background: hasNewAnnouncement? "#1c1f35" : "#151a2d", border:`1px solid ${hasNewAnnouncement? "#8b7cf8" : "#1e233a"}`, borderRadius:16, padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer"}}>
+        <div style={{display:"flex", alignItems:"center", gap:10}}>
+          <div style={{position:"relative"}}>
+            <div style={{width:36,height:36,borderRadius:10,background:"#252a46",display:"grid",placeItems:"center"}}>📢</div>
+            {hasNewAnnouncement && <span style={{position:"absolute", top:-3, right:-3, width:10, height:10, background:"#ef4444", borderRadius:99, border:"2px solid #1c1f35"}}></span>}
+          </div>
+          <div>
+            <div style={{color:"white", fontWeight:800, fontSize:14, display:"flex", alignItems:"center", gap:6}}>
+              Announcements {hasNewAnnouncement && <span style={{background:"#ef4444", color:"white", fontSize:9, padding:"2px 6px", borderRadius:8, fontWeight:900}}>NEW</span>}
+            </div>
+            <div style={{color:"#94a3b8", fontSize:11, marginTop:2}}>{hasNewAnnouncement? "You have a new announcement" : "Check latest updates"}</div>
+          </div>
+        </div>
+        <div style={{color:"#64748b"}}>→</div>
+      </div>
+
       <div style={{marginTop:22}}>
         <h3 style={{fontWeight:900,fontSize:18,color:"white",marginBottom:14}}>📚 My Subjects</h3>
         <div style={{display:"flex",flexDirection:"column",gap:14}}>
