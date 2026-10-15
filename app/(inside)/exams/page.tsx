@@ -29,7 +29,7 @@ export default function ExamsHubPage(){
           {icon:"⚡",title:"Daily Sprint",desc:"5 questions. 5 minutes. Every day.", href:"/exams/daily"},
           {icon:"🎯",title:"Weak Areas",desc:"Practice the topics holding you back, automatically.", href:"/exams/weak-areas"},
           {icon:"📝",title:"Past Papers",desc:"Real NSC & Prep papers with memos and video solutions.", href:"/exams/past-papers"},
-          {icon:"🏆",title:"Mock Exams",desc:"Full exam simulation. Timer, marks, no peeking.", href:"/mock-exams"},
+          {icon:"🏆",title:"Mock Exams",desc:"Full exam simulation. Timer, marks, no peeking.", href:"/exams/practice"},
           {icon:"🎯",title:"Exam Readiness",desc:"See how prepared you are for the final CAPS exam.", href:"/exams/readiness"},
           {icon:"🔄",title:"Retry Incorrect",desc:"Turn your mistakes into strengths.", href:"/exams/retry"},
         ].map(c=>(
