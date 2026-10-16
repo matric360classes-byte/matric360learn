@@ -11,8 +11,8 @@
     "next": "14.2.5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "@supabase/supabase-js": "2.45.4",
-    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.49.4",
+    "@supabase/ssr": "^0.7.0",
     "openai": "^4.28.0",
     "katex": "^0.16.9",
     "react-katex": "^3.0.1"
