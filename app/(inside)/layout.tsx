@@ -43,6 +43,9 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
   const [isAdmin,setIsAdmin]=useState(false);
   const path = usePathname();
 
+  const waNumber = "27729888561";
+  const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent("Hi Matric360 Tutor, I need help")}`;
+
   useEffect(()=>{
     (async()=>{
       const supabase = createClient();
@@ -105,7 +108,29 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
           {subjectsNav.map(n=><Item key={n.href} {...n} />)}
           <div style={{height:1,background:"#252a44",margin:"14px 0"}} />
           {toolsNav.map(n=><Item key={n.href} {...n} />)}
+          
+          {/* NEW: CONTACT TUTOR WHATSAPP */}
+          <a href={waLink} target="_blank" rel="noopener noreferrer" onClick={()=>setOpen(false)} style={{
+            display:"flex",gap:12,padding:"12px 16px",borderRadius:10,
+            background:"#25D366", color:"#0f111e",
+            textDecoration:"none", fontSize:15, fontWeight:800, marginTop:6
+          }}>
+            <span>💬</span> Contact Tutor
+          </a>
+
           <div style={{height:1,background:"#252a44",margin:"14px 0"}} />
+          {/* NEW: HELP CARD */}
+          <div style={{margin:"8px 6px", padding:"14px", borderRadius:12, background:"#1e2140", border:"1px solid #252a44"}}>
+            <div style={{fontSize:13, fontWeight:700, marginBottom:4}}>Need help?</div>
+            <div style={{fontSize:12, color:"#94a3b8", marginBottom:10}}>Chat with tutor on WhatsApp: 072 988 8561</div>
+            <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+              display:"block", textAlign:"center", padding:"10px", borderRadius:8,
+              background:"#25D366", color:"#0f111e", fontWeight:800, fontSize:13, textDecoration:"none"
+            }}>
+              WhatsApp Tutor
+            </a>
+          </div>
+
           <button
             onClick={async()=>{
               const supabase = createClient();
@@ -123,7 +148,16 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
    <header style={{height:60, background:"#15172a", borderBottom:"1px solid #252a44", display:"flex", alignItems:"center", padding:"0 16px", gap:12, position:"sticky", top:0, zIndex:40}}>
      <button onClick={()=>setOpen(true)} style={{fontSize:22,background:"transparent",border:0,color:"#fff"}}>☰</button>
      {!open && <LogoSmall />}
-     <div style={{marginLeft:"auto",fontSize:12,color:"#22c55e"}}>● Online</div>
+     <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:12}}>
+       {/* NEW: HEADER WHATSAPP */}
+       <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+         display:"flex",alignItems:"center",gap:6, padding:"6px 12px", borderRadius:999,
+         background:"#25D366", color:"#0f111e", fontWeight:800, fontSize:12, textDecoration:"none"
+       }}>
+         💬 Tutor
+       </a>
+       <div style={{fontSize:12,color:"#22c55e"}}>● Online</div>
+     </div>
    </header>
    <main style={{flex:1, paddingBottom:90}}>{children}</main>
 
@@ -154,6 +188,16 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
   </div>
 
       {open && <div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:55}}></div>}
+
+      {/* NEW: FLOATING WHATSAPP BUTTON */}
+      <a href={waLink} target="_blank" rel="noopener noreferrer" style={{
+        position:"fixed", bottom:90, right:16, width:56, height:56, borderRadius:999,
+        background:"#25D366", display:"flex", alignItems:"center", justifyContent:"center",
+        fontSize:26, boxShadow:"0 8px 24px rgba(0,0,0,0.4)", zIndex:96, textDecoration:"none"
+      }}>
+        💬
+      </a>
+
     </div>
   );
 }
