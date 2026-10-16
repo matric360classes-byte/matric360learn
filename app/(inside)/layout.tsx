@@ -60,7 +60,7 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
     {label:"Physical Sciences", href:"/subjects/physical-sciences", icon:"🎓"},
   ];
   const toolsNav = [
-    {label:"Mock Exams", href:"/exams/practice", icon:"📋"}, // NOW REDIRECTS TO START PRACTICE
+    {label:"Mock Exams", href:"/exams/practice", icon:"📋"},
     {label:"Live Lessons", href:"/live", icon:"📡"},
     {label:"Announcements", href:"/announcements", icon:"📢"},
     {label:"Progress", href:"/progress", icon:"📊"},
@@ -106,7 +106,6 @@ export default function InsideLayout({children}:{children:React.ReactNode}){
           <div style={{height:1,background:"#252a44",margin:"14px 0"}} />
           {toolsNav.map(n=><Item key={n.href} {...n} />)}
           <div style={{height:1,background:"#252a44",margin:"14px 0"}} />
-          {/* FIXED LOGOUT - NOW ACTUALLY LOGS OUT */}
           <button
             onClick={async()=>{
               const supabase = createClient();
