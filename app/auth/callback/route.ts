@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import type { NextRequest } from "next/server";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/dashboard";
@@ -15,11 +16,7 @@ export async function GET(request: Request) {
       {
         cookies: {
           getAll() {
-            const cookieHeader = request.headers.get("cookie") ?? "";
-            return cookieHeader.split(";").map(c => {
-              const [name, ...rest] = c.trim().split("=");
-              return { name, value: rest.join("=") };
-            }).filter(c => c.name);
+            return request.cookies.getAll(); // <-- FIX: use NextRequest cookies, not header string
           },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) => {
@@ -32,9 +29,10 @@ export async function GET(request: Request) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return response; // Contains auth cookie now
+      return response;
     }
+    console.error("OAuth exchange error:", error.message);
   }
 
-  return NextResponse.redirect(`${origin}/login`);
+  return NextResponse.redirect(`${origin}/login?error=auth_failed`);
 }
