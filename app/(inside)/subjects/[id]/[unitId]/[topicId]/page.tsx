@@ -119,22 +119,12 @@ export default function Page(){
     setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
 
     try {
-      // VIDEO FIX ONLY - uses same source as Super Ase (82 videos)
-      const resVid = await fetch(`${url}/rest/v1/videos_mind_gaps_view?select=*&order=topic.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      // FINAL FIX - fetch directly from videos (82) - all have caps_topic_id
+      const resVid = await fetch(`${url}/rest/v1/videos?select=*`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       const allVids:any = await resVid.json();
-      if(Array.isArray(allVids) && allVids.length>0){
-        const lowerKb = (kb.topic||"").toLowerCase().trim();
-        const kbId = (kb.id||"").toString().toLowerCase();
-        const lowerRaw = cleanTopicRaw.toLowerCase().trim();
-        const lowerDash = cleanTopic.toLowerCase().trim();
-        const matched = allVids.filter((v:any)=>{
-          const vt = (v.topic||"").toLowerCase().trim();
-          const vcaps = (v.caps_topic_id||"").toString().toLowerCase();
-          if(vcaps && kbId && vcaps === kbId) return true;
-          if(!vt) return false;
-          return vt === lowerKb || lowerKb === vt || vt.includes(lowerKb) || lowerKb.includes(vt) || vt.includes(lowerRaw) || vt.includes(lowerDash);
-        });
-        setVideos(matched.length>0? matched : []);
+      if(Array.isArray(allVids)){
+        const matched = allVids.filter((v:any)=> v.caps_topic_id && v.caps_topic_id.toString() === kb.id.toString());
+        setVideos(matched);
       }
     } catch(e){ setVideos([]); }
   })()},[topicId, subjectId]);
