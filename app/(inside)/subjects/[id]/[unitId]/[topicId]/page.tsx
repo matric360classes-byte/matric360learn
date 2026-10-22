@@ -43,6 +43,7 @@ export default function Page(){
   const subjectId=p?.id, unitId=p?.unitId, topicId=p?.topicId;
   const [rows, setRows]=useState<any[]>([]);
   const [videos, setVideos]=useState<any[]>([]);
+  const [kbId, setKbId]=useState<string>("");
   const [active, setActive]=useState("A");
   const [isAdmin, setIsAdmin]=useState(false);
   const [editing, setEditing]=useState(false);
@@ -111,21 +112,33 @@ export default function Page(){
     }
     if(!Array.isArray(kbArr) || kbArr.length===0) return;
     const kb = kbArr[0];
+    setKbId(kb.id);
     const res = await fetch(`${url}/rest/v1/lesson_nodes?select=*&caps_topic_id=eq.${kb.id}&order=node_type.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
     let nodes:any = await res.json();
     if(!Array.isArray(nodes)) return;
     const seen=new Set();
     nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
-    setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
+    const finalNodes = nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type}));
+    setRows(finalNodes);
 
     try {
-      // FINAL FIX - fetch directly from videos (82) - all have caps_topic_id
-      const resVid = await fetch(`${url}/rest/v1/videos?select=*`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-      const allVids:any = await resVid.json();
-      if(Array.isArray(allVids)){
-        const matched = allVids.filter((v:any)=> v.caps_topic_id && v.caps_topic_id.toString() === kb.id.toString());
-        setVideos(matched);
+      // FIXED: Use linked lesson_node_id (linked=true) + fallback caps_topic_id
+      const nodeIds = finalNodes.map((n:any)=> n.id);
+      let matched:any[] = [];
+      if(nodeIds.length){
+        // 1. Try via lesson_node_id (your 82 linked videos)
+        const res1 = await fetch(`${url}/rest/v1/videos?select=*&lesson_node_id=in.(${nodeIds.join(',')})`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+        const v1:any = await res1.json();
+        if(Array.isArray(v1)) matched = [...matched, ...v1];
       }
+      // 2. Fallback via caps_topic_id
+      const res2 = await fetch(`${url}/rest/v1/videos?select=*&caps_topic_id=eq.${kb.id}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      const v2:any = await res2.json();
+      if(Array.isArray(v2)) matched = [...matched, ...v2];
+
+      // Deduplicate by id
+      const map = new Map(matched.map((v:any)=>[v.id, v]));
+      setVideos(Array.from(map.values()));
     } catch(e){ setVideos([]); }
   })()},[topicId, subjectId]);
 
@@ -133,7 +146,13 @@ export default function Page(){
   const activeNode = rows.find((r:any)=>r.node_label===active) || rows[0];
   const meta = META[active];
   const getContent = (n:any)=> n?.content?.body_markdown || n?.body_markdown || n?.content?.body || n?.body || (typeof n?.content==='string'? n.content:"") || "";
-  const videoForActive = videos[0] || null;
+  
+  // FIXED: Per-node video lookup
+  const videoForActive = (() => {
+    if(!activeNode || videos.length===0) return videos[0] || null;
+    return videos.find((v:any)=> v.lesson_node_id === activeNode.id) || videos.find((v:any)=> v.caps_topic_id === kbId) || videos[0] || null;
+  })();
+
   let ytIdFromVideos = videoForActive? (videoForActive.youtube_id || getYoutubeId(videoForActive.youtube_url||"")) : "";
   const ytIdFromNode = (() => { try { let c = activeNode?.content; if (typeof c === 'string') c = JSON.parse(c); return c?.youtubeId || c?.youtube_id || "" } catch { return "" } })();
   const ytId = ytIdFromVideos || ytIdFromNode || "";
@@ -184,7 +203,7 @@ export default function Page(){
           {isAdmin? <span style={{fontSize:"10px",background:"#00ff88",color:"#000",padding:"4px 8px",borderRadius:"8px",fontWeight:800}}>ADMIN</span> : null}
         </div>
         <h1 style={{fontSize:"26px",fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
-        {isAdmin && <div style={{fontSize:"12px",color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES {videos.length>0? `• 🎥 VIDEO INCLUDED`:"• No video yet"}</div>}
+        {isAdmin && <div style={{fontSize:"12px",color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES {videos.length>0? `• 🎥 VIDEO INCLUDED (${videos.length})`:"• No video yet"}</div>}
       </div>
       <div style={{display:"flex",gap:"8px",overflowX:"auto",padding:"0 12px 16px"}}>
         {Object.keys(META).map(k=><button key={k} onClick={()=>{setActive(k); setEditing(false);}} style={{flexShrink:0,padding:"10px 18px",borderRadius:"24px",border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
@@ -195,6 +214,7 @@ export default function Page(){
             <iframe width="100%" height="100%" src={`https://www.youtube-nocookie.com/embed/${ytId}?vq=hd1080&modestbranding=1&rel=0`} title={videoForActive?.title || clean} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen style={{width:"100%",height:"100%",border:0}} />
           </div>
           <div style={{fontSize:"10px",color:"#6b7280",marginTop:"8px"}}>Content is licensed to your Matric360 account. Sharing prohibited.</div>
+          {videoForActive?.title && <div style={{fontSize:"12px",color:"#9ca3af",marginTop:"6px"}}>🎥 {videoForActive.title}</div>}
         </div>
       )}
       <div style={{margin:"0 12px",background:"#1a1c2e",borderRadius:"24px",border:"1px solid #252a44",overflow:"hidden"}}>
