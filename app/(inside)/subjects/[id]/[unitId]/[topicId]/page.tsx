@@ -27,14 +27,12 @@ function MathRenderer({ text }: { text: string }) {
       let math = part.slice(2,-2); if(part.startsWith('$')&&!part.startsWith('$$')) math=part.slice(1,-1);
       try{
         const rendered = katex.renderToString(math,{displayMode:isBlock,throwOnError:false});
-        // FIX 1: block math scrolls instead of overlapping
         if(isBlock) return `<div style="overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch"><div style="min-width:max-content">${rendered}</div></div>`;
         return rendered;
       }catch{return part}
     }
     return part.replace(/\*\*(.*?)\*\*/g,'<b style="color:#fff">$1</b>').replace(/\n/g,'<br/>');
   }).join('');
-  // FIX 1: allow wrapping + prevent overlap
   return <div dangerouslySetInnerHTML={{__html:html}} style={{lineHeight:'1.9',fontSize:'15px',color:'#e5e7eb',maxWidth:'100%',overflowWrap:'anywhere',wordBreak:'break-word'}} />
 }
 
@@ -121,14 +119,18 @@ export default function Page(){
     setRows(nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type})));
 
     try {
-      const resVid = await fetch(`${url}/rest/v1/videos?select=*&subject=eq.${subjNorm}&order=order_index.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      // VIDEO FIX ONLY - uses same source as Super Ase (82 videos)
+      const resVid = await fetch(`${url}/rest/v1/videos_mind_gaps_view?select=*&order=topic.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       const allVids:any = await resVid.json();
       if(Array.isArray(allVids) && allVids.length>0){
         const lowerKb = (kb.topic||"").toLowerCase().trim();
+        const kbId = (kb.id||"").toString().toLowerCase();
         const lowerRaw = cleanTopicRaw.toLowerCase().trim();
         const lowerDash = cleanTopic.toLowerCase().trim();
         const matched = allVids.filter((v:any)=>{
           const vt = (v.topic||"").toLowerCase().trim();
+          const vcaps = (v.caps_topic_id||"").toString().toLowerCase();
+          if(vcaps && kbId && vcaps === kbId) return true;
           if(!vt) return false;
           return vt === lowerKb || lowerKb === vt || vt.includes(lowerKb) || lowerKb.includes(vt) || vt.includes(lowerRaw) || vt.includes(lowerDash);
         });
@@ -185,7 +187,6 @@ export default function Page(){
   };
 
   return(
-    // FIX 3: 180 -> 150 removes big empty gap under content
     <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:150}}>
       <div style={{padding:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -193,7 +194,6 @@ export default function Page(){
           {isAdmin? <span style={{fontSize:"10px",background:"#00ff88",color:"#000",padding:"4px 8px",borderRadius:"8px",fontWeight:800}}>ADMIN</span> : null}
         </div>
         <h1 style={{fontSize:"26px",fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
-        {/* FIX 2: hidden for students, admin only */}
         {isAdmin && <div style={{fontSize:"12px",color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES {videos.length>0? `• 🎥 VIDEO INCLUDED`:"• No video yet"}</div>}
       </div>
       <div style={{display:"flex",gap:"8px",overflowX:"auto",padding:"0 12px 16px"}}>
@@ -228,7 +228,6 @@ export default function Page(){
         </div>
       </div>
 
-      {/* FIXED - Now above Dashboard bar */}
       <div style={{position:"fixed",bottom:72,left:0,right:0,zIndex:80,background:"rgba(14,15,26,0.98)",borderTop:"1px solid #1f223a",padding:"12px",display:"flex",gap:10}}>
         {prevNodeId? (
           <button onClick={()=>{setActive(prevNodeId); window.scrollTo(0,0);}} style={{flex:1,background:"#1a1c2e",border:"1px solid #2a2d4a",padding:"14px",borderRadius:16,color:"#9aa0b6",fontWeight:700,fontSize:13}}>← {META[prevNodeId]?.label}</button>
