@@ -41,10 +41,24 @@ export default async function LearnPage({ params }: any) {
     if (n3?.length) nodes = n3
   }
 
-  const videoId = caps?.youtube_id
+  // --- VIDEO LOGIC WITH FALLBACK ---
+  // 1. Start with old field
+  let videoId = caps?.youtube_id
+
+  // 2. Try new videos table (your 82) by capsId
+  if (capsId) {
+    const { data: vByCapsId } = await supabase.from('videos').select('youtube_id').eq('caps_topic_id', capsId).limit(1).maybeSingle()
+    if (vByCapsId?.youtube_id) videoId = vByCapsId.youtube_id
+  }
+  
+  // 3. Also try by slug directly (if link uses id)
+  if (!videoId) {
+    const { data: vBySlug } = await supabase.from('videos').select('youtube_id').eq('caps_topic_id', slug).limit(1).maybeSingle()
+    if (vBySlug?.youtube_id) videoId = vBySlug.youtube_id
+  }
+
   if (!nodes?.length) return <div style={{padding:20,background:'black',color:'white'}}>No nodes for {slug} - capsId: {capsId||'not found'} - video: {videoId||'none'}</div>
 
-  // Debug for Node B
   const debugNodeB = nodes.find((x:any)=>x.node_type==='B')
   let debugContent = debugNodeB?.content
   try{ if(typeof debugContent==='string') debugContent = JSON.parse(debugContent)}catch{}
@@ -54,11 +68,11 @@ export default async function LearnPage({ params }: any) {
     <div style={{background:'#0a0a0a',minHeight:'100vh',color:'#d1d5db',padding:16}}>
       <h1 style={{color:'white',fontSize:20}}>{nodes[0].topic_slug} - {nodes.length} nodes</h1>
 
-      {/* GREY DEBUG BOX - YOU WILL SEE THIS NOW */}
       <div style={{background:'#111',padding:10,borderRadius:8,fontSize:11,marginBottom:16,border:'1px solid #333',color:'#aaa'}}>
         <div>Page Slug: {slug}</div>
         <div>Real capsId: {capsId}</div>
-        <div>caps.youtube_id: {videoId || 'none'}</div>
+        <div>caps.youtube_id: {caps?.youtube_id || 'none'}</div>
+        <div>Final videoId (with 82 fallback): {videoId || 'none'}</div>
         <div>Node B youtube: {debugYoutube}</div>
         <div>Node B id: {debugNodeB?.id || 'not found'}</div>
       </div>
