@@ -41,40 +41,53 @@ export default async function LearnPage({ params }: any) {
     if (n3?.length) nodes = n3
   }
 
-  // --- VIDEO LOGIC WITH FALLBACK ---
-  // 1. Start with old field
+  // --- FIXED VIDEO LOGIC: uses your 82 linked lesson_node_id ---
   let videoId = caps?.youtube_id
+  let allVideos: any[] = []
 
-  // 2. Try new videos table (your 82) by capsId
-  if (capsId) {
-    const { data: vByCapsId } = await supabase.from('videos').select('youtube_id').eq('caps_topic_id', capsId).limit(1).maybeSingle()
-    if (vByCapsId?.youtube_id) videoId = vByCapsId.youtube_id
+  if (nodes?.length) {
+    const nodeIds = nodes.map((n:any)=> n.id)
+    // Fetch by lesson_node_id (your linked 82) + caps_topic_id fallback
+    if (capsId) {
+      const { data: vids } = await supabase.from('videos').select('*').eq('caps_topic_id', capsId)
+      if (vids?.length) allVideos = [...allVideos, ...vids]
+    }
+    if (nodeIds.length) {
+      const { data: vids2 } = await supabase.from('videos').select('*').in('lesson_node_id', nodeIds)
+      if (vids2?.length) allVideos = [...allVideos, ...vids2]
+    }
+    if (!allVideos.length && capsId) {
+      // also try slug as caps_topic_id (string match)
+      const { data: vids3 } = await supabase.from('videos').select('*').eq('caps_topic_id', slug)
+      if (vids3?.length) allVideos = [...allVideos, ...vids3]
+    }
+    // Deduplicate
+    const map = new Map(allVideos.map((v:any)=>[v.id, v]))
+    allVideos = Array.from(map.values())
+
+    if (allVideos.length) {
+      const bNode = nodes.find((x:any)=> x.node_type==='B' || x.node_type==='CONCEPT' || x.node_type==='LEARN_THE_CONCEPT' || x.node_type==='LEARN_THE_CONCEPT')
+      const linkedToB = bNode ? allVideos.find((v:any)=> v.lesson_node_id === bNode.id) : null
+      videoId = linkedToB?.youtube_id || linkedToB?.youtubeId || allVideos[0]?.youtube_id || allVideos[0]?.youtubeId || videoId
+    }
   }
-  
-  // 3. Also try by slug directly (if link uses id)
-  if (!videoId) {
-    const { data: vBySlug } = await supabase.from('videos').select('youtube_id').eq('caps_topic_id', slug).limit(1).maybeSingle()
-    if (vBySlug?.youtube_id) videoId = vBySlug.youtube_id
-  }
 
-  if (!nodes?.length) return <div style={{padding:20,background:'black',color:'white'}}>No nodes for {slug} - capsId: {capsId||'not found'} - video: {videoId||'none'}</div>
+  if (!nodes?.length) return <div style={{padding:20,background:'black',color:'white'}}>No nodes for {slug} - capsId: {capsId||'not found'} - video: {videoId||'none'} - videosFound: {allVideos.length}</div>
 
-  const debugNodeB = nodes.find((x:any)=>x.node_type==='B')
-  let debugContent = debugNodeB?.content
-  try{ if(typeof debugContent==='string') debugContent = JSON.parse(debugContent)}catch{}
-  const debugYoutube = debugContent?.youtubeId || debugContent?.youtube_id || 'none'
+  const debugNodeB = nodes.find((x:any)=>x.node_type==='B' || x.node_type==='CONCEPT')
 
   return (
     <div style={{background:'#0a0a0a',minHeight:'100vh',color:'#d1d5db',padding:16}}>
-      <h1 style={{color:'white',fontSize:20}}>{nodes[0].topic_slug} - {nodes.length} nodes</h1>
+      <h1 style={{color:'white',fontSize:20}}>{nodes[0].topic_slug} - {nodes.length} nodes - {allVideos.length} videos</h1>
 
       <div style={{background:'#111',padding:10,borderRadius:8,fontSize:11,marginBottom:16,border:'1px solid #333',color:'#aaa'}}>
         <div>Page Slug: {slug}</div>
         <div>Real capsId: {capsId}</div>
         <div>caps.youtube_id: {caps?.youtube_id || 'none'}</div>
-        <div>Final videoId (with 82 fallback): {videoId || 'none'}</div>
-        <div>Node B youtube: {debugYoutube}</div>
+        <div>Final videoId (82 linked): {videoId || 'none'}</div>
+        <div>Videos found: {allVideos.length} {allVideos.length>0? '• 🎥 INCLUDED': '• No video'}</div>
         <div>Node B id: {debugNodeB?.id || 'not found'}</div>
+        <div>Linked video lesson_node_id: {allVideos[0]?.lesson_node_id || 'none'}</div>
       </div>
 
       {videoId && (
@@ -88,13 +101,13 @@ export default async function LearnPage({ params }: any) {
       {nodes.map((n:any)=>{
         let parsedContent = n.content
         try { if(typeof n.content === 'string') parsedContent = JSON.parse(n.content) } catch {}
-        const nodeYoutubeId = parsedContent?.youtubeId || parsedContent?.youtube_id || (n.node_type === 'B'? videoId : null)
+        const nodeYoutubeId = parsedContent?.youtubeId || parsedContent?.youtube_id || (n.node_type === 'B' || n.node_type==='CONCEPT' || n.node_type==='LEARN_THE_CONCEPT' ? videoId : null)
 
         return (
           <div key={n.id} style={{border:'1px solid #222',margin:'16px 0',padding:18,borderRadius:16,background:'#141414'}}>
-            <div style={{color:'#00ff88',fontWeight:'bold'}}>{n.node_type}: {n.title}</div>
+            <div style={{color:'#00ff88',fontWeight:'bold'}}>{n.node_type}: {n.title} {nodeYoutubeId? '• 🎥': ''}</div>
 
-            {nodeYoutubeId && n.node_type === 'B' && (
+            {nodeYoutubeId && (n.node_type === 'B' || n.node_type === 'CONCEPT' || n.node_type === 'LEARN_THE_CONCEPT') && (
               <div style={{background:"#000",borderRadius:12,overflow:"hidden",border:"1px solid #00ff88",margin:"12px 0"}}>
                 <div style={{position:'relative',paddingBottom:'56.25%'}}>
                   <iframe style={{position:'absolute',inset:0,width:'100%',height:'100%'}} src={`https://www.youtube.com/embed/${nodeYoutubeId}`} allowFullScreen />
