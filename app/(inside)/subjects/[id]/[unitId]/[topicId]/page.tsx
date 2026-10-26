@@ -67,9 +67,30 @@ export default function Page(){
       }
     }
 
-    const allRes = await fetch(`${url}/rest/v1/videos?select=*&subject=eq.${subjNorm}&limit=500`,{headers});
+    // FIX 1: Fetch WITHOUT eq filter, then filter in JS (handles caps + NULL subject)
+    let allRes = await fetch(`${url}/rest/v1/videos?select=*&limit=500`,{headers});
     let all:any = await allRes.json();
     if(!Array.isArray(all)) all=[];
+    all = all.filter((v:any)=> (v.subject||"").toLowerCase().includes(subjNorm.split('-')[0]) || !v.subject);
+
+    // FIX 2: Resolve lesson_node_id -> caps_code
+    const nodeIds=all.filter((v:any)=> !v.caps_code && !v.topic && v.lesson_node_id).map((v:any)=>v.lesson_node_id);
+    if(nodeIds.length){
+      const inList=nodeIds.map((id:string)=>`"${id}"`).join(',');
+      const resNodes=await fetch(`${url}/rest/v1/lesson_nodes?select=id,caps_topic_id&id=in.(${inList})`,{headers});
+      const nodes:any=await resNodes.json();
+      if(Array.isArray(nodes)){
+        const capsIds=[...new Set(nodes.map((n:any)=>n.caps_topic_id).filter(Boolean))] as string[];
+        if(capsIds.length){
+          const capsIn=capsIds.map((id:string)=>`"${id}"`).join(',');
+          const resKb2=await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,caps_code&id=in.(${capsIn})`,{headers});
+          const kbs:any=await resKb2.json();
+          const kbMap=new Map((kbs||[]).map((k:any)=>[k.id,k.caps_code]));
+          const nodeMap=new Map(nodes.map((n:any)=>[n.id,kbMap.get(n.caps_topic_id)]));
+          all=all.map((v:any)=>{ if(!v.caps_code && !v.topic && v.lesson_node_id && nodeMap.get(v.lesson_node_id)){ return {...v, caps_code: nodeMap.get(v.lesson_node_id)}; } return v; });
+        }
+      }
+    }
 
     const filtered = all.filter((v:any)=>{
       const combined=norm((v.caps_code||"")+(v.topic||""));
@@ -89,7 +110,7 @@ export default function Page(){
       else if(nTopic.includes(caps) || nTopic.includes(top)) score=80;
       else if(caps.slice(0,4)===nTopic.slice(0,4) && caps.length>3) score=60;
       return {...v, _score:score};
-    }).filter((v:any)=>v._score>=60).sort((a:any,b:any)=>b._score-a._score);
+    }).filter((v:any)=>v._score>=50).sort((a:any,b:any)=>b._score-a._score);
 
     const uniq=new Map(); scored.forEach((v:any)=>{ if(!uniq.has(v.id)) uniq.set(v.id,v); });
     setVideos([...uniq.values()].slice(0,1));
