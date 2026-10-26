@@ -122,23 +122,32 @@ export default function Page(){
     setRows(finalNodes);
 
     try {
-      // FIXED: Use linked lesson_node_id (linked=true) + fallback caps_topic_id
+      // FIXED BLOCK START - ONLY THIS PART CHANGED
       const nodeIds = finalNodes.map((n:any)=> n.id);
       let matched:any[] = [];
       if(nodeIds.length){
-        // 1. Try via lesson_node_id (your 82 linked videos)
-        const res1 = await fetch(`${url}/rest/v1/videos?select=*&lesson_node_id=in.(${nodeIds.join(',')})`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+        const inList = nodeIds.map((id:string)=> `"${id}"`).join(',');
+        const res1 = await fetch(`${url}/rest/v1/videos?select=*&lesson_node_id=in.(${inList})`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
         const v1:any = await res1.json();
         if(Array.isArray(v1)) matched = [...matched, ...v1];
       }
-      // 2. Fallback via caps_topic_id
       const res2 = await fetch(`${url}/rest/v1/videos?select=*&caps_topic_id=eq.${kb.id}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       const v2:any = await res2.json();
       if(Array.isArray(v2)) matched = [...matched, ...v2];
 
-      // Deduplicate by id
+      const res3 = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${cleanTopic}&subject=eq.${subjNorm}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      const v3:any = await res3.json();
+      if(Array.isArray(v3)) matched = [...matched, ...v3];
+
+      if(matched.length===0){
+        const res4 = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${cleanTopic}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+        const v4:any = await res4.json();
+        if(Array.isArray(v4)) matched = [...matched, ...v4];
+      }
+
       const map = new Map(matched.map((v:any)=>[v.id, v]));
       setVideos(Array.from(map.values()));
+      // FIXED BLOCK END
     } catch(e){ setVideos([]); }
   })()},[topicId, subjectId]);
 
@@ -147,7 +156,6 @@ export default function Page(){
   const meta = META[active];
   const getContent = (n:any)=> n?.content?.body_markdown || n?.body_markdown || n?.content?.body || n?.body || (typeof n?.content==='string'? n.content:"") || "";
   
-  // FIXED: Per-node video lookup
   const videoForActive = (() => {
     if(!activeNode || videos.length===0) return videos[0] || null;
     return videos.find((v:any)=> v.lesson_node_id === activeNode.id) || videos.find((v:any)=> v.caps_topic_id === kbId) || videos[0] || null;
