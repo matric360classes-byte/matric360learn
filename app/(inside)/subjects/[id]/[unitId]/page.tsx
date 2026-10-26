@@ -22,17 +22,40 @@ export default function UnitPage(){
   }catch{}
  },[]);
 
- // DYNAMIC CHECK - from videos table
+ // FIXED DYNAMIC CHECK - checks caps_code, topic, caps_topic_id, lesson_node_id
  useEffect(()=>{
   (async()=>{
     try{
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
       const subjNorm = sid.toLowerCase().includes('math')? 'mathematics' : 'physical-sciences';
-      const res = await fetch(`${url}/rest/v1/videos?select=topic&subject=eq.${subjNorm}&limit=300`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      // FIXED: select all possible columns, not just topic
+      const res = await fetch(`${url}/rest/v1/videos?select=caps_code,topic,caps_topic_id,lesson_node_id,subject&subject=eq.${subjNorm}&limit=500`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       const data:any = await res.json();
       const s = new Set<string>();
-      if(Array.isArray(data)) data.forEach((v:any)=>{ if(v.topic) s.add(norm(v.topic)); });
+      if(Array.isArray(data)){
+        data.forEach((v:any)=>{
+          if(v.topic) s.add(norm(v.topic));
+          if(v.caps_code) s.add(norm(v.caps_code));
+          // Also add caps_topic_id mapping via caps_code fetch if needed - but caps_code is enough
+        });
+        // FIXED: Also fetch lesson_nodes for videos that only have lesson_node_id
+        const nodeIds = data.filter((v:any)=> v.lesson_node_id && !v.caps_code && !v.topic).map((v:any)=> v.lesson_node_id);
+        if(nodeIds.length){
+          const inList = nodeIds.map((id:string)=> `"${id}"`).join(',');
+          const resNodes = await fetch(`${url}/rest/v1/lesson_nodes?select=id,caps_topic_id&caps_topic_id=not.is.null&id=in.(${inList})`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+          const nodes:any = await resNodes.json();
+          if(Array.isArray(nodes) && nodes.length){
+            const capsIds = [...new Set(nodes.map((n:any)=> n.caps_topic_id))];
+            const capsIn = capsIds.map((id:string)=> `"${id}"`).join(',');
+            const resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,caps_code&caps_code=not.is.null&id=in.(${capsIn})`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+            const kbs:any = await resKb.json();
+            if(Array.isArray(kbs)){
+              kbs.forEach((kb:any)=>{ if(kb.caps_code) s.add(norm(kb.caps_code)); });
+            }
+          }
+        }
+      }
       setVideosNorm(s);
     }catch{}
   })();
@@ -71,7 +94,6 @@ export default function UnitPage(){
         <div style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:12}}>{t.title}</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
 
-         {/* DYNAMIC BADGE - EXACTLY LIKE YOUR REFERENCE PHOTO */}
          {show && (
            <div style={{display:"flex",alignItems:"center",gap:6,background:"#2a335a",border:"1px solid #3d4a8a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#8ea0ff",fontWeight:700}}>
              <span style={{fontSize:12}}>◧</span> Video Lesson <span style={{background:"#3d4a8a",padding:"2px 7px",borderRadius:8,fontSize:10,color:"#aab6ff",fontWeight:800,letterSpacing:0.5}}>INCLUDED</span>
