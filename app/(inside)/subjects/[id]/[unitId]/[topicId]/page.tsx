@@ -91,32 +91,57 @@ export default function Page(){
     setRows(mapped);
 
     try {
-      let allVids:any[] = [];
-      // 1. PRIORITY: caps_code = slug (ALL 82 have this now)
+      // --- FUZZY CLOSEST NAME LOGIC (your request) - names don't need to be exact ---
+      const getScore = (target:string, candidate:string) => {
+        if(!target || !candidate) return 0;
+        const t = target.toLowerCase().replace(/[-_]/g,' ').replace(/[^a-z0-9 ]/g,'').split(/\s+/).filter(Boolean);
+        const c = candidate.toLowerCase().replace(/[-_]/g,' ').replace(/[^a-z0-9 ]/g,'').split(/\s+/).filter(Boolean);
+        if(!t.length || !c.length) return 0;
+        if(t.join(' ') === c.join(' ')) return 100;
+        if(c.join(' ').includes(t.join(' ')) || t.join(' ').includes(c.join(' '))) return 90;
+        let common = 0;
+        t.forEach(w=>{ if(c.includes(w) || c.some(cw=> cw.includes(w) || w.includes(cw) && w.length>3)) common++; });
+        if(t[0] && c[0] && t[0]===c[0]) common+=1;
+        return Math.round((common / Math.max(t.length, c.length)) * 80);
+      };
+
+      const targetSlug = kb.caps_code || cleanTopic || cleanTopicRaw;
+      const targetTopic = kb.topic || cleanTopic;
+
+      // 1. Fetch ALL videos for this subject (200 limit covers your 82)
+      let allRes = await fetch(`${url}/rest/v1/videos?select=*&subject=eq.${subjNorm}&limit=200`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      let all:any = await allRes.json();
+      if(!Array.isArray(all)) all = [];
+
+      // 2. Score every video for closest similar name
+      const scored = all.map((v:any)=>{
+        const s1 = getScore(targetSlug, v.caps_code || '');
+        const s2 = getScore(targetSlug, v.topic || '');
+        const s3 = getScore(targetTopic, v.topic || '');
+        const s4 = getScore(targetTopic, v.caps_code || '');
+        const s5 = getScore(cleanTopicRaw, v.caps_code || '');
+        const s6 = getScore(cleanTopicRaw, v.topic || '');
+        return {...v, _score: Math.max(s1,s2,s3,s4,s5,s6)};
+      }).filter((v:any)=> v._score >= 30).sort((a:any,b:any)=> b._score - a._score);
+
+      // 3. Direct links (always include)
+      let direct:any[] = [];
       let r1 = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${cleanTopic}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-      let d1:any = await r1.json(); if(Array.isArray(d1)) allVids=[...allVids,...d1];
+      let d1:any = await r1.json(); if(Array.isArray(d1)) direct=[...direct,...d1];
       let r2 = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${cleanTopicRaw}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-      let d2:any = await r2.json(); if(Array.isArray(d2)) allVids=[...allVids,...d2];
-      // 2. lesson_node_id
+      let d2:any = await r2.json(); if(Array.isArray(d2)) direct=[...direct,...d2];
+      let r3b = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${kb.caps_code}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      let d3b:any = await r3b.json(); if(Array.isArray(d3b)) direct=[...direct,...d3b];
       if(mapped.length){
         const ids = mapped.map((n:any)=>n.id).join(',');
         let r3 = await fetch(`${url}/rest/v1/videos?select=*&lesson_node_id=in.(${ids})`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-        let d3:any = await r3.json(); if(Array.isArray(d3)) allVids=[...allVids,...d3];
+        let d3:any = await r3.json(); if(Array.isArray(d3)) direct=[...direct,...d3];
       }
-      // 3. caps_topic_id
       let r4 = await fetch(`${url}/rest/v1/videos?select=*&caps_topic_id=eq.${kb.id}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-      let d4:any = await r4.json(); if(Array.isArray(d4)) allVids=[...allVids,...d4];
-      // 4. old fallback by topic string
-      if(allVids.length===0){
-        let r5 = await fetch(`${url}/rest/v1/videos?select=*&subject=eq.${subjNorm}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-        let d5:any = await r5.json();
-        if(Array.isArray(d5)){
-          const low = (kb.topic||"").toLowerCase();
-          const f = d5.filter((v:any)=>{const vt=(v.topic||"").toLowerCase(); return vt && (vt===low || vt.includes(low) || low.includes(vt) || vt.includes(cleanTopicRaw));});
-          allVids=[...allVids,...f];
-        }
-      }
-      const uniq = Array.from(new Map(allVids.map((v:any)=>[v.id,v])).values());
+      let d4:any = await r4.json(); if(Array.isArray(d4)) direct=[...direct,...d4];
+
+      const merged = [...direct, ...scored];
+      const uniq = Array.from(new Map(merged.map((v:any)=>[v.id, v])).values());
       setVideos(uniq);
     } catch(e){ setVideos([]); }
   })()},[topicId, subjectId]);
