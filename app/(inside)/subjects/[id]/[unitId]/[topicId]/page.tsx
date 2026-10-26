@@ -56,12 +56,27 @@ export default function Page(){
     const cleanTopicRaw = decodeURIComponent(topicId||"").toLowerCase().trim();
     const cleanSubjectRaw = decodeURIComponent(subjectId||"").toLowerCase().trim();
     const subjNorm = cleanSubjectRaw.includes('math')? 'mathematics' : cleanSubjectRaw.includes('physical')? 'physical-sciences' : cleanSubjectRaw;
+    const ALIAS:any = {
+      "equations": subjNorm==='physical-sciences'? "equations-motion" : "equations",
+      "equation": subjNorm==='physical-sciences'? "equations-motion" : "equations",
+      "equations-of-motion": "equations-motion",
+      "graphs": "graphs-motion", "graphs-of-motion": "graphs-motion", "graph": "graphs-motion",
+      "projectile-calculations": "projectile-calculations", "projectile-calculation": "projectile-calculations", "projectile": "projectile-calculations",
+      "doppler-effect-definition": "doppler-definition", "doppler-effect---definition": "doppler-definition", "doppler-definition": "doppler-definition",
+      "doppler-equation": "doppler-equation", "doppler-effect": "red-blue", "doppler": "red-blue",
+      "red-and-blue-shift": "red-blue", "red-blue-shift": "red-blue"
+    };
+    const cleanTopic = ALIAS[cleanTopicRaw] || cleanTopicRaw;
 
-    let resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&caps_code=eq.${cleanTopicRaw}&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+    let resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&subject=eq.${subjNorm}&caps_code=eq.${cleanTopic}&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
     let kbArr:any = await resKb.json();
     if(!Array.isArray(kbArr) || kbArr.length===0){
-      const keyword = cleanTopicRaw.split('-')[0];
-      resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&topic=ilike.%${keyword}%&limit=5`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&caps_code=eq.${cleanTopic}&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      kbArr = await resKb.json();
+    }
+    if(!Array.isArray(kbArr) || kbArr.length===0){
+      const keyword = cleanTopicRaw.includes('doppler')? 'doppler' : cleanTopicRaw.includes('projectile')? 'projectile' : cleanTopicRaw.split('-')[0];
+      resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&subject=eq.${subjNorm}&topic=ilike.%${keyword}%&limit=5`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       const fuzzy:any = await resKb.json();
       if(Array.isArray(fuzzy) && fuzzy.length>0) kbArr=[fuzzy[0]];
     }
@@ -78,29 +93,53 @@ export default function Page(){
     try {
       const getScore = (target:string, candidate:string) => {
         if(!target || !candidate) return 0;
-        const t = target.toLowerCase().replace(/[-_]/g,' ').split(/\s+/).filter(Boolean);
-        const c = candidate.toLowerCase().replace(/[-_]/g,' ').split(/\s+/).filter(Boolean);
+        const t = target.toLowerCase().replace(/[-_]/g,' ').replace(/[^a-z0-9 ]/g,'').split(/\s+/).filter(Boolean);
+        const c = candidate.toLowerCase().replace(/[-_]/g,' ').replace(/[^a-z0-9 ]/g,'').split(/\s+/).filter(Boolean);
+        if(!t.length || !c.length) return 0;
         if(t.join(' ') === c.join(' ')) return 100;
         if(c.join(' ').includes(t.join(' ')) || t.join(' ').includes(c.join(' '))) return 90;
-        let common=0; t.forEach(w=>{ if(c.includes(w) || c.some(cw=> cw.includes(w) && w.length>3)) common++; });
+        let common = 0;
+        t.forEach(w=>{ if(c.includes(w) || c.some(cw=> cw.includes(w) || w.includes(cw) && w.length>3)) common++; });
+        if(t[0] && c[0] && t[0]===c[0]) common+=1;
         return Math.round((common / Math.max(t.length, c.length)) * 80);
       };
-      const targetSlug = kb.caps_code || cleanTopicRaw;
 
-      // FIXED: Fetch ALL 500 videos, NO subject filter
+      const targetSlug = kb.caps_code || cleanTopic || cleanTopicRaw;
+      const targetTopic = kb.topic || cleanTopic;
+
+      // FIXED: NO subject filter - RLS is now OK per your screenshots
       let allRes = await fetch(`${url}/rest/v1/videos?select=*&limit=500`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       let all:any = await allRes.json();
       if(!Array.isArray(all)) all = [];
 
-      // Only keep closest name matches >= 50% - so inverse-parabola won't show doppler
       const scored = all.map((v:any)=>{
         const s1 = getScore(targetSlug, v.caps_code || '');
         const s2 = getScore(targetSlug, v.topic || '');
-        const s3 = getScore(cleanTopicRaw, v.caps_code || '');
-        return {...v, _score: Math.max(s1,s2,s3)};
-      }).filter((v:any)=> v._score >= 50).sort((a:any,b:any)=> b._score - a._score);
+        const s3 = getScore(targetTopic, v.topic || '');
+        const s4 = getScore(targetTopic, v.caps_code || '');
+        const s5 = getScore(cleanTopicRaw, v.caps_code || '');
+        const s6 = getScore(cleanTopicRaw, v.topic || '');
+        return {...v, _score: Math.max(s1,s2,s3,s4,s5,s6)};
+      }).filter((v:any)=> v._score >= 20).sort((a:any,b:any)=> b._score - a._score);
 
-      setVideos(scored);
+      let direct:any[] = [];
+      let r1 = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${cleanTopic}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      let d1:any = await r1.json(); if(Array.isArray(d1)) direct=[...direct,...d1];
+      let r2 = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${cleanTopicRaw}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      let d2:any = await r2.json(); if(Array.isArray(d2)) direct=[...direct,...d2];
+      let r3b = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${kb.caps_code}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      let d3b:any = await r3b.json(); if(Array.isArray(d3b)) direct=[...direct,...d3b];
+      if(mapped.length){
+        const ids = mapped.map((n:any)=>n.id).join(',');
+        let r3 = await fetch(`${url}/rest/v1/videos?select=*&lesson_node_id=in.(${ids})`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+        let d3:any = await r3.json(); if(Array.isArray(d3)) direct=[...direct,...d3];
+      }
+      let r4 = await fetch(`${url}/rest/v1/videos?select=*&caps_topic_id=eq.${kb.id}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      let d4:any = await r4.json(); if(Array.isArray(d4)) direct=[...direct,...d4];
+
+      const merged = [...direct, ...scored];
+      const uniq = Array.from(new Map(merged.map((v:any)=>[v.id, v])).values());
+      setVideos(uniq);
     } catch(e){ setVideos([]); }
   })()},[topicId, subjectId]);
 
@@ -131,15 +170,15 @@ export default function Page(){
           {isAdmin? <span style={{fontSize:"10px",background:"#00ff88",color:"#000",padding:"4px 8px",borderRadius:"8px",fontWeight:800}}>ADMIN</span> : null}
         </div>
         <h1 style={{fontSize:"26px",fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
-        <div style={{fontSize:"12px",color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES {videos.length>0? `• 🎥 ${videos[0].caps_code} (${videos[0]._score}%)`:"• No video for this exact topic"}</div>
+        <div style={{fontSize:"12px",color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES {videos.length>0? `• 🎥 VIDEO INCLUDED (${videos.length})`:"• No video yet"}</div>
       </div>
       <div style={{display:"flex",gap:"8px",overflowX:"auto",padding:"0 12px 16px"}}>
         {Object.keys(META).map(k=><button key={k} onClick={()=>{setActive(k); setEditing(false);}} style={{flexShrink:0,padding:"10px 18px",borderRadius:"24px",border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
       </div>
       {ytId && (
         <div style={{margin:"0 12px 12px"}}>
-          <div style={{background:"#000",borderRadius:"24px",overflow:"hidden",aspectRatio:"16/9",border:"1px solid #00ff88"}}>
-            <iframe width="100%" height="100%" src={`https://www.youtube-nocookie.com/embed/${ytId}?vq=hd1080&modestbranding=1&rel=0`} title={videoForActive?.title || clean} frameBorder="0" allowFullScreen style={{width:"100%",height:"100%",border:0}} />
+          <div style={{background:"#000",borderRadius:"24px",overflow:"hidden",aspectRatio:"16/9",border:"1px solid #252a44"}}>
+            <iframe width="100%" height="100%" src={`https://www.youtube-nocookie.com/embed/${ytId}?vq=hd1080&modestbranding=1&rel=0`} title={videoForActive?.title || clean} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen style={{width:"100%",height:"100%",border:0}} />
           </div>
         </div>
       )}
@@ -147,12 +186,12 @@ export default function Page(){
         <div style={{padding:"16px",borderBottom:"1px solid #252a44",display:"flex",gap:"12px",alignItems:"center",justifyContent:"space-between"}}>
           <div style={{display:"flex",gap:"12px",alignItems:"center"}}>
             <div style={{width:"44px",height:"44px",borderRadius:"12px",background:meta?.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{meta?.icon}</div>
-            <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:"11px",color:"#6b7280"}}>{activeNode?.node_type} • {videos.length} videos matched</div></div>
+            <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:"11px",color:"#6b7280"}}>{activeNode?.node_type} • {videos.length} videos linked</div></div>
           </div>
           {isAdmin &&!editing && <button onClick={startEdit} style={{background:"#ff6b35",color:"#fff",border:"none",padding:"8px 14px",borderRadius:"12px",fontWeight:700,fontSize:"12px"}}>Quick Edit</button>}
         </div>
         <div style={{padding:"20px",minHeight:"250px"}}>
-          {!editing? ( activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean}... {rows.length===0?"No nodes found for this topic - check caps_knowledge_base":""}</div> ) : (
+          {!editing? ( activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean}...</div> ) : (
             <div><textarea value={editText} onChange={e=>setEditText(e.target.value)} style={{width:"100%",minHeight:"320px",background:"#0e0f1a",color:"#e5e7eb",border:"1px solid #ff6b35",borderRadius:"12px",padding:"12px",fontSize:"14px",fontFamily:"monospace"}} /><div style={{display:"flex",gap:"8px",marginTop:"12px"}}><button onClick={saveEdit} disabled={saving} style={{flex:1,background:saving?"#555":"#00ff88",color:"#000",border:"none",padding:"12px",borderRadius:"12px",fontWeight:800}}>{saving? "Saving...":"Save"}</button><button onClick={()=>setEditing(false)} style={{flex:1,background:"#252a44",color:"#fff",border:"none",padding:"12px",borderRadius:"12px"}}>Cancel</button></div></div>
           )}
         </div>
