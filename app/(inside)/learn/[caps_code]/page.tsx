@@ -41,26 +41,38 @@ export default async function LearnPage({ params }: any) {
     if (n3?.length) nodes = n3
   }
 
-  // --- FIXED VIDEO LOGIC: uses your 82 linked lesson_node_id ---
+  // --- FIXED VIDEO LOGIC - ADDED caps_code fallback ---
   let videoId = caps?.youtube_id
   let allVideos: any[] = []
 
   if (nodes?.length) {
     const nodeIds = nodes.map((n:any)=> n.id)
-    // Fetch by lesson_node_id (your linked 82) + caps_topic_id fallback
+    // 1. Fetch by caps_topic_id (new id)
     if (capsId) {
       const { data: vids } = await supabase.from('videos').select('*').eq('caps_topic_id', capsId)
       if (vids?.length) allVideos = [...allVideos, ...vids]
     }
+    // 2. Fetch by lesson_node_id (your linked 82)
     if (nodeIds.length) {
       const { data: vids2 } = await supabase.from('videos').select('*').in('lesson_node_id', nodeIds)
       if (vids2?.length) allVideos = [...allVideos, ...vids2]
     }
-    if (!allVideos.length && capsId) {
-      // also try slug as caps_topic_id (string match)
+    // 3. FIXED: Fetch by caps_code = slug (PERMANENT - survives Unit Shift)
+    if (!allVideos.length) {
+      const { data: vidsCode } = await supabase.from('videos').select('*').eq('caps_code', slug)
+      if (vidsCode?.length) allVideos = [...allVideos, ...vidsCode]
+    }
+    // 4. FIXED: Also try slug as caps_topic_id string
+    if (!allVideos.length) {
       const { data: vids3 } = await supabase.from('videos').select('*').eq('caps_topic_id', slug)
       if (vids3?.length) allVideos = [...allVideos, ...vids3]
     }
+    // 5. FINAL FALLBACK: Try caps_code ilike for partial match
+    if (!allVideos.length) {
+      const { data: vids4 } = await supabase.from('videos').select('*').ilike('caps_code', `%${slug}%`)
+      if (vids4?.length) allVideos = [...allVideos, ...vids4]
+    }
+
     // Deduplicate
     const map = new Map(allVideos.map((v:any)=>[v.id, v]))
     allVideos = Array.from(map.values())
@@ -88,6 +100,7 @@ export default async function LearnPage({ params }: any) {
         <div>Videos found: {allVideos.length} {allVideos.length>0? '• 🎥 INCLUDED': '• No video'}</div>
         <div>Node B id: {debugNodeB?.id || 'not found'}</div>
         <div>Linked video lesson_node_id: {allVideos[0]?.lesson_node_id || 'none'}</div>
+        <div>caps_code: {allVideos[0]?.caps_code || 'none'}</div>
       </div>
 
       {videoId && (
