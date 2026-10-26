@@ -4,7 +4,6 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
-import { SUBJECTS_DATA } from "@/lib/subjects";
 
 const META:any = {
   A:{label:"Exam Hook", icon:"📌", color:"#ff6b35"},
@@ -25,25 +24,19 @@ function MathRenderer({ text }: { text: string }) {
     const isInline = (part.startsWith('\\(')&&part.endsWith('\\)')) || (part.startsWith('$')&&part.endsWith('$')&&part.length>2);
     if(isBlock||isInline){
       let math = part.slice(2,-2); if(part.startsWith('$')&&!part.startsWith('$$')) math=part.slice(1,-1);
-      try{
-        const rendered = katex.renderToString(math,{displayMode:isBlock,throwOnError:false});
-        if(isBlock) return `<div style="overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch"><div style="min-width:max-content">${rendered}</div></div>`;
-        return rendered;
-      }catch{return part}
+      try{ return katex.renderToString(math,{displayMode:isBlock,throwOnError:false}) }catch{return part}
     }
     return part.replace(/\*\*(.*?)\*\*/g,'<b style="color:#fff">$1</b>').replace(/\n/g,'<br/>');
   }).join('');
-  return <div dangerouslySetInnerHTML={{__html:html}} style={{lineHeight:'1.9',fontSize:'15px',color:'#e5e7eb',maxWidth:'100%',overflowWrap:'anywhere',wordBreak:'break-word'}} />
+  return <div dangerouslySetInnerHTML={{__html:html}} style={{lineHeight:'1.9',fontSize:'15px',color:'#e5e7eb'}} />
 }
-
 function getYoutubeId(url:string){ if(!url) return ""; const m=url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([^&?\/]+)/); return m?m[1]:url; }
 
 export default function Page(){
   const p = useParams() as any;
   const subjectId=p?.id, unitId=p?.unitId, topicId=p?.topicId;
-  const [rows, setRows]=useState<any[]>([]);
-  const [videos, setVideos]=useState<any[]>([]);
-  const [kbId, setKbId]=useState<string>("");
+  const [rows, setRows] = useState<any[]>([]);
+  const [videos, setVideos] = useState<any[]>([]);
   const [active, setActive]=useState("A");
   const [isAdmin, setIsAdmin]=useState(false);
   const [editing, setEditing]=useState(false);
@@ -53,9 +46,7 @@ export default function Page(){
   useEffect(()=>{
     if(typeof window!=='undefined'){
       const qs = new URLSearchParams(window.location.search);
-      if(qs.get('admin')==='1' || localStorage.getItem('isContentAdmin')==='true'){
-        setIsAdmin(true);
-      }
+      if(qs.get('admin')==='1' || localStorage.getItem('isContentAdmin')==='true') setIsAdmin(true);
     }
   },[]);
 
@@ -69,25 +60,11 @@ export default function Page(){
       "equations": subjNorm==='physical-sciences'? "equations-motion" : "equations",
       "equation": subjNorm==='physical-sciences'? "equations-motion" : "equations",
       "equations-of-motion": "equations-motion",
-      "graphs": "graphs-motion",
-      "graphs-of-motion": "graphs-motion",
-      "graph": "graphs-motion",
-      "projectile-calculations": "projectile-calculations",
-      "projectile-calculation": "projectile-calculations",
-      "projectile": "projectile-calculations",
-      "free-fall": "free-fall",
-      "free": "free-fall",
-      "bouncing": "bouncing",
-      "doppler-effect-definition": "doppler-definition",
-      "doppler-effect---definition": "doppler-definition",
-      "doppler-definition": "doppler-definition",
-      "doppler-equation": "doppler-equation",
-      "doppler-effect": "red-blue",
-      "doppler": "red-blue",
-      "red-and-blue-shift": "red-blue",
-      "red-blue-shift": "red-blue",
-      "regression": "regression",
-      "regression-and-least-squares": "regression"
+      "graphs": "graphs-motion", "graphs-of-motion": "graphs-motion", "graph": "graphs-motion",
+      "projectile-calculations": "projectile-calculations", "projectile-calculation": "projectile-calculations", "projectile": "projectile-calculations",
+      "doppler-effect-definition": "doppler-definition", "doppler-effect---definition": "doppler-definition", "doppler-definition": "doppler-definition",
+      "doppler-equation": "doppler-equation", "doppler-effect": "red-blue", "doppler": "red-blue",
+      "red-and-blue-shift": "red-blue", "red-blue-shift": "red-blue"
     };
     const cleanTopic = ALIAS[cleanTopicRaw] || cleanTopicRaw;
 
@@ -98,56 +75,49 @@ export default function Page(){
       kbArr = await resKb.json();
     }
     if(!Array.isArray(kbArr) || kbArr.length===0){
-      const keyword = cleanTopicRaw.includes('doppler')? 'doppler' : cleanTopicRaw.includes('projectile')? 'projectile' : cleanTopicRaw.includes('graph')? 'graphs' : cleanTopicRaw.split('-')[0];
+      const keyword = cleanTopicRaw.includes('doppler')? 'doppler' : cleanTopicRaw.includes('projectile')? 'projectile' : cleanTopicRaw.split('-')[0];
       resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,topic,subject,caps_code&subject=eq.${subjNorm}&topic=ilike.%${keyword}%&limit=5`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       const fuzzy:any = await resKb.json();
-      if(Array.isArray(fuzzy) && fuzzy.length>0){
-        let pick = fuzzy[0];
-        if(cleanTopicRaw.includes('definition')) pick = fuzzy.find((k:any)=> k.topic.toLowerCase().includes('definition') || k.caps_code.includes('definition')) || fuzzy[0];
-        if(cleanTopicRaw.includes('equation')) pick = fuzzy.find((k:any)=> k.topic.toLowerCase().includes('equation') || k.caps_code.includes('equation')) || fuzzy[0];
-        if(cleanTopicRaw.includes('graphs')) pick = fuzzy.find((k:any)=> k.caps_code.includes('graphs')) || fuzzy[0];
-        if(cleanTopicRaw.includes('projectile')) pick = fuzzy.find((k:any)=> k.caps_code.includes('projectile')) || fuzzy[0];
-        kbArr = [pick];
-      }
+      if(Array.isArray(fuzzy) && fuzzy.length>0) kbArr=[fuzzy[0]];
     }
     if(!Array.isArray(kbArr) || kbArr.length===0) return;
     const kb = kbArr[0];
-    setKbId(kb.id);
     const res = await fetch(`${url}/rest/v1/lesson_nodes?select=*&caps_topic_id=eq.${kb.id}&order=node_type.asc`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
     let nodes:any = await res.json();
     if(!Array.isArray(nodes)) return;
     const seen=new Set();
     nodes = nodes.filter((n:any)=>{const l=TYPE_TO_LABEL[n.node_type]||n.node_type; if(seen.has(l)) return false; seen.add(l); return true;});
-    const finalNodes = nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type}));
-    setRows(finalNodes);
+    const mapped = nodes.map((n:any)=>({...n,node_label:TYPE_TO_LABEL[n.node_type]||n.node_type}));
+    setRows(mapped);
 
     try {
-      // FIXED BLOCK START - ONLY THIS PART CHANGED
-      const nodeIds = finalNodes.map((n:any)=> n.id);
-      let matched:any[] = [];
-      if(nodeIds.length){
-        const inList = nodeIds.map((id:string)=> `"${id}"`).join(',');
-        const res1 = await fetch(`${url}/rest/v1/videos?select=*&lesson_node_id=in.(${inList})`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-        const v1:any = await res1.json();
-        if(Array.isArray(v1)) matched = [...matched, ...v1];
+      let allVids:any[] = [];
+      // 1. PRIORITY: caps_code = slug (ALL 82 have this now)
+      let r1 = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${cleanTopic}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      let d1:any = await r1.json(); if(Array.isArray(d1)) allVids=[...allVids,...d1];
+      let r2 = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${cleanTopicRaw}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      let d2:any = await r2.json(); if(Array.isArray(d2)) allVids=[...allVids,...d2];
+      // 2. lesson_node_id
+      if(mapped.length){
+        const ids = mapped.map((n:any)=>n.id).join(',');
+        let r3 = await fetch(`${url}/rest/v1/videos?select=*&lesson_node_id=in.(${ids})`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+        let d3:any = await r3.json(); if(Array.isArray(d3)) allVids=[...allVids,...d3];
       }
-      const res2 = await fetch(`${url}/rest/v1/videos?select=*&caps_topic_id=eq.${kb.id}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-      const v2:any = await res2.json();
-      if(Array.isArray(v2)) matched = [...matched, ...v2];
-
-      const res3 = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${cleanTopic}&subject=eq.${subjNorm}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-      const v3:any = await res3.json();
-      if(Array.isArray(v3)) matched = [...matched, ...v3];
-
-      if(matched.length===0){
-        const res4 = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${cleanTopic}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-        const v4:any = await res4.json();
-        if(Array.isArray(v4)) matched = [...matched, ...v4];
+      // 3. caps_topic_id
+      let r4 = await fetch(`${url}/rest/v1/videos?select=*&caps_topic_id=eq.${kb.id}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      let d4:any = await r4.json(); if(Array.isArray(d4)) allVids=[...allVids,...d4];
+      // 4. old fallback by topic string
+      if(allVids.length===0){
+        let r5 = await fetch(`${url}/rest/v1/videos?select=*&subject=eq.${subjNorm}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+        let d5:any = await r5.json();
+        if(Array.isArray(d5)){
+          const low = (kb.topic||"").toLowerCase();
+          const f = d5.filter((v:any)=>{const vt=(v.topic||"").toLowerCase(); return vt && (vt===low || vt.includes(low) || low.includes(vt) || vt.includes(cleanTopicRaw));});
+          allVids=[...allVids,...f];
+        }
       }
-
-      const map = new Map(matched.map((v:any)=>[v.id, v]));
-      setVideos(Array.from(map.values()));
-      // FIXED BLOCK END
+      const uniq = Array.from(new Map(allVids.map((v:any)=>[v.id,v])).values());
+      setVideos(uniq);
     } catch(e){ setVideos([]); }
   })()},[topicId, subjectId]);
 
@@ -155,63 +125,30 @@ export default function Page(){
   const activeNode = rows.find((r:any)=>r.node_label===active) || rows[0];
   const meta = META[active];
   const getContent = (n:any)=> n?.content?.body_markdown || n?.body_markdown || n?.content?.body || n?.body || (typeof n?.content==='string'? n.content:"") || "";
-  
-  const videoForActive = (() => {
-    if(!activeNode || videos.length===0) return videos[0] || null;
-    return videos.find((v:any)=> v.lesson_node_id === activeNode.id) || videos.find((v:any)=> v.caps_topic_id === kbId) || videos[0] || null;
-  })();
-
+  const videoForActive = videos[0] || null;
   let ytIdFromVideos = videoForActive? (videoForActive.youtube_id || getYoutubeId(videoForActive.youtube_url||"")) : "";
   const ytIdFromNode = (() => { try { let c = activeNode?.content; if (typeof c === 'string') c = JSON.parse(c); return c?.youtubeId || c?.youtube_id || "" } catch { return "" } })();
   const ytId = ytIdFromVideos || ytIdFromNode || "";
-
   const startEdit = ()=>{ setEditText(getContent(activeNode)); setEditing(true); };
   const saveEdit = async()=>{
-    if(!activeNode) return;
-    setSaving(true);
-    const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    if(!activeNode) return; setSaving(true);
+    const url=process.env.NEXT_PUBLIC_SUPABASE_URL!; const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     try{
       const res = await fetch(`${url}/rest/v1/lesson_nodes?id=eq.${activeNode.id}`,{ method:"PATCH", headers:{ apikey:key, Authorization:`Bearer ${key}`, "Content-Type":"application/json", Prefer:"return=representation" }, body: JSON.stringify({ content: {...(typeof activeNode.content==='object'? activeNode.content:{}), body_markdown: editText }, body_markdown: editText }) });
       const data = await res.json();
       if(Array.isArray(data) && data.length>0){ setRows(prev=> prev.map(r=> r.id===activeNode.id? {...r, content:{...r.content, body_markdown: editText}, body_markdown: editText} : r)); setEditing(false); alert("Saved!"); }else{ alert("Save blocked: "+JSON.stringify(data)); }
-    }catch(e:any){ alert("Error: "+e.message); }
-    setSaving(false);
-  };
-
-  const NODE_ORDER = ["A","B","C","D","E"];
-  const nodeIdx = NODE_ORDER.indexOf(active);
-  const prevNodeId = nodeIdx>0? NODE_ORDER[nodeIdx-1] : null;
-  const nextNodeId = nodeIdx < NODE_ORDER.length-1? NODE_ORDER[nodeIdx+1] : null;
-
-  let sidNorm = (subjectId||"").toLowerCase(); if(sidNorm==="physical-science") sidNorm="physical-sciences";
-  const subjData = (SUBJECTS_DATA as any)[sidNorm];
-  const unitsList = subjData?.sections?.flatMap((s:any)=>s.units) || [];
-  const curUnit = unitsList.find((u:any)=>u.id===unitId);
-  const topicsList = curUnit?.topics || [];
-  const tIdx = topicsList.findIndex((t:any)=>t.id===topicId);
-  const nextTopic = tIdx>=0 && tIdx < topicsList.length-1? topicsList[tIdx+1] : null;
-  const prevTopic = tIdx>0? topicsList[tIdx-1] : null;
-
-  const handleFinish = ()=>{
-    try{
-      const progKey = `${sidNorm}_${unitId}_${topicId}`;
-      const saved = localStorage.getItem("matric360_progress");
-      const arr = saved? JSON.parse(saved):[];
-      const set = new Set(arr); set.add(progKey);
-      localStorage.setItem("matric360_progress", JSON.stringify([...set]));
-    }catch{}
+    }catch(e:any){ alert("Error: "+e.message); } setSaving(false);
   };
 
   return(
-    <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:150}}>
+    <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:100}}>
       <div style={{padding:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:"14px",textDecoration:"none"}}>← Back</Link>
           {isAdmin? <span style={{fontSize:"10px",background:"#00ff88",color:"#000",padding:"4px 8px",borderRadius:"8px",fontWeight:800}}>ADMIN</span> : null}
         </div>
         <h1 style={{fontSize:"26px",fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
-        {isAdmin && <div style={{fontSize:"12px",color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES {videos.length>0? `• 🎥 VIDEO INCLUDED (${videos.length})`:"• No video yet"}</div>}
+        <div style={{fontSize:"12px",color:rows.length?"#00ff88":"#ff6b35"}}>🔒 {rows.length} NODES {videos.length>0? `• 🎥 VIDEO INCLUDED (${videos.length})`:"• No video yet"}</div>
       </div>
       <div style={{display:"flex",gap:"8px",overflowX:"auto",padding:"0 12px 16px"}}>
         {Object.keys(META).map(k=><button key={k} onClick={()=>{setActive(k); setEditing(false);}} style={{flexShrink:0,padding:"10px 18px",borderRadius:"24px",border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
@@ -221,45 +158,21 @@ export default function Page(){
           <div style={{background:"#000",borderRadius:"24px",overflow:"hidden",aspectRatio:"16/9",border:"1px solid #252a44"}}>
             <iframe width="100%" height="100%" src={`https://www.youtube-nocookie.com/embed/${ytId}?vq=hd1080&modestbranding=1&rel=0`} title={videoForActive?.title || clean} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen style={{width:"100%",height:"100%",border:0}} />
           </div>
-          <div style={{fontSize:"10px",color:"#6b7280",marginTop:"8px"}}>Content is licensed to your Matric360 account. Sharing prohibited.</div>
-          {videoForActive?.title && <div style={{fontSize:"12px",color:"#9ca3af",marginTop:"6px"}}>🎥 {videoForActive.title}</div>}
         </div>
       )}
-      <div style={{margin:"0 12px",background:"#1a1c2e",borderRadius:"24px",border:"1px solid #252a44",overflow:"hidden"}}>
+      <div style={{margin:"0 12px",background:"#1a1c2e",borderRadius:"24px",border:"1px solid #252a44"}}>
         <div style={{padding:"16px",borderBottom:"1px solid #252a44",display:"flex",gap:"12px",alignItems:"center",justifyContent:"space-between"}}>
           <div style={{display:"flex",gap:"12px",alignItems:"center"}}>
             <div style={{width:"44px",height:"44px",borderRadius:"12px",background:meta?.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{meta?.icon}</div>
-            <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:"11px",color:"#6b7280"}}>{activeNode?.node_type}</div></div>
+            <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:"11px",color:"#6b7280"}}>{activeNode?.node_type} • {videos.length} videos linked</div></div>
           </div>
           {isAdmin &&!editing && <button onClick={startEdit} style={{background:"#ff6b35",color:"#fff",border:"none",padding:"8px 14px",borderRadius:"12px",fontWeight:700,fontSize:"12px"}}>Quick Edit</button>}
         </div>
-        <div style={{padding:"20px",minHeight:"250px",maxWidth:"100%",overflow:"hidden"}}>
+        <div style={{padding:"20px",minHeight:"250px"}}>
           {!editing? ( activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean}...</div> ) : (
-            <div>
-              <textarea value={editText} onChange={e=>setEditText(e.target.value)} style={{width:"100%",minHeight:"320px",background:"#0e0f1a",color:"#e5e7eb",border:"1px solid #ff6b35",borderRadius:"12px",padding:"12px",fontSize:"14px",fontFamily:"monospace"}} />
-              <div style={{display:"flex",gap:"8px",marginTop:"12px"}}>
-                <button onClick={saveEdit} disabled={saving} style={{flex:1,background:saving?"#555":"#00ff88",color:"#000",border:"none",padding:"12px",borderRadius:"12px",fontWeight:800}}>{saving? "Saving...":"Save"}</button>
-                <button onClick={()=>setEditing(false)} style={{flex:1,background:"#252a44",color:"#fff",border:"none",padding:"12px",borderRadius:"12px"}}>Cancel</button>
-              </div>
-            </div>
+            <div><textarea value={editText} onChange={e=>setEditText(e.target.value)} style={{width:"100%",minHeight:"320px",background:"#0e0f1a",color:"#e5e7eb",border:"1px solid #ff6b35",borderRadius:"12px",padding:"12px",fontSize:"14px",fontFamily:"monospace"}} /><div style={{display:"flex",gap:"8px",marginTop:"12px"}}><button onClick={saveEdit} disabled={saving} style={{flex:1,background:saving?"#555":"#00ff88",color:"#000",border:"none",padding:"12px",borderRadius:"12px",fontWeight:800}}>{saving? "Saving...":"Save"}</button><button onClick={()=>setEditing(false)} style={{flex:1,background:"#252a44",color:"#fff",border:"none",padding:"12px",borderRadius:"12px"}}>Cancel</button></div></div>
           )}
         </div>
-      </div>
-
-      <div style={{position:"fixed",bottom:72,left:0,right:0,zIndex:80,background:"rgba(14,15,26,0.98)",borderTop:"1px solid #1f223a",padding:"12px",display:"flex",gap:10}}>
-        {prevNodeId? (
-          <button onClick={()=>{setActive(prevNodeId); window.scrollTo(0,0);}} style={{flex:1,background:"#1a1c2e",border:"1px solid #2a2d4a",padding:"14px",borderRadius:16,color:"#9aa0b6",fontWeight:700,fontSize:13}}>← {META[prevNodeId]?.label}</button>
-        ) : prevTopic? (
-          <Link href={`/subjects/${subjectId}/${unitId}/${prevTopic.id}`} style={{flex:1,textDecoration:"none",background:"#1a1c2e",border:"1px solid #2a2d4a",padding:"14px",borderRadius:16,color:"#9aa0b6",textAlign:"center",fontWeight:700,fontSize:13}}>← {prevTopic.title?.slice(0,20)}</Link>
-        ) : <div style={{flex:1}}/>}
-
-        {nextNodeId? (
-          <button onClick={()=>{setActive(nextNodeId); window.scrollTo(0,0);}} style={{flex:1,background:"#3a5bff",border:"none",padding:"14px",borderRadius:16,color:"#fff",fontWeight:800,fontSize:13}}>{META[nextNodeId]?.label} →</button>
-        ) : nextTopic? (
-          <Link href={`/subjects/${subjectId}/${unitId}/${nextTopic.id}`} onClick={handleFinish} style={{flex:1,textDecoration:"none",background:"#0f2a1e",border:"1px solid #14532d",padding:"14px",borderRadius:16,color:"#4ade80",textAlign:"center",fontWeight:800,fontSize:13}}>Finish ✓ → {nextTopic.title?.slice(0,15)}</Link>
-        ) : (
-          <Link href={`/subjects/${subjectId}/${unitId}`} onClick={handleFinish} style={{flex:1,textDecoration:"none",background:"#0f2a1e",border:"1px solid #14532d",padding:"14px",borderRadius:16,color:"#4ade80",textAlign:"center",fontWeight:800,fontSize:13}}>Finish Unit ✓</Link>
-        )}
       </div>
     </div>
   )
