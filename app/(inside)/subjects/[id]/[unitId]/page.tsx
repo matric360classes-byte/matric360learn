@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { SUBJECTS_DATA } from "../../../../../lib/subjects";
+import { useState, useEffect } from "react";
+import { SUBJECTS_DATA } from "../../../../lib/subjects";
 
 const norm = (s:string)=> (s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
 
@@ -21,10 +21,30 @@ export default function UnitPage(){
   (async()=>{
     const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const headers:any={apikey:key,Authorization:`Bearer ${key}`};
     const subjNorm=sid.toLowerCase().includes('math')?'mathematics':'physical-sciences';
-    const res=await fetch(`${url}/rest/v1/videos?select=caps_code,topic,subject&subject=eq.${subjNorm}&limit=500`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-    const data:any=await res.json();
-    setVideos(Array.isArray(data)? data:[]);
+    let res=await fetch(`${url}/rest/v1/videos?select=caps_code,topic,lesson_node_id,subject&limit=500`,{headers});
+    let data:any=await res.json();
+    if(!Array.isArray(data)) data=[];
+    let filtered=data.filter((v:any)=> (v.subject||"").toLowerCase().includes(subjNorm.split('-')[0]) || !v.subject);
+    const nodeIds=filtered.filter((v:any)=> !v.caps_code && !v.topic && v.lesson_node_id).map((v:any)=>v.lesson_node_id);
+    if(nodeIds.length){
+      const inList=nodeIds.map((id:string)=>`"${id}"`).join(',');
+      const resNodes=await fetch(`${url}/rest/v1/lesson_nodes?select=id,caps_topic_id&id=in.(${inList})`,{headers});
+      const nodes:any=await resNodes.json();
+      if(Array.isArray(nodes)){
+        const capsIds=[...new Set(nodes.map((n:any)=>n.caps_topic_id).filter(Boolean))] as string[];
+        if(capsIds.length){
+          const capsIn=capsIds.map((id:string)=>`"${id}"`).join(',');
+          const resKb=await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,caps_code&id=in.(${capsIn})`,{headers});
+          const kbs:any=await resKb.json();
+          const kbMap=new Map((kbs||[]).map((k:any)=>[k.id,k.caps_code]));
+          const nodeMap=new Map(nodes.map((n:any)=>[n.id,kbMap.get(n.caps_topic_id)]));
+          filtered=filtered.map((v:any)=>{ if(!v.caps_code && !v.topic && v.lesson_node_id && nodeMap.get(v.lesson_node_id)){ return {...v, caps_code: nodeMap.get(v.lesson_node_id)}; } return v; });
+        }
+      }
+    }
+    setVideos(filtered);
   })();
  },[sid]);
 
@@ -32,20 +52,20 @@ export default function UnitPage(){
   const nTopic=norm(t.id);
   const nTitle=norm(t.title);
   const nUnit=norm(uid);
+  if(!videos.length) return false;
   return videos.some(v=>{
     const caps=norm(v.caps_code||"");
     const top=norm(v.topic||"");
     const combined=caps+top;
     if(!combined) return false;
     if(nUnit.includes('doppler') && !combined.includes('doppler')) return false;
-    if(nUnit.includes('projectile') && !combined.includes('projectile') && !combined.includes('equationsmotion') && !combined.includes('graphsmotion')) return false;
-    if(nUnit.includes('numberpatterns') && !(combined.includes('arithmetic')||combined.includes('geometric')||combined.includes('sequence')||combined.includes('series'))) return false;
-    let score=0;
-    if(caps===nTopic || top===nTopic) score=100;
-    else if(combined.includes(nTopic) || nTopic.includes(combined)) score=90;
-    else if(nTitle.includes(caps) || nTitle.includes(top)) score=80;
-    else if(caps && nTopic.slice(0,4)===caps.slice(0,4)) score=60;
-    return score>=60;
+    if(nUnit.includes('projectile') && !combined.includes('equationsmotion') && !combined.includes('graphsmotion')) return false;
+    if(caps===nTopic || top===nTopic) return true;
+    if(combined.includes(nTopic) || nTopic.includes(combined)) return true;
+    if(nTitle.includes(caps) && caps.length>4) return true;
+    if(nTitle.includes(top) && top.length>4) return true;
+    if(nTopic.slice(0,4)===combined.slice(0,4)) return true;
+    return false;
   });
  };
 
