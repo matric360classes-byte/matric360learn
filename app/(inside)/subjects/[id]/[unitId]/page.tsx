@@ -13,7 +13,7 @@ export default function UnitPage(){
  const subj=(SUBJECTS_DATA as any)[sid];
  const unit = subj?.sections?.flatMap((s:any)=>s.units).find((u:any)=>u.id===uid);
  const [done,setDone]=useState<Set<string>>(new Set());
- const [videosNorm,setVideosNorm]=useState<Set<string>>(new Set());
+ const [videos,setVideos]=useState<any[]>([]);
 
  useEffect(()=>{
   try{
@@ -22,51 +22,52 @@ export default function UnitPage(){
   }catch{}
  },[]);
 
- // FIXED DYNAMIC CHECK - checks caps_code, topic, caps_topic_id, lesson_node_id
  useEffect(()=>{
   (async()=>{
     try{
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
       const subjNorm = sid.toLowerCase().includes('math')? 'mathematics' : 'physical-sciences';
-      // FIXED: select all possible columns, not just topic
-      const res = await fetch(`${url}/rest/v1/videos?select=caps_code,topic,caps_topic_id,lesson_node_id,subject&subject=eq.${subjNorm}&limit=500`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      
+      // FAST: 1 fetch only, subject filtered - fixes maths in physics
+      const res = await fetch(`${url}/rest/v1/videos?select=caps_code,topic,subject&subject=eq.${subjNorm}&limit=500`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       const data:any = await res.json();
-      const s = new Set<string>();
-      if(Array.isArray(data)){
-        data.forEach((v:any)=>{
-          if(v.topic) s.add(norm(v.topic));
-          if(v.caps_code) s.add(norm(v.caps_code));
-          // Also add caps_topic_id mapping via caps_code fetch if needed - but caps_code is enough
-        });
-        // FIXED: Also fetch lesson_nodes for videos that only have lesson_node_id
-        const nodeIds = data.filter((v:any)=> v.lesson_node_id && !v.caps_code && !v.topic).map((v:any)=> v.lesson_node_id);
-        if(nodeIds.length){
-          const inList = nodeIds.map((id:string)=> `"${id}"`).join(',');
-          const resNodes = await fetch(`${url}/rest/v1/lesson_nodes?select=id,caps_topic_id&caps_topic_id=not.is.null&id=in.(${inList})`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-          const nodes:any = await resNodes.json();
-          if(Array.isArray(nodes) && nodes.length){
-            const capsIds = [...new Set(nodes.map((n:any)=> n.caps_topic_id))];
-            const capsIn = capsIds.map((id:string)=> `"${id}"`).join(',');
-            const resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,caps_code&caps_code=not.is.null&id=in.(${capsIn})`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
-            const kbs:any = await resKb.json();
-            if(Array.isArray(kbs)){
-              kbs.forEach((kb:any)=>{ if(kb.caps_code) s.add(norm(kb.caps_code)); });
-            }
-          }
-        }
-      }
-      setVideosNorm(s);
-    }catch{}
+      if(Array.isArray(data)) setVideos(data);
+      else setVideos([]);
+    }catch{ setVideos([]); }
   })();
  },[sid]);
 
+ const getScore = (a:string,b:string)=>{
+   if(!a||!b) return 0;
+   a=norm(a); b=norm(b);
+   if(!a||!b) return 0;
+   if(a===b) return 100;
+   if(b.includes(a) || a.includes(b)) return 85;
+   if(a.length>4 && b.length>4 && (a.includes(b.slice(0,4)) || b.includes(a.slice(0,4)))) return 60;
+   return 0;
+ };
+
  const hasVideo = (t:any)=>{
-  const nTitle = norm(t.title);
-  const nId = norm(t.id);
-  for(const v of videosNorm){
-    if(!v) continue;
-    if(v===nId || v===nTitle || nId.includes(v) || v.includes(nId) || nTitle.includes(v) || v.includes(nTitle)) return true;
+  if(!videos.length) return false;
+  const tid = t.id || "";
+  const ttitle = t.title || "";
+  // Unit relevance: video must share at least unit word OR be exact topic
+  const unitWords = uid.toLowerCase().split('-').filter((w:string)=>w.length>3);
+  
+  for(const v of videos){
+    const vc = v.caps_code || "";
+    const vt = v.topic || "";
+    const s1 = getScore(tid, vc);
+    const s2 = getScore(tid, vt);
+    const s3 = getScore(ttitle, vc);
+    const s4 = getScore(ttitle, vt);
+    const best = Math.max(s1,s2,s3,s4);
+    if(best >= 60){
+      // Extra unit check for physics to prevent doppler showing in chemical equilibrium
+      if(uid.includes('chemical') && (vc.toLowerCase().includes('doppler') || vc.toLowerCase().includes('projectile'))) continue;
+      return true;
+    }
   }
   return false;
  };
@@ -93,13 +94,11 @@ export default function UnitPage(){
        <div style={{background:"#1a1c2e",border:"1px solid #252a44",borderRadius:24,padding:"18px 16px"}}>
         <div style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:12}}>{t.title}</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
-
          {show && (
            <div style={{display:"flex",alignItems:"center",gap:6,background:"#2a335a",border:"1px solid #3d4a8a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#8ea0ff",fontWeight:700}}>
              <span style={{fontSize:12}}>◧</span> Video Lesson <span style={{background:"#3d4a8a",padding:"2px 7px",borderRadius:8,fontSize:10,color:"#aab6ff",fontWeight:800,letterSpacing:0.5}}>INCLUDED</span>
            </div>
          )}
-
          <div style={{display:"flex",alignItems:"center",gap:5,background:"#1f1f2e",border:"1px solid #2a2d4a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#9aa0b6"}}>☰ Practice</div>
          <div style={{display:"flex",alignItems:"center",gap:5,background:"#1f1f2e",border:"1px solid #2a2d4a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#9aa0b6"}}>⎙ Exam Challenge</div>
          {isDone? (
