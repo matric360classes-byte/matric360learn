@@ -91,7 +91,6 @@ export default function Page(){
     setRows(mapped);
 
     try {
-      // --- FUZZY CLOSEST NAME LOGIC (your request) - names don't need to be exact ---
       const getScore = (target:string, candidate:string) => {
         if(!target || !candidate) return 0;
         const t = target.toLowerCase().replace(/[-_]/g,' ').replace(/[^a-z0-9 ]/g,'').split(/\s+/).filter(Boolean);
@@ -108,12 +107,11 @@ export default function Page(){
       const targetSlug = kb.caps_code || cleanTopic || cleanTopicRaw;
       const targetTopic = kb.topic || cleanTopic;
 
-      // 1. Fetch ALL videos for this subject (200 limit covers your 82)
-      let allRes = await fetch(`${url}/rest/v1/videos?select=*&subject=eq.${subjNorm}&limit=200`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+      // FIXED: NO subject filter - fetch ALL videos so closest-name can work
+      let allRes = await fetch(`${url}/rest/v1/videos?select=*&limit=500`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       let all:any = await allRes.json();
       if(!Array.isArray(all)) all = [];
 
-      // 2. Score every video for closest similar name
       const scored = all.map((v:any)=>{
         const s1 = getScore(targetSlug, v.caps_code || '');
         const s2 = getScore(targetSlug, v.topic || '');
@@ -124,7 +122,6 @@ export default function Page(){
         return {...v, _score: Math.max(s1,s2,s3,s4,s5,s6)};
       }).filter((v:any)=> v._score >= 30).sort((a:any,b:any)=> b._score - a._score);
 
-      // 3. Direct links (always include)
       let direct:any[] = [];
       let r1 = await fetch(`${url}/rest/v1/videos?select=*&caps_code=eq.${cleanTopic}`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
       let d1:any = await r1.json(); if(Array.isArray(d1)) direct=[...direct,...d1];
