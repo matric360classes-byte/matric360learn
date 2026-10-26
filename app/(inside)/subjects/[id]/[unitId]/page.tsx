@@ -89,6 +89,7 @@ export default function UnitPage(){
         <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
          {show && <div style={{background:"#2a335a",border:"1px solid #3d4a8a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#8ea0ff",fontWeight:700}}>◧ Video Lesson INCLUDED</div>}
          <div style={{background:"#1f1f2e",border:"1px solid #2a2d4a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#9aa0b6"}}>☰ Practice</div>
+         <div style={{background:"#1f1f2e",border:"1px solid #2a2d4a",padding:"5px 10px",borderRadius:20,fontSize:12,color:"#9aa0b6"}}>⎙ Exam Challenge</div>
          <div style={{background:done.has(tid)?"#0f2a1e":"#1f1f2e",border:"1px solid #252a44",padding:"5px 10px",borderRadius:20,fontSize:12,color:done.has(tid)?"#4ade80":"#6b7280"}}>{done.has(tid)?"✔ Completed":"○ Not started"}</div>
         </div>
        </div>
