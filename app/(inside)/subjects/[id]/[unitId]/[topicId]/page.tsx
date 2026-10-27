@@ -50,11 +50,11 @@ export default function Page(){
     const nTopic=norm(cleanTopicRaw);
     const nUnit=norm(cleanUnitRaw);
 
-    let resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,caps_code&caps_code=eq.${cleanTopicRaw}&limit=1`,{headers});
+    let resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,caps_code,topic&caps_code=eq.${cleanTopicRaw}&limit=1`,{headers});
     let kbArr:any = await resKb.json();
     if(!Array.isArray(kbArr)||kbArr.length===0){
       const kw=cleanTopicRaw.split('-')[0];
-      resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,caps_code&subject=eq.${subjNorm}&topic=ilike.%${kw}%&limit=1`,{headers});
+      resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,caps_code,topic&subject=eq.${subjNorm}&topic=ilike.%${kw}%&limit=1`,{headers});
       kbArr = await resKb.json();
     }
     if(Array.isArray(kbArr)&&kbArr.length>0){
@@ -71,7 +71,12 @@ export default function Page(){
     let allRes = await fetch(`${url}/rest/v1/videos?select=*&limit=500`,{headers});
     let all:any = await allRes.json();
     if(!Array.isArray(all)) all=[];
-    all = all.filter((v:any)=> (v.subject||"").toLowerCase().includes(subjNorm.split('-')[0]) || !v.subject);
+    // Keep all videos that match subject OR have no subject OR match unit/subtopic we added
+    all = all.filter((v:any)=> {
+      const subjMatch = (v.subject||"").toLowerCase().includes(subjNorm.split('-')[0]) || !v.subject;
+      const hasUnit = !!(v.unit || v.subtopic);
+      return subjMatch || hasUnit;
+    });
 
     // FIX 2: Resolve lesson_node_id -> caps_code
     const nodeIds=all.filter((v:any)=> !v.caps_code && !v.topic && v.lesson_node_id).map((v:any)=>v.lesson_node_id);
@@ -92,29 +97,56 @@ export default function Page(){
       }
     }
 
+    // === NEW FORCE FIX - SEARCH BY UNIT + SUBTOPIC (how you added them) ===
     const filtered = all.filter((v:any)=>{
-      const combined=norm((v.caps_code||"")+(v.topic||""));
+      const caps=norm(v.caps_code||"");
+      const top=norm(v.topic||"");
+      const unit=norm(v.unit||"");
+      const sub=norm(v.subtopic||"");
+      const combined=caps+top+unit+sub;
       if(!combined) return false;
-      if(nUnit.includes('doppler') && !combined.includes('doppler')) return false;
-      if(nUnit.includes('projectile') && !combined.includes('projectile') && !combined.includes('equationsmotion') && !combined.includes('graphsmotion')) return false;
+      // Keep Doppler / Projectile logic but include unit/subtopic
+      if(nUnit.includes('doppler') && !(combined.includes('doppler'))) return false;
+      if(nUnit.includes('projectile') && !combined.includes('projectile') && !combined.includes('equationsmotion') && !combined.includes('graphsmotion') && !unit.includes('projectile') && !sub.includes('projectile')) return false;
       return true;
     });
 
     const scored = filtered.map((v:any)=>{
       const caps=norm(v.caps_code||"");
       const top=norm(v.topic||"");
-      const combined=caps+top;
+      const unit=norm(v.unit||"");
+      const sub=norm(v.subtopic||"");
+      const combined=caps+top+unit+sub;
       let score=0;
-      if(caps===nTopic || top===nTopic) score=100;
+      // Exact matches on new columns get 100
+      if(caps===nTopic || top===nTopic || unit===nTopic || sub===nTopic) score=100;
+      else if(unit===nUnit || sub===nTopic) score=100;
       else if(combined.includes(nTopic) || nTopic.includes(combined)) score=90;
-      else if(nTopic.includes(caps) || nTopic.includes(top)) score=80;
+      else if(nTopic.includes(caps) || nTopic.includes(top) || nTopic.includes(unit) || nTopic.includes(sub)) score=85;
+      else if(caps.includes(nTopic) || top.includes(nTopic) || unit.includes(nTopic) || sub.includes(nTopic)) score=85;
+      else if(nUnit && (unit.includes(nUnit) || sub.includes(nUnit) || combined.includes(nUnit))) score=80;
       else if(caps.slice(0,4)===nTopic.slice(0,4) && caps.length>3) score=60;
+      else if(unit.slice(0,4)===nUnit.slice(0,4) && unit.length>3) score=60;
       return {...v, _score:score};
-    }).filter((v:any)=>v._score>=50).sort((a:any,b:any)=>b._score-a._score);
+    }).filter((v:any)=>v._score>=40).sort((a:any,b:any)=>b._score-a._score);
 
     const uniq=new Map(); scored.forEach((v:any)=>{ if(!uniq.has(v.id)) uniq.set(v.id,v); });
-    setVideos([...uniq.values()].slice(0,1));
-  })()},[topicId,subjectId]);
+    let finalVids = [...uniq.values()];
+    
+    // FALLBACK: If still 0, directly search by unit + subtopic ilike topicId
+    if(finalVids.length===0){
+      try{
+        const rUnit = await fetch(`${url}/rest/v1/videos?select=*&unit=ilike.%${cleanUnitRaw}%&limit=10`,{headers});
+        const dUnit:any = await rUnit.json();
+        if(Array.isArray(dUnit) && dUnit.length) finalVids = [...finalVids, ...dUnit];
+        const rSub = await fetch(`${url}/rest/v1/videos?select=*&subtopic=ilike.%${cleanTopicRaw}%&limit=10`,{headers});
+        const dSub:any = await rSub.json();
+        if(Array.isArray(dSub) && dSub.length) finalVids = [...finalVids, ...dSub];
+      }catch{}
+    }
+
+    setVideos(finalVids.slice(0,1));
+  })()},[topicId,subjectId,unitId]);
 
   const clean = decodeURIComponent(topicId||"").replace(/-/g," ");
   const activeNode = rows.find((r:any)=>r.node_label===active) || rows[0];
@@ -127,6 +159,7 @@ export default function Page(){
       <div style={{padding:16}}>
         <Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:"14px",textDecoration:"none"}}>← Back</Link>
         <h1 style={{fontSize:"26px",fontWeight:900,margin:"8px 0",textTransform:"capitalize"}}>{clean}</h1>
+        <div style={{fontSize:"10px",color:"#444"}}>DEBUG: unit:{unitId} topic:{topicId} vids:{videos.length} {videos[0]?.unit} / {videos[0]?.subtopic} / {videos[0]?.caps_code} score:{videos[0]?._score} yt:{ytId ? 'yes' : 'no'}</div>
       </div>
       <div style={{display:"flex",gap:"8px",overflowX:"auto",padding:"0 12px 16px"}}>
         {Object.keys(META).map(k=><button key={k} onClick={()=>setActive(k)} style={{flexShrink:0,padding:"10px 18px",borderRadius:"24px",border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500}}>{META[k].icon} {k}</button>)}
@@ -138,10 +171,11 @@ export default function Page(){
           </div>
         </div>
       )}
+      {!ytId && videos.length>0 && <div style={{margin:"0 12px 12px",padding:12,background:"#331111",borderRadius:12,fontSize:12}}>Video found but no youtube_id: {videos[0]?.title} - {videos[0]?.youtube_url}</div>}
       <div style={{margin:"0 12px",background:"#1a1c2e",borderRadius:"24px",border:"1px solid #252a44"}}>
         <div style={{padding:"16px",borderBottom:"1px solid #252a44",display:"flex",gap:"12px",alignItems:"center"}}>
           <div style={{width:"44px",height:"44px",borderRadius:"12px",background:meta?.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{meta?.icon}</div>
-          <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div></div>
+          <div><div style={{fontWeight:800}}>Node {active} • {meta?.label}</div><div style={{fontSize:12,color:"#6b7280"}}>{videos.length>0 ? `🎥 INCLUDED: ${videos[0]?.unit} / ${videos[0]?.subtopic}` : 'No video'}</div></div>
         </div>
         <div style={{padding:"20px",minHeight:"250px"}}>
           {activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888"}}>Loading {clean}...</div>}
