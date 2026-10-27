@@ -6,7 +6,7 @@ import katex from 'katex'
 
 function MathRenderer({ text }: { text: string }) {
   if (!text) return null
-  const regex = /(\\\[.*?\\\]|\\\(.*?\\\)|\$\$.*?\$\$|\$[^$]+?\$)/gs
+  const regex = /(\[.*?\]|\(.*?\)|\$\$.*?\$\$|\$[^$]+?\$)/gs
   const parts = text.split(regex)
   return <div dangerouslySetInnerHTML={{ __html: parts.map(p=>{
     if(!p) return ''
@@ -68,8 +68,10 @@ export default async function LearnPage({ params }: any) {
       const s1 = getScore(slug, v.caps_code || '')
       const s2 = getScore(slug, v.topic || '')
       const s3 = getScore(caps?.topic || '', v.topic || '')
-      return {...v, _score: Math.max(s1,s2,s3)}
-    }).filter((v:any)=> v._score >= 30).sort((a:any,b:any)=> b._score - a._score).slice(0,5)
+      const s4 = getScore(caps?.topic || '', v.unit || '')
+      const s5 = getScore(caps?.topic || '', v.subtopic || '')
+      return {...v, _score: Math.max(s1,s2,s3,s4,s5)}
+    }).filter((v:any)=> v._score >= 25).sort((a:any,b:any)=> b._score - a._score).slice(0,10)
     allVideos = [...allVideos, ...scored]
   }
 
@@ -91,6 +93,26 @@ export default async function LearnPage({ params }: any) {
     if (vids?.length) allVideos = [...allVideos, ...vids]
   }
 
+  // === NEW FORCE FIX - SEARCH BY HOW WE ADDED THEM (unit + subtopic + topic) ===
+  if (caps?.topic) {
+    const { data: vByUnit } = await supabase.from('videos').select('*').ilike('unit', `%${caps.topic}%`)
+    if (vByUnit?.length) allVideos = [...allVideos, ...vByUnit]
+    
+    const { data: vBySubtopic } = await supabase.from('videos').select('*').ilike('subtopic', `%${caps.topic}%`)
+    if (vBySubtopic?.length) allVideos = [...allVideos, ...vBySubtopic]
+
+    const { data: vByTopic } = await supabase.from('videos').select('*').ilike('topic', `%${caps.topic}%`)
+    if (vByTopic?.length) allVideos = [...allVideos, ...vByTopic]
+  }
+  // Also search by caps_code words in unit/subtopic
+  const words = slug.split('-').filter((w:string)=> w.length>3)
+  for (const w of words.slice(0,3)) {
+    const { data: vW1 } = await supabase.from('videos').select('*').ilike('unit', `%${w}%`)
+    if (vW1?.length) allVideos = [...allVideos, ...vW1]
+    const { data: vW2 } = await supabase.from('videos').select('*').ilike('subtopic', `%${w}%`)
+    if (vW2?.length) allVideos = [...allVideos, ...vW2]
+  }
+
   const map = new Map(allVideos.map((v:any)=>[v.id, v]))
   allVideos = Array.from(map.values()).sort((a:any,b:any)=> (b._score||0)-(a._score||0))
 
@@ -100,12 +122,12 @@ export default async function LearnPage({ params }: any) {
     videoId = linkedToB?.youtube_id || linkedToB?.youtubeId || allVideos[0]?.youtube_id || allVideos[0]?.youtubeId || videoId
   }
 
-  if (!nodes?.length) return <div style={{padding:20,background:'black',color:'white'}}>No nodes for {slug} - videosFound: {allVideos.length} closest: {allVideos[0]?.caps_code} ({allVideos[0]?._score}%)</div>
+  if (!nodes?.length) return <div style={{padding:20,background:'black',color:'white'}}>No nodes for {slug} - videosFound: {allVideos.length} closest: {allVideos[0]?.caps_code} ({allVideos[0]?._score}%) unit: {allVideos[0]?.unit} subtopic: {allVideos[0]?.subtopic}</div>
 
   return (
     <div style={{background:'#0a0a0a',minHeight:'100vh',color:'#d1d5db',padding:16}}>
       <div style={{background:'#111',padding:10,borderRadius:8,fontSize:11,marginBottom:16,border:'1px solid #333'}}>
-        Slug: {slug} - Videos found: {allVideos.length} {allVideos.length>0? `• 🎥 INCLUDED - ${allVideos[0]?.caps_code} (${allVideos[0]?._score}%)`: ''}
+        Slug: {slug} - Topic: {caps?.topic} - Videos found: {allVideos.length} {allVideos.length>0? `• 🎥 INCLUDED - ${allVideos[0]?.caps_code || allVideos[0]?.unit} / ${allVideos[0]?.subtopic || allVideos[0]?.topic} (${allVideos[0]?._score}%)`: ''} - youtube: {allVideos[0]?.youtube_id}
       </div>
       {videoId && <div style={{background:"#000",borderRadius:16,overflow:"hidden",border:"1px solid #00ff88",marginBottom:20}}><div style={{position:'relative',paddingBottom:'56.25%'}}><iframe style={{position:'absolute',inset:0,width:'100%',height:'100%'}} src={`https://www.youtube.com/embed/${videoId}`} allowFullScreen /></div></div>}
       {nodes.map((n:any)=>{
