@@ -10,10 +10,27 @@ const META:any = { A:{label:"Exam Hook", icon:"📌", color:"#ff6b35"}, B:{label
 const ORDER = ["A","B","C","D","E"];
 const TYPE_TO_LABEL:any = { EXAM_HOOK:"A", CONCEPT:"B", LEARN_THE_CONCEPT:"B", WORKED_EXAMPLE:"C", EXAMINER_TRAPS:"D", TRAPS:"D", EXAM_CHALLENGE:"E" };
 
+// --- ONLY ADDITION - CLEANER FOR HIGHLIGHTED STUFF ---
+function cleanNodeText(text:string){
+  if(!text) return "";
+  let t = text;
+  t = t.replace(/^\s*(Certainly|Sure)\s*!+\s*/gim, "");
+  t = t.replace(/Sure!\s*Here are five practice questions related to.*?by a memo with solutions\.?/gis, "");
+  t = t.replace(/Here are five practice questions.*?CAPS.*?solutions\.?/gis, "");
+  t = t.replace(/Below are (three|five) worked examples.*?complexity\.?/gis, "");
+  t = t.replace(/Feel free to adjust the questions or solutions as needed!?/gi, "");
+  t = t.replace(/^#{1,6}\s*/gm, "");
+  t = t.replace(/\s*#{1,6}\s*$/gm, "");
+  t = t.replace(/^\s*---+\s*$/gm, "");
+  t = t.replace(/\n{3,}/g, "\n\n");
+  return t.trim();
+}
+
 function MathRenderer({ text }: { text: string }) { 
   if (!text) return <div style={{color:"#888"}}>No content</div>; 
+  const cleaned = cleanNodeText(text); // ONLY CHANGE HERE - USE CLEANED TEXT
   const regex = /(\\\[.*?\\\]|\\\(.*?\\\)|\$\$.*?\$\$|\$[^$]+?\$)/gs; 
-  const parts = text.split(regex); 
+  const parts = cleaned.split(regex); 
   const html = parts.map(part=>{ 
     if(!part) return ''; 
     const isBlock = (part.startsWith('\\[')&&part.endsWith('\\]')) || (part.startsWith('$$')&&part.endsWith('$$')); 
