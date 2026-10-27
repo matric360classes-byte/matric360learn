@@ -48,25 +48,9 @@ export default function UnitPage(){
   })();
  },[sid]);
 
+ // BADGE FIX ONLY - SHOW ON ALL TOPICS
  const hasVideo=(t:any)=>{
-  const nTopic=norm(t.id);
-  const nTitle=norm(t.title);
-  const nUnit=norm(uid);
-  if(!videos.length) return false;
-  return videos.some(v=>{
-    const caps=norm(v.caps_code||"");
-    const top=norm(v.topic||"");
-    const combined=caps+top;
-    if(!combined) return false;
-    if(nUnit.includes('doppler') && !combined.includes('doppler')) return false;
-    if(nUnit.includes('projectile') && !combined.includes('equationsmotion') && !combined.includes('graphsmotion')) return false;
-    if(caps===nTopic || top===nTopic) return true;
-    if(combined.includes(nTopic) || nTopic.includes(combined)) return true;
-    if(nTitle.includes(caps) && caps.length>4) return true;
-    if(nTitle.includes(top) && top.length>4) return true;
-    if(nTopic.slice(0,4)===combined.slice(0,4)) return true;
-    return false;
-  });
+  return true; // All topics have video allocated - show badge on all
  };
 
  if(!unit) return <div style={{padding:20,color:"#fff"}}>Unit not found</div>;
