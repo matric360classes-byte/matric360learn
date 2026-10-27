@@ -1,9 +1,20 @@
-// FILE 1: subjects/[id]/page.tsx - SUBJECT PAGE (lists UNITS) - NO CHANGES NEEDED
+// FILE 1: subjects/[id]/page.tsx - SUBJECT PAGE (lists UNITS) - Unit 1 Hidden
 "use client";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { SUBJECTS_DATA } from "../../../../lib/subjects";
+
+// TOGGLE: set to false to bring Unit 1 back when videos are ready
+const HIDE_UNIT_1 = true;
+
+function isUnit1(unit:any, globalIndex:number){
+  // Hide by global index 1 (first unit) OR by id/title match
+  if(globalIndex === 1) return true;
+  if(unit.id === "unit-1") return true;
+  if(unit.title?.toLowerCase().includes("unit 1")) return true;
+  return false;
+}
 
 export default function SubjectPage(){
  const p=useParams() as any;
@@ -15,6 +26,9 @@ export default function SubjectPage(){
  let allUnits:any[]=[];
  sections.forEach((sec:any)=>{ sec.units?.forEach((u:any)=> allUnits.push({...u, sectionTitle: sec.title}))});
  const tabs=["All topics","In progress","Completed","Not started"];
+
+ // Filtered for display - Unit 1 hidden
+ const visibleAllUnits = HIDE_UNIT_1 ? allUnits.filter((u:any, i:number) => !isUnit1(u, i+1)) : allUnits;
 
  return(
   <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:100}}>
@@ -33,20 +47,23 @@ export default function SubjectPage(){
     <div style={{padding:"0 12px"}}>
      {sections.map((sec:any)=>{
       const isPhysics=sec.title.toLowerCase().includes("physics");
+      // Filter Unit 1 out of this section too
+      const visibleUnits = HIDE_UNIT_1 ? sec.units?.filter((u:any)=>{ const gIdx = allUnits.findIndex((au:any)=>au.id===u.id)+1; return !isUnit1(u, gIdx); }) : sec.units;
+      if(!visibleUnits || visibleUnits.length===0) return null;
       return(
        <div key={sec.title} style={{marginBottom:22}}>
         <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 4px"}}>
          <div style={{width:3,height:14,background:isPhysics?"#3b82f6":"#10b981",borderRadius:2}}/>
          <span style={{fontSize:11,fontWeight:900,letterSpacing:2,color:"#9aa0b6"}}>{sec.title.toUpperCase()}</span>
         </div>
-        {sec.units?.map((u:any)=>{ const globalIdx=allUnits.findIndex((au:any)=>au.id===u.id)+1; return <div key={u.id} style={{marginBottom:12}}><UnitCard unit={u} index={globalIdx} sid={sid}/></div>})}
+        {visibleUnits.map((u:any)=>{ const globalIdx=allUnits.findIndex((au:any)=>au.id===u.id)+1; return <div key={u.id} style={{marginBottom:12}}><UnitCard unit={u} index={globalIdx} sid={sid}/></div>})}
        </div>
       )
      })}
     </div>
    ) : (
     <div style={{padding:"0 12px",display:"flex",flexDirection:"column",gap:14}}>
-     {allUnits.map((u:any,idx:number)=> <UnitCard key={u.id} unit={u} index={idx+1} sid={sid}/>)}
+     {visibleAllUnits.map((u:any,idx:number)=> <UnitCard key={u.id} unit={u} index={allUnits.findIndex((au:any)=>au.id===u.id)+1} sid={sid}/>)}
     </div>
    )}
   </div>
