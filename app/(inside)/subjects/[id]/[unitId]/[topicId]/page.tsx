@@ -46,7 +46,6 @@ export default function Page(){
     const topicKeyword = topicSlug.replace(/-/g," ").toLowerCase();
     const unitKeyword = unitSlug.replace(/-/g," ").toLowerCase();
 
-    // KB
     let resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id&caps_code=eq.${topicSlug.toLowerCase()}&limit=1`,{headers}); 
     let kbArr:any = await resKb.json().catch(()=>[]);
     if(!Array.isArray(kbArr)||kbArr.length===0){
@@ -62,7 +61,7 @@ export default function Page(){
       }
     }
 
-    // VIDEO ALLOCATION - LOCKED - DO NOT CHANGE
+    // VIDEO ALLOCATION - LOCKED AS IN YOUR SCREENSHOT (Buffers working)
     let currentIdx=0;
     const subj = (SUBJECTS_DATA as any)[subjectId==="physical-science"?"physical-sciences":subjectId];
     if(subj?.sections){
@@ -94,21 +93,12 @@ export default function Page(){
   return(
     <div style={{background:"#0e0f1a",minHeight:"100vh",color:"#fff",paddingBottom:20}}>
       <div style={{padding:"12px 16px 8px"}}><Link href={`/subjects/${subjectId}/${unitId}`} style={{color:"#6b7280",fontSize:14,textDecoration:"none"}}>← Back</Link><h1 style={{fontSize:26,fontWeight:900,margin:"8px 0 0",textTransform:"capitalize"}}>{clean}</h1></div>
-      
       <div style={{display:"flex",gap:8,overflowX:"auto",padding:"0 12px 12px"}}>{Object.keys(META).map(k=><button key={k} onClick={()=>setActive(k)} style={{flexShrink:0,padding:"8px 16px",borderRadius:24,border:"1px solid #252a44",background:active===k?"#fff":"#1a1c2e",color:active===k?"#000":"#9ca3af",fontWeight:active===k?700:500,fontSize:13}}>{META[k].icon} {k}</button>)}</div>
-      
       {ytId ? (<div style={{margin:"0 12px 12px"}}><div style={{background:"#000",borderRadius:20,overflow:"hidden",aspectRatio:"16/9",border:"1px solid #252a44"}}><iframe width="100%" height="100%" src={`https://www.youtube-nocookie.com/embed/${ytId}`} frameBorder="0" allowFullScreen style={{width:"100%",height:"100%",border:0}} /></div></div>) : null}
-
       <div style={{margin:"0 12px",background:"#1a1c2e",borderRadius:20,border:"1px solid #252a44"}}><div style={{padding:14,borderBottom:"1px solid #252a44",display:"flex",gap:12,alignItems:"center"}}><div style={{width:40,height:40,borderRadius:10,background:meta?.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{meta?.icon}</div><div><div style={{fontWeight:800,fontSize:14}}>Node {active} • {meta?.label}</div></div></div><div style={{padding:16}}>{activeNode? <MathRenderer text={getContent(activeNode)} /> : <div style={{color:"#888",fontSize:14}}>Loading...</div>}</div></div>
-
-      {/* BACK / NEXT / FINISH - REDUCED SPACE */}
       <div style={{margin:"16px 12px 0",display:"flex",gap:10}}>
         {prevTopic ? (<button onClick={()=>router.push(`/subjects/${subjectId}/${unitId}/${prevTopic.id}`)} style={{flex:1,padding:"14px",borderRadius:14,border:"1px solid #252a44",background:"#1a1c2e",color:"#fff",fontWeight:600}}>← Previous</button>) : <div style={{flex:1}}/>}
-        {isLast ? (
-          <button onClick={()=>router.push(`/subjects/${subjectId}/${unitId}`)} style={{flex:1,padding:"14px",borderRadius:14,border:"none",background:"#10b981",color:"#000",fontWeight:800}}>Finish Topic ✓</button>
-        ) : nextTopic ? (
-          <button onClick={()=>router.push(`/subjects/${subjectId}/${unitId}/${nextTopic.id}`)} style={{flex:1,padding:"14px",borderRadius:14,border:"none",background:"#fff",color:"#000",fontWeight:700}}>Next →</button>
-        ) : null}
+        {isLast ? (<button onClick={()=>router.push(`/subjects/${subjectId}/${unitId}`)} style={{flex:1,padding:"14px",borderRadius:14,border:"none",background:"#10b981",color:"#000",fontWeight:800}}>Finish Topic ✓</button>) : nextTopic ? (<button onClick={()=>router.push(`/subjects/${subjectId}/${unitId}/${nextTopic.id}`)} style={{flex:1,padding:"14px",borderRadius:14,border:"none",background:"#fff",color:"#000",fontWeight:700}}>Next →</button>) : null}
       </div>
     </div>
   )
