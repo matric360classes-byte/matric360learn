@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
-import { SUBJECTS_DATA } from "../../../../lib/subjects";
+import { SUBJECTS_DATA } from "../../../../../../lib/subjects";
 
 const META:any = {
   A:{label:"Exam Hook", icon:"📌", color:"#ff6b35"},
@@ -61,21 +61,11 @@ export default function Page(){
           break;
         }
       }
-    } else if(subj?.units){
-      const u = subj.units?.find((x:any)=> x.id===unitId);
-      if(u){
-        exactUnitTitle = u.title;
-        const t = u.topics?.find((x:any)=> x.id===topicId);
-        if(t) exactTopicTitle = t.title;
-      }
     }
-    // For mathematics structure
     if(!exactUnitTitle){
-      // Search in allUnits
       const allUnits:any[] = [];
       subj?.sections?.forEach((sec:any)=> sec.units?.forEach((u:any)=> allUnits.push(u)));
       if(subj?.units) allUnits.push(...subj.units);
-      // also check SUBJECTS_DATA directly
       const found = allUnits.find((u:any)=> u.id===unitId);
       if(found){
         exactUnitTitle = found.title;
@@ -87,7 +77,7 @@ export default function Page(){
     const cleanTopicRaw = decodeURIComponent(topicId||"").toLowerCase().trim();
     const subjNorm = sid.toLowerCase().includes('math')? 'mathematics' : 'physical-sciences';
 
-    // Fetch nodes as before
+    // Fetch nodes
     let resKb = await fetch(`${url}/rest/v1/caps_knowledge_base?select=id,caps_code&caps_code=eq.${cleanTopicRaw}&limit=1`,{headers});
     let kbArr:any = await resKb.json();
     if(!Array.isArray(kbArr)||kbArr.length===0){
@@ -105,17 +95,15 @@ export default function Page(){
       }
     }
 
-    // === STRICT MANUAL ALLOCATION - EXACT MATCH ONLY - NO FUZZY ===
+    // === STRICT MANUAL ALLOCATION - EXACT MATCH ONLY - NO FUZZY - NO DUPLICATES ===
     let finalVids:any[] = [];
     
     if(exactUnitTitle && exactTopicTitle){
-      // Exact match to our manual allocation: unit = exactUnitTitle AND subtopic = exactTopicTitle
       const rExact = await fetch(`${url}/rest/v1/videos?select=*&unit=eq.${encodeURIComponent(exactUnitTitle)}&subtopic=eq.${encodeURIComponent(exactTopicTitle)}&limit=5`,{headers});
       const dExact:any = await rExact.json();
       if(Array.isArray(dExact) && dExact.length>0){
         finalVids = dExact;
       } else {
-        // Try case-insensitive exact for subtopic
         const rExact2 = await fetch(`${url}/rest/v1/videos?select=*&unit=ilike.${encodeURIComponent(exactUnitTitle)}&subtopic=ilike.${encodeURIComponent(exactTopicTitle)}&limit=5`,{headers});
         const dExact2:any = await rExact2.json();
         if(Array.isArray(dExact2) && dExact2.length>0){
@@ -124,14 +112,12 @@ export default function Page(){
       }
     }
 
-    // If still 0, try topic column (old allocation)
     if(finalVids.length===0 && exactUnitTitle && exactTopicTitle){
       const rTopic = await fetch(`${url}/rest/v1/videos?select=*&unit=eq.${encodeURIComponent(exactUnitTitle)}&topic=eq.${encodeURIComponent(exactTopicTitle)}&limit=5`,{headers});
       const dTopic:any = await rTopic.json();
       if(Array.isArray(dTopic) && dTopic.length>0) finalVids = dTopic;
     }
 
-    // NO MORE FUZZY - if 0, leave 0 (do not duplicate)
     setVideos(finalVids.slice(0,1));
   })()},[topicId,subjectId,unitId]);
 
